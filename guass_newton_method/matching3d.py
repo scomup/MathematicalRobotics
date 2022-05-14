@@ -13,6 +13,8 @@ def func(a, x):
     j = R.dot(j)
     return r.flatten(), j
 
+def plus(x1, x2):
+    return m2p(p2m(x1).dot(p2m(x2)))
 
 if __name__ == '__main__':
 
@@ -28,7 +30,7 @@ if __name__ == '__main__':
     b = transform3d(x_truth, a.T).T
     b += np.random.normal(0, 0.03, (elements,3))
 
-    gn = guassNewton(a,b,func)
+    gn = guassNewton(a,b,func, plus)
     x_cur = np.array([0.,0.,0., 0.,0.,0.])
     cur_a = transform3d(x_cur, a.T).T
     last_score = None
@@ -42,7 +44,7 @@ if __name__ == '__main__':
         ax.scatter3D(b[:,0],b[:,1],b[:,2], c= 'b')
         plt.pause(0.1)
         dx, score = gn.solve_once(x_cur)
-        x_cur = m2p(p2m(x_cur).dot(p2m(dx)))
+        x_cur = plus(x_cur, dx)
         cur_a = transform3d(x_cur, a.T).T
         print(score)
         if(last_score is None):

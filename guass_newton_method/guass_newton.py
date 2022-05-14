@@ -2,10 +2,12 @@ import numpy as np
 
 # solve y = f(a,x) - b
 class guassNewton:
-    def __init__(self, a, b, func):
+    def __init__(self, a, b, func, plus=None):
         self.a = a
         self.b = b
         self.func = func
+        self.plus = plus
+
     
     def solve_once(self, x):
         H = np.zeros([x.shape[0],x.shape[0]])
@@ -27,7 +29,10 @@ class guassNewton:
         x_cur = x
         while(True):   
             dx, score = self.solve_once(x_cur)
-            x_cur = x_cur + dx
+            if(self.plus is None):
+                x_cur = x_cur + dx
+            else:
+                x_cur = self.plus(x_cur, dx)
             print(score)
             if(last_score is None):
                 last_score = score
