@@ -4,18 +4,31 @@ from mpl_toolkits.mplot3d import Axes3D
 from math_tools import *
 from guass_newton import *
 
-def func(a, x):
-    r = transform3d(x, a)
-    R = expSO3(x[3:6])
+
+def func0(a, x):
+    R, t = makeRt(p2m(x))
+    r = R.dot(a) + t
+    r = R.dot(a) + t
     j = np.array([[1,0,0,0, a[2], -a[1]], 
                  [0,1,0,-a[2], 0, a[0]], 
                  [0,0,1,a[1], -a[0], 0]])
     j = R.dot(j)
     return r.flatten(), j
 
-def plus(x1, x2):
+def plus0(x1, x2):
     return m2p(p2m(x1).dot(p2m(x2)))
 
+
+def func(a, x):
+    R, t = makeRt(expSE3(x))
+    r = R.dot(a) + t
+    M = R.dot(skew(-a))
+    j = np.hstack([R,M])
+    return r.flatten(), j
+
+def plus(x1, x2):
+    return logSE3(expSE3(x1).dot(expSE3(x2)))
+    
 if __name__ == '__main__':
 
     fig = plt.figure()
@@ -31,11 +44,12 @@ if __name__ == '__main__':
     b += np.random.normal(0, 0.03, (elements,3))
 
     gn = guassNewton(a,b,func, plus)
+    #gn = guassNewton(a,b,func0, plus0) # work too...
     x_cur = np.array([0.,0.,0., 0.,0.,0.])
     cur_a = transform3d(x_cur, a.T).T
     last_score = None
-    while(True):   
-        
+    iter = 0
+    while(True):      
         plt.cla()
         ax.set_xlim(-2,2)
         ax.set_ylim(-2,2)
@@ -44,9 +58,10 @@ if __name__ == '__main__':
         ax.scatter3D(b[:,0],b[:,1],b[:,2], c= 'b')
         plt.pause(0.1)
         dx, score = gn.solve_once(x_cur)
-        x_cur = plus(x_cur, dx)
+        x_cur = gn.plus(x_cur, dx)
         cur_a = transform3d(x_cur, a.T).T
-        print(score)
+        print('iter %d: %f'%(iter, score))
+        iter += 1
         if(last_score is None):
             last_score = score
             continue
