@@ -2,11 +2,12 @@ import numpy as np
 
 # solve y = f(a,x) - b
 class guassNewton:
-    def __init__(self, a, b, func, plus=None):
+    def __init__(self, a, b, func, plus=None, kernel=None):
         self.a = a
         self.b = b
         self.func = func
         self.plus = plus
+        self.kernel = kernel
 
     
     def solve_once(self, x):
@@ -17,9 +18,17 @@ class guassNewton:
             b_i = self.b[i]
             f_i, j_i = self.func(a_i, x)
             r_i = f_i - b_i
-            H += j_i.T.dot(j_i)
-            g += j_i.T.dot(r_i) 
-            score += r_i.T.dot(r_i)
+            e2 = r_i.T.dot(r_i)
+            if(self.kernel is None):
+                H += j_i.T.dot(j_i)
+                g += j_i.T.dot(r_i) 
+                score += e2
+            else:
+                rho = self.kernel.apply(e2)
+                W = np.eye(j_i.shape[0]) * rho[1]
+                H += j_i.T.dot(W.dot(j_i))
+                g += j_i.T.dot(rho[1]*r_i) 
+                score += rho[0]
         H_inv = np.linalg.inv(H)
         dx = np.dot(H_inv, -g)
         return dx, score
