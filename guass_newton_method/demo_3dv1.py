@@ -1,7 +1,7 @@
 import numpy as np
 from math_tools import *
 from guass_newton import *
-from matching3d import plot3D
+from demo_3d import plot3D
 
 
 def func(a, x):
