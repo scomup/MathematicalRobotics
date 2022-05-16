@@ -9,10 +9,9 @@ class graphSolver:
         self.psize = 0
 
     def addNode(self, node):
-        self.nodes.append(node[0])
-        self.ops.append(node[1])
-        self.loc.append(self.psize)
-        self.psize += node[0].size
+        node.loc = self.psize
+        self.psize += node.size
+        self.nodes.append(node)
         return len(self.nodes) - 1
 
     def addEdge(self, edge):
@@ -23,23 +22,20 @@ class graphSolver:
         g = np.zeros([self.psize])
         score = 0
         for edge in self.edges:
-            if(len(edge) == 4):
-                i, j, z, func = edge
-                r, jacobian_i, jacobian_j = func(self.nodes[i], self.nodes[j], z)
-                jacobian = np.zeros([3, self.psize])
-                jacobian[:,self.loc[i]:self.loc[i]+3] = jacobian_i
-                jacobian[:,self.loc[j]:self.loc[j]+3] = jacobian_j
-                H += jacobian.T.dot(jacobian)
-                g+= jacobian.T.dot(r)
-                score += r.dot(r)
-            elif(len(edge) == 3):
-                i,  z, func = edge
-                r, jacobian_i = func(self.nodes[i], z)
-                jacobian = np.zeros([3, self.psize])
-                jacobian[:,self.loc[i]:self.loc[i]+3] = jacobian_i
-                H += jacobian.T.dot(jacobian)
-                g+= jacobian.T.dot(r)
-                score += r.dot(r)
+            jacobian = np.zeros([3, self.psize])
+            if(edge.type == 'between'):
+                r, jacobian_i, jacobian_j = edge.func(self.nodes)
+                node_i = self.nodes[edge.i]
+                node_j = self.nodes[edge.j]
+                jacobian[:, node_i.loc : node_i.loc +  node_i.size] = jacobian_i
+                jacobian[:, node_j.loc : node_j.loc +  node_j.size] = jacobian_j
+            elif(edge.type == 'one'):
+                node_i = self.nodes[edge.i]
+                r, jacobian_i = edge.func(self.nodes)
+                jacobian[:,node_i.loc:node_i.loc + node_i.size] = jacobian_i
+            H += jacobian.T.dot(jacobian)
+            g+= jacobian.T.dot(r)
+            score += r.dot(r)
         H_inv = np.linalg.inv(H)
         dx = np.dot(H_inv, -g)
         print(score)
@@ -47,40 +43,62 @@ class graphSolver:
 
     def update(self, dx):
         for i, node in enumerate(self.nodes):
-            self.nodes[i] = self.ops[i](node,dx[self.loc[i]:self.loc[i]+3])
+            node.update(dx[node.loc:node.loc+node.size])
 
-if __name__ == '__main__':
-    from math_tools import *
 
-    def func1(x1, x2, z):
-        T12 = np.linalg.inv(v2m(x1)).dot(v2m(x2))
-        T21 = np.linalg.inv(T12)
-        R21,t21 = makeRt(T21)
-        Ad_T21 = np.eye(3)
-        Ad_T21[0:2,0:2] = R21
-        Ad_T21[0:2,2] = np.array([t21[1], -t21[0]])
-        return m2v(np.linalg.inv(v2m(z)).dot(T12)), -Ad_T21, np.eye(3)
-
-    def func2(x2, z):
-        Tz2 = np.linalg.inv(v2m(z)).dot(v2m(x2))
+class pose2dEdge:
+    def __init__(self, i, z):
+        self.i = i
+        self.z = z
+        self.type = 'one'
+    def func(self, nodes):
+        Tz2 = np.linalg.inv(v2m(self.z)).dot(v2m(nodes[self.i].x))
         T2z = np.linalg.inv(Tz2)
         R,t = makeRt(T2z)
         Ad_T = np.eye(3)
         Ad_T[0:2,0:2] = R
         Ad_T[0:2,2] = np.array([t[1], -t[0]])
         return m2v(T2z), -Ad_T
-    def plus(x1, x2):
-        return m2v(v2m(x1).dot(v2m(x2)))
+
+
+class pose2dbetweenEdge:
+    def __init__(self, i, j, z):
+        self.i = i
+        self.j = j
+        self.z = z
+        self.type = 'between'
+    def func(self, nodes):
+        T12 = np.linalg.inv(v2m(nodes[self.i].x)).dot(v2m(nodes[self.j].x))
+        T21 = np.linalg.inv(T12)
+        R21,t21 = makeRt(T21)
+        Ad_T21 = np.eye(3)
+        Ad_T21[0:2,0:2] = R21
+        Ad_T21[0:2,2] = np.array([t21[1], -t21[0]])
+        return m2v(np.linalg.inv(v2m(self.z)).dot(T12)), -Ad_T21, np.eye(3)
+
+class pose2Node:
+    def __init__(self, x):
+        self.x = x
+        self.size = x.size
+        self.loc = 0
+
+    def update(self, dx):
+        self.x = m2v(v2m(self.x).dot(v2m(dx)))
+
+
+
+if __name__ == '__main__':
+    from math_tools import *
 
     gs = graphSolver()
-    gs.addNode([np.array([0,0,0]),plus]) #0
-    gs.addNode([np.array([1,0,0]),plus]) #1
-    gs.addNode([np.array([0.5,0,0]),plus]) #2
-    gs.addEdge([0,np.array([0,0,0]),func2]) #i, z, func
-    gs.addEdge([1,np.array([1.1,0,0]),func2]) #i, z, func
-    gs.addEdge([0,1,np.array([1.05,0,0]),func1]) #i, j, z, func
-    gs.addEdge([1,2,np.array([-0.6,0,0]),func1]) #i, j, z, func
-    gs.addEdge([0,2,np.array([0,0,0]),func1]) #i, j, z, func
+    gs.addNode(pose2Node(np.array([0,0,0]))) #0
+    gs.addNode(pose2Node(np.array([1,0,0]))) #1
+    gs.addNode(pose2Node(np.array([0.5,0,0]))) #2
+    gs.addEdge(pose2dEdge(0,np.array([0,0,0]))) #i, z, func
+    gs.addEdge(pose2dEdge(1,np.array([1.1,0,0]))) #i, z, func
+    gs.addEdge(pose2dbetweenEdge(0,1,np.array([1.05,0,0]))) #i, j, z, func
+    gs.addEdge(pose2dbetweenEdge(1,2,np.array([-0.6,0,0]))) #i, j, z, func
+    gs.addEdge(pose2dbetweenEdge(0,2,np.array([0,0,0]))) #i, j, z, func
     dx = gs.solve_once()
     gs.update(dx)
     dx = gs.solve_once()
