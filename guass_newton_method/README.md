@@ -28,14 +28,13 @@ $$
 J is the jacobian matrix, e is the residual vector. 
 
 
-#### The jacabian for 3d rotation?  
+#### The jacabian matrix of 3d rotation or 3d transform 
 
 If we define the increment of SO3/SE3 as:
 
 $$T(x_{0}\oplus\delta) \triangleq T(x_{0})\exp( \delta )$$
 
-The $\delta \in \mathfrak{\text{so}}(3)$ or
-$\delta \in \mathfrak{\text{se}}(3)$
+The $\delta \in \mathfrak{so}(3)$ or $\delta \in \mathfrak{se}(3)$
 
 We use a first-order Taylor expansion to approximate the original equation:  
 
@@ -62,9 +61,13 @@ $$= - \frac{T_{0}\delta\widehat{a}}{\delta}$$
 
 $$= - T_{0}\widehat{a} $$
 
-If $\delta \in \mathfrak{s}\mathfrak{e}(3)$
+#### When $\delta \in \mathfrak{so}(3)$
+$T_0$ is a 3d rotation matrix($R_0$),
+and $\widehat{a}$ is defined as a skew symmetric matrix for vector $[ a ]_{\times}$
 
-$$\dot{f} = - R_{0}[ a ]{\times}$$
+$$\dot{f} = - R_{0}[ a ]_{\times}$$
+
+####  When $\delta \in \mathfrak{so}(3)$
 
 $$\delta = [\ v, \omega ]$$
 
