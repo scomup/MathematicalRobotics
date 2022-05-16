@@ -36,11 +36,26 @@ class graphSolver:
             H += jacobian.T.dot(jacobian)
             g += jacobian.T.dot(r)
             score += r.dot(r)
-        #H_inv = np.linalg.inv(H)
-        #dx = np.dot(H_inv, -g)
         dx = np.linalg.solve(H, -g)
-        print(score)
-        return dx
+        return dx, score
+
+    def solve(self):
+        last_score = None
+        iter = 0
+        while(True):   
+            dx, score = self.solve_once()
+            iter +=1
+            print('iter %d: %f'%(iter, score))
+            self.update(dx)
+            if(last_score is None):
+                last_score = score
+                continue        
+            if(last_score < score):
+                break
+            if(last_score - score < 0.0001):
+                break
+            last_score = score
+
 
     def update(self, dx):
         for i, node in enumerate(self.nodes):
