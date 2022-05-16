@@ -1,6 +1,8 @@
 import numpy as np
 from graph_solver import *
 from math_tools import *
+import gtsam.utils.plot as gtsam_plot
+import gtsam
 
 class pose2dEdge:
     def __init__(self, i, z):
@@ -46,15 +48,27 @@ class pose2Node:
 if __name__ == '__main__':
     gs = graphSolver()
     gs.addNode(pose2Node(np.array([0,0,0]))) #0
-    gs.addNode(pose2Node(np.array([1,0,0]))) #1
-    gs.addNode(pose2Node(np.array([0.5,0,0]))) #2
+    gs.addNode(pose2Node(np.array([1,0,np.pi/2]))) #1
+    gs.addNode(pose2Node(np.array([1,1,np.pi]))) #2
+    gs.addNode(pose2Node(np.array([0,1,-np.pi/2]))) #3
     gs.addEdge(pose2dEdge(0,np.array([0,0,0]))) #i, z
-    gs.addEdge(pose2dEdge(1,np.array([1.1,0,0]))) #i, z
-    gs.addEdge(pose2dbetweenEdge(0,1,np.array([1.05,0,0]))) #i, j, z
-    gs.addEdge(pose2dbetweenEdge(1,2,np.array([-0.6,0,0]))) #i, j, z
-    gs.addEdge(pose2dbetweenEdge(0,2,np.array([0,0,0]))) #i, j, z
+    #gs.addEdge(pose2dEdge(1,np.array([1.1,0,0]))) #i, z
+    #gs.addEdge(pose2dEdge(2,np.array([0.6,0,0]))) #i, z
+    gs.addEdge(pose2dbetweenEdge(0,1,np.array([1,0,np.pi/2]))) #i, j, z
+    gs.addEdge(pose2dbetweenEdge(1,2,np.array([1,0,np.pi/2]))) #i, j, z
+    gs.addEdge(pose2dbetweenEdge(2,3,np.array([1,0,np.pi/2]))) #i, j, z
+    gs.addEdge(pose2dbetweenEdge(3,0,np.array([0,0,np.pi/2]))) #i, j, z
+
+    
     dx = gs.solve_once()
     gs.update(dx)
     dx = gs.solve_once()
     gs.update(dx)
     dx = gs.solve_once()
+    for n in gs.nodes:
+        print(n.x)
+    import matplotlib.pyplot as plt
+    for n in gs.nodes:
+        gtsam_plot.plot_pose2(0, gtsam.Pose2(*n.x), 0.1)
+    plt.axis('equal')
+    plt.show()
