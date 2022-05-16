@@ -12,7 +12,7 @@ class plot2D:
         plt.cla()
         self.ax.scatter(a[:,0],a[:,1], c= 'r')
         self.ax.scatter(b[:,0],b[:,1], c= 'b')
-        plt.pause(0.1)
+        plt.pause(0.2)
     def show(self):
         plt.show()
 

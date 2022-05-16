@@ -148,9 +148,8 @@ def logSO3(R):
     omega = magnitude * np.array([R32 - R23, R13 - R31, R21 - R12])
     return omega
 
-def transform2d(x,p):
-    t = x[0:2]
-    R = np.array([[np.cos(x[2]),-np.sin(x[2])], [np.sin(x[2]),np.cos(x[2])]])
+def transform2d(x,p, x2T = v2m):
+    R, t = makeRt(x2T(x))
     element = int(p.size/2)
     tp = np.dot(R,p).reshape(2, -1) + np.array([t,]*(element)).transpose()
     return tp

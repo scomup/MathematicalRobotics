@@ -15,7 +15,7 @@ class plot3D:
         plt.cla()
         self.ax.scatter3D(a[:,0],a[:,1],a[:,2], c= 'r')
         self.ax.scatter3D(b[:,0],b[:,1],b[:,2], c= 'b')
-        plt.pause(0.1)
+        plt.pause(0.2)
     def show(self):
         plt.show()
 
