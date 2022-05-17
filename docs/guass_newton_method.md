@@ -63,17 +63,17 @@ $$= - T_{0}\widehat{a} $$
 
 #### When $\delta \in \mathfrak{so}(3)$
 $T_0$ is a 3d rotation matrix($R_0$),
-and $\widehat{a}$ is defined as a skew symmetric matrix for vector $[ a ]_{\times}$
+and $\widehat{a}$ is defined as a skew symmetric matrix for vector $a$
 
 $$\dot{f} = - R_{0}[ a ]_{\times}$$
 
-####  When $\delta \in \mathfrak{so}(3)$
+####  When $\delta \in \mathfrak{se}(3)$
 
 $$\delta = [\ v, \omega ]$$
 
-$\omega$: the parameter for rotation.
+$\omega$: the parameter of rotation.
 
-$v:$the parameter for translation.
+$v$: the parameter of translation.
 
 $$\widehat{\delta} = \begin{bmatrix}
 [ \omega ]_{\times} & v \\

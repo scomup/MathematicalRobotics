@@ -30,6 +30,7 @@ def plot_pose2(
         axis_labels=("X axis", "Y axis", "Z axis")):
     # get figure object
     fig = plt.figure(fignum)
+    plt.axis('equal')
     axes = fig.gca()
     plot_pose2_on_axes(axes,
                        pose,
@@ -39,3 +40,17 @@ def plot_pose2(
     axes.set_ylabel(axis_labels[1])
 
     return fig
+
+
+if __name__ == '__main__':
+    from math_tools import *
+    pose = []
+    cur_pose = np.array([0,0,0])
+    odom = np.array([0.2, 0, 0.5])
+    for i in range(12):
+        pose.append(cur_pose)
+        cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
+        plot_pose2(0, cur_pose, 0.05)
+    plt.axis('equal')
+    plt.show()
+

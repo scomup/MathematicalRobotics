@@ -18,7 +18,7 @@ class pose2dbetweenEdge:
         self.i = i
         self.j = j
         self.z = z
-        self.type = 'between'
+        self.type = 'two'
     def func(self, nodes):
         T12 = np.linalg.inv(v2m(nodes[self.i].x)).dot(v2m(nodes[self.j].x))
         T21 = np.linalg.inv(T12)
@@ -37,25 +37,41 @@ class pose2Node:
     def update(self, dx):
         self.x = m2v(v2m(self.x).dot(v2m(dx)))
 
+def draw(figname, gs):
+    fig = plt.figure(figname)
+    axes = fig.gca()
+    for i in range(n):
+        j = (i + 1)%n
+        gs.addEdge(pose2dbetweenEdge(i,j,odom))
+        plot_pose2(figname, gs.nodes[i].x, 0.05)
+        x = [gs.nodes[i].x[0],gs.nodes[j].x[0]]
+        y = [gs.nodes[i].x[1],gs.nodes[j].x[1]]
+        if(j!=0):
+            axes.plot(x,y,c='black',linestyle=':')
+        else:
+            axes.plot(x,y,c='r',linestyle=':')
 
 
 if __name__ == '__main__':
+    
     gs = graphSolver()
-    gs.addNode(pose2Node(np.array([0,0,0]))) #0
-    gs.addNode(pose2Node(np.array([1,0,np.pi/2]))) #1
-    gs.addNode(pose2Node(np.array([1,1,np.pi]))) #2
-    gs.addNode(pose2Node(np.array([0,1,-np.pi/2]))) #3
-    gs.addEdge(pose2dEdge(0,np.array([0,0,0]))) 
-    #gs.addEdge(pose2dEdge(1,np.array([1.1,0,0]))) #i, z
-    #gs.addEdge(pose2dEdge(2,np.array([0.6,0,0]))) #i, z
-    gs.addEdge(pose2dbetweenEdge(0,1,np.array([1,0,np.pi/2])))
-    gs.addEdge(pose2dbetweenEdge(1,2,np.array([1,0,np.pi/2])))
-    gs.addEdge(pose2dbetweenEdge(2,3,np.array([1,0,np.pi/2])))
-    gs.addEdge(pose2dbetweenEdge(3,0,np.array([0,0,np.pi/2])))
-    gs.solve()
 
-    import matplotlib.pyplot as plt
-    for n in gs.nodes:
-        plot_pose2(0, n.x, 0.05)
-    plt.axis('equal')
+    n = 12
+    cur_pose = np.array([0,0,0])
+    odom = np.array([0.2, 0, 0.45])
+    for i in range(n):
+        gs.addNode(pose2Node(cur_pose)) # add node to graph
+        cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
+
+    gs.addEdge(pose2dEdge(0,np.array([0,0,0]))) # add prior pose to graph
+
+    for i in range(n):
+        j = (i + 1)%n
+        gs.addEdge(pose2dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
+
+
+    draw('before loop-closing', gs)
+    gs.solve()
+    draw('after loop-closing', gs)
+
     plt.show()
