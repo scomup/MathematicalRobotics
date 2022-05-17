@@ -30,6 +30,10 @@ def skew(vector):
                      [vector[2], 0, -vector[0]], 
                      [-vector[1], vector[0], 0]])
 
+def unskew(m):
+    return np.array([m[2,1],m[0,2], m[1,0]])
+
+
 def makeT(R,t):
     n = t.shape[0]
     T = np.eye(n+1)
@@ -145,7 +149,7 @@ def logSO3(R):
             #use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
             #see https://github.com/borglab/gtsam/issues/746 for details
             magnitude = 0.5 - tr_3 / 12.0 + tr_3*tr_3/60.0
-    omega = magnitude * np.array([R32 - R23, R13 - R31, R21 - R12])
+        omega = magnitude * np.array([R32 - R23, R13 - R31, R21 - R12])
     return omega
 
 def transform2d(x,p, x2T = v2m):

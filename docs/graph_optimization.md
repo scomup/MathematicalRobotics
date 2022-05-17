@@ -29,10 +29,10 @@ $$H_{ij} =
 ... & ...       & ... & ...       & ... \\  
 \end{bmatrix}$$
 
-The $ J_i^T J_i $ is located in row i column i of $H_{ij}$  
-The $ J_j^T J_j $ is located in row j column j of $H_{ij}$  
-The $ J_i^T J_j $ is located in row i column j of $H_{ij}$  
-The $ J_j^T J_i $ is located in row j column i of $H_{ij}$  
+The $J_i^T J_i$ is located in row i column i of $H_{ij}$  
+The $J_j^T J_j$ is located in row j column j of $H_{ij}$  
+The $J_i^T J_j$ is located in row i column j of $H_{ij}$  
+The $J_j^T J_i$ is located in row j column i of $H_{ij}$  
 
 The overall hessian matrix of F is:
 
@@ -51,9 +51,36 @@ J_j^T r_n \\
 ... \\
 \end{bmatrix}$$
 
-The $ J_i^T r_i $ is located in row i of $g_{ij}$  
-The $ J_j^T J_j $ is located in row j of $g_{ij}$  
+The $J_i^T r_i$ is located in row i of $g_{ij}$  
+The $J_j^T r_j$ is located in row j of $g_{ij}$  
 
 The overall gradient vector of F is:
 
 $$ g = \sum_{\{i,j\} \in E}{g_{ij}} $$
+
+### pose 2d
+The edge of 2 pose2d can be defined as:
+
+$$
+ f_{ij}(v_i, v_j; z_{ij}) = \exp(\hat{z}_{ij})^{-1}(\exp(\hat{v}_i)^{-1} \exp(\hat{v}_j))
+$$
+
+$$
+ f_{ij}(v_i, v_j; z_{ij}) = (\exp(\hat{v}_i)^{-1} \exp(\hat{v}_j))
+$$
+
+
+$$
+ \frac{\partial{f_{ij}}}{\partial{v_{i}}} 
+ =  \frac{f(v_i \oplus \delta) - f(v_i )}{\delta} \\
+ =  \frac{ \exp(-v_1)\exp(-\delta)\exp(v_j) - \exp(-v_1)\exp(v_j)}{\delta} \\
+ =  \frac{ \exp(-v_1)[I - [\delta]_{\times} ]\exp(v_j) - \exp(-v_1)\exp(v_j)}{\delta} \\
+=  \frac{ \exp(-v_1) [\delta]_{\times} \exp(v_j)}{\delta} 
+
+ 
+
+$$
+
+
+
+\oplus\delta

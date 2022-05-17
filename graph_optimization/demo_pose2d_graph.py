@@ -1,6 +1,8 @@
 import numpy as np
 from graph_solver import *
-from math_tools import *
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utilities.math_tools import *
 from plot_pose2d import *
 
 class pose2dEdge:

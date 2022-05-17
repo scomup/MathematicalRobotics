@@ -56,7 +56,10 @@ class guassNewton:
 
 
 if __name__ == '__main__':
-    from math_tools import *
+    import sys, os
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from utilities.math_tools import *
+
     def func(a, x):
         r = transform3d(x, a)
         j = np.array([[1,0,0,0, a[2], -a[1]], 

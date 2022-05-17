@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from math_tools import *
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utilities.math_tools import *
 from guass_newton import *
 
 class plot3D:

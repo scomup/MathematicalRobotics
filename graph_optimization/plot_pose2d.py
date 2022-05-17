@@ -1,5 +1,7 @@
 import numpy as np
-from math_tools import *
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utilities.math_tools import *
 from matplotlib import patches
 import matplotlib.pyplot as plt
 
@@ -43,7 +45,10 @@ def plot_pose2(
 
 
 if __name__ == '__main__':
-    from math_tools import *
+    import sys, os
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from utilities.math_tools import *
+
     pose = []
     cur_pose = np.array([0,0,0])
     odom = np.array([0.2, 0, 0.5])
