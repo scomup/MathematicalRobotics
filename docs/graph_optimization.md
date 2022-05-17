@@ -22,11 +22,11 @@ since there are many parameters for $F$.
 The hessian matrix of $f_{ij}$ can be show as:
 $$H_{ij} = 
 \begin{bmatrix}
-... & ...       & ... & ...       & ... \\
-... & J_i^T J_i & ... & J_i^T J_j & ... \\
-... & ...       & ... & ...       & ... \\
-... & J_j^T J_i & ... & J_j^T J_j & ... \\
-... & ...       & ... & ...       & ... \\
+... & ...       & ... & ...       & ... \\  
+... & J_i^T J_i & ... & J_i^T J_j & ... \\  
+... & ...       & ... & ...       & ... \\  
+... & J_j^T J_i & ... & J_j^T J_j & ... \\  
+... & ...       & ... & ...       & ... \\  
 \end{bmatrix}$$
 
 The $ J_i^T J_i $ is located in row i column i of $H_{ij}$  
