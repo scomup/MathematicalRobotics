@@ -16,11 +16,12 @@ class pose2dEdge:
 
 
 class pose2dbetweenEdge:
-    def __init__(self, i, j, z):
+    def __init__(self, i, j, z, flag = 'none'):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
+        self.flag = flag
     def func(self, nodes):
         T12 = np.linalg.inv(v2m(nodes[self.i].x)).dot(v2m(nodes[self.j].x))
         T21 = np.linalg.inv(T12)
@@ -42,16 +43,19 @@ class pose2Node:
 def draw(figname, gs):
     fig = plt.figure(figname)
     axes = fig.gca()
-    for i in range(n):
-        j = (i + 1)%n
-        gs.addEdge(pose2dbetweenEdge(i,j,odom))
-        plot_pose2(figname, gs.nodes[i].x, 0.05)
+    for n in gs.nodes:
+        plot_pose2(figname, n.x, 0.05)
+    for e in gs.edges:
+        if(e.type=='one'):
+            continue
+        i = e.i
+        j = e.j
         x = [gs.nodes[i].x[0],gs.nodes[j].x[0]]
         y = [gs.nodes[i].x[1],gs.nodes[j].x[1]]
-        if(j!=0):
-            axes.plot(x,y,c='black',linestyle=':')
-        else:
-            axes.plot(x,y,c='r',linestyle=':')
+        color = 'black'
+        if(e.flag == 'loop'):
+            color = 'red'
+        axes.plot(x,y,c=color,linestyle=':')
 
 
 if __name__ == '__main__':
@@ -67,9 +71,11 @@ if __name__ == '__main__':
 
     gs.addEdge(pose2dEdge(0,np.array([0,0,0]))) # add prior pose to graph
 
-    for i in range(n):
-        j = (i + 1)%n
+    for i in range(n-1):
+        j = (i + 1)
         gs.addEdge(pose2dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
+        
+    gs.addEdge(pose2dbetweenEdge(n-1, 0, odom, 'loop'))
 
 
     draw('before loop-closing', gs)

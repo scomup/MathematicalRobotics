@@ -58,29 +58,46 @@ The overall gradient vector of F is:
 
 $$ g = \sum_{\{i,j\} \in E}{g_{ij}} $$
 
-### pose 2d
-The edge of 2 pose2d can be defined as:
+### Derivative of edge between two SO3
+Suppose $\varphi$ is an smooth mapping between two Lie Groups,
+we can define the derivative of $\varphi$ as $J$:
 
 $$
- f_{ij}(v_i, v_j; z_{ij}) = \exp(\hat{z}_{ij})^{-1}(\exp(\hat{v}_i)^{-1} \exp(\hat{v}_j))
+    \exp(\widehat{J\delta}) = \varphi(x)^{-1}\varphi(x\oplus\delta)
 $$
 
+$x$ is a the parameter of $\varphi$, and $\delta$ is a small increment to $x$.
+
+The SO3 edge can define as:
 $$
- f_{ij}(v_i, v_j; z_{ij}) = (\exp(\hat{v}_i)^{-1} \exp(\hat{v}_j))
-$$
-
-
-$$
- \frac{\partial{f_{ij}}}{\partial{v_{i}}} 
- =  \frac{f(v_i \oplus \delta) - f(v_i )}{\delta} \\
- =  \frac{ \exp(-v_1)\exp(-\delta)\exp(v_j) - \exp(-v_1)\exp(v_j)}{\delta} \\
- =  \frac{ \exp(-v_1)[I - [\delta]_{\times} ]\exp(v_j) - \exp(-v_1)\exp(v_j)}{\delta} \\
-=  \frac{ \exp(-v_1) [\delta]_{\times} \exp(v_j)}{\delta} 
-
- 
-
+    \varphi(A,B) = Z^{-1}A^{{-1}}B
 $$
 
+Where $A$ and $B$ are the two SO3 of node_a and node_b. The $Z$ represents the relative pose of $A$, $B$,
+which usually measured by odometry or loop-closing.
 
 
-\oplus\delta
+$$
+    \exp(\widehat{J_A\delta}) = (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}(A\exp(\hat{\delta}))^{{-1}}B) \\
+    = B^{-1}AZ Z^{-1}\exp(-\hat{\delta})A^{{-1}}B \\
+    = B^{-1}A\exp(-\hat{\delta})A^{{-1}}B \\
+    = -\exp(B^{-1}A \hat{\delta} A^{{-1}}B) \\
+    = -\exp(\widehat{B^{-1}A\delta})
+$$
+
+Hence:
+$$
+   J_A = -B^{-1}A
+$$
+
+
+$$
+    \exp(\widehat{J_B\delta}) = (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}A B \exp{(\hat{\delta}})) \\
+    = B^{-1}AZ Z^{-1}A B \exp{(\hat{\delta}}) \\
+    = \exp(\hat{\delta})
+$$
+
+Hence:
+$$
+   J_B = I
+$$
