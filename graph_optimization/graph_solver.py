@@ -1,6 +1,10 @@
 import numpy as np
 
 class graphSolver:
+    """
+    A graph optimization solver.
+    more information is written in graph_optimization.md
+    """
     def __init__(self):
         self.nodes = []
         self.edges = []

@@ -22,6 +22,10 @@ class plot3D:
         plt.show()
 
 def func(a, x):
+    """
+    The residual vector of 3d point matching is given by guass_newton_method.md (7)
+    The proof of Jocabian of 3d point matching is given in a guass_newton_method.md (12)
+    """
     R, t = makeRt(expSE3(x))
     r = R.dot(a) + t
     M = R.dot(skew(-a))
@@ -29,6 +33,9 @@ def func(a, x):
     return r.flatten(), j
 
 def plus(x1, x2):
+    """
+    The incremental function of SE3 is given in guass_newton_method.md (5)
+    """
     return logSE3(expSE3(x1).dot(expSE3(x2)))
     
 if __name__ == '__main__':

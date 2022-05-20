@@ -19,6 +19,10 @@ class plot2D:
         plt.show()
 
 def func(a, x):
+    """
+    The residual vector of 2d point matching is given by guass_newton_method.md (7)
+    The proof of Jocabian of 2d point matching is given in a guass_newton_method.md (12)
+    """
     R, t = makeRt(v2m(x))
     r = R.dot(a) + t
     j = np.array([[1, 0, -a[1]],
@@ -27,6 +31,9 @@ def func(a, x):
     return r.flatten(), j
 
 def plus(x1, x2):
+    """
+    The incremental function of SE2 is given in guass_newton_method.md (5)
+    """
     return m2v(v2m(x_cur).dot(v2m(dx)))
 
 if __name__ == '__main__':

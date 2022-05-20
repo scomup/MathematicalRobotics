@@ -2,7 +2,12 @@ import numpy as np
 
 # solve y = f(a,x) - b
 class guassNewton:
+    """
+    A guass newton solver.
+    more information is written in guass_newton_method.md
+    """
     def __init__(self, a, b, func, plus=None, kernel=None):
+
         self.a = a
         self.b = b
         self.func = func

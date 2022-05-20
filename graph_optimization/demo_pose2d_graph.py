@@ -11,6 +11,9 @@ class pose2dEdge:
         self.z = z
         self.type = 'one'
     def func(self, nodes):
+        """
+        The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
+        """
         Tzx = np.linalg.inv(v2m(self.z)).dot(v2m(nodes[self.i].x))
         return m2v(Tzx), np.eye(3)
 
@@ -23,13 +26,17 @@ class pose2dbetweenEdge:
         self.type = 'two'
         self.flag = flag
     def func(self, nodes):
+        """
+        The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
+        """
         T12 = np.linalg.inv(v2m(nodes[self.i].x)).dot(v2m(nodes[self.j].x))
         T21 = np.linalg.inv(T12)
         R21,t21 = makeRt(T21)
-        Ad_T21 = np.eye(3)
-        Ad_T21[0:2,0:2] = R21
-        Ad_T21[0:2,2] = np.array([t21[1], -t21[0]])
-        return m2v(np.linalg.inv(v2m(self.z)).dot(T12)), -Ad_T21, np.eye(3)
+        J = np.eye(3)
+        J[0:2,0:2] = R21
+        J[0:2,2] = -np.array([-t21[1], t21[0]])
+        J = -J
+        return m2v(np.linalg.inv(v2m(self.z)).dot(T12)), J, np.eye(3)
 
 class pose2Node:
     def __init__(self, x):
