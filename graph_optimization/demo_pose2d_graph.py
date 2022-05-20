@@ -57,8 +57,10 @@ def draw(figname, gs):
             continue
         i = e.i
         j = e.j
-        x = [gs.nodes[i].x[0],gs.nodes[j].x[0]]
-        y = [gs.nodes[i].x[1],gs.nodes[j].x[1]]
+        _, ti = makeRt(v2m(gs.nodes[i].x))
+        _, tj = makeRt(v2m(gs.nodes[j].x))
+        x = [ti[0],tj[0]]
+        y = [ti[1],tj[1]]
         color = 'black'
         if(e.flag == 'loop'):
             color = 'red'
