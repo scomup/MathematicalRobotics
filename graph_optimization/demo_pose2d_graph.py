@@ -3,7 +3,7 @@ from graph_solver import *
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
-from plot_pose2d import *
+from graph_optimization.plot_pose import *
 
 class pose2dEdge:
     def __init__(self, i, z):
