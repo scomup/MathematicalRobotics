@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from guass_newton import *
-from robust_kernel import *
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utilities.robust_kernel import *
 
 def func(a, x):
     r = a*x[0] + x[1]
