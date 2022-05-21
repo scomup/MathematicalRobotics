@@ -85,16 +85,16 @@ $$= \frac{T_{0}\begin{bmatrix}
 \end{bmatrix}\begin{bmatrix}
 a \\
 1 \\
-\end{bmatrix}}{[ \omega,\ v ]} \\
+\end{bmatrix}}{[v,\omega ]} \\
 = \frac{T_{0}\begin{bmatrix}
-[ - a ]_{\times} & I \\
+I & [ - a ]_{\times} \\
 0 & 0 \\
 \end{bmatrix}\begin{bmatrix}
-\omega \\
 v \\
-\end{bmatrix}}{[ \omega,\ v ]} \\
+\omega \\
+\end{bmatrix}}{[v,\omega ]} \\
 = T_{0}\begin{bmatrix}
-[ - a ]_{\times} & I \\
+I & [ - a ]_{\times} \\
 0 & 0 \\
 \end{bmatrix} \tag{12}$$
 

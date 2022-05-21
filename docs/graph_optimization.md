@@ -110,7 +110,7 @@ The small incremental matrix of SE2 can be shown as follow:
 $$
   \hat{\delta} = 
   \begin{bmatrix}
-[ \omega ]_{\times} & v \\
+[ \omega ]_+ & v \\
 0 & 0 \\
 \end{bmatrix}
 \tag{12}
@@ -118,7 +118,8 @@ $$
 
 
 Where $\delta = \begin{bmatrix} v \\ w \end{bmatrix} \in \mathfrak{se}(2) $
-$\omega$: the parameter of rotation (is a scalar).
+$\omega$: the parameter of rotation (is a scalar). $[w]_+ = \begin{bmatrix} 0 & -w \\ w & 0 \end{bmatrix} $
+
 $v$: the parameters of translation (is a 2d vector).
 
 
@@ -133,6 +134,107 @@ $$
 $$
 
 We substitute (12) and (13) into (8), we get:
+$$
+    \exp(\widehat{J_A\delta}) 
+    = -\exp(T_{BA} \hat{\delta} T_{BA}^{{-1}}) \\
+    = -\exp(T_{BA} 
+          \begin{bmatrix}
+            [ \omega ]_+ & v \\
+            0 & 0 \\
+            \end{bmatrix}
+        T_{BA}^{{-1}}) \\
+    = -\exp
+        (\begin{bmatrix}
+             R & t \\
+            0 & 1 \\
+        \end{bmatrix}
+          \begin{bmatrix}
+            [ \omega ]_+ & v \\
+            0 & 0 \\
+            \end{bmatrix}
+        \begin{bmatrix}
+             R^T & -R^Tt \\
+            0 & 1 \\
+        \end{bmatrix}
+        ) \\
+    = -\exp
+        (\begin{bmatrix}
+             R[ \omega ]_+ & Rv \\
+            0 & 0 \\
+        \end{bmatrix}
+        \begin{bmatrix}
+             R^T & -R^Tt \\
+            0 & 1 \\
+        \end{bmatrix}
+        ) \\
+     = -\exp
+        (\begin{bmatrix}
+             R[ \omega ]_+R^T & R[ \omega ]_+(-R^Tt)+Rv \\
+            0 & 0 \\
+        \end{bmatrix}
+        ) \quad \\
+     = -\exp
+        (\begin{bmatrix}
+             [ \omega ]_+ & -[ \omega ]_+t+Rv \\
+            0 & 0 \\
+        \end{bmatrix}
+        ) \quad \\
+     = -\exp
+        (\begin{bmatrix}
+             [ \omega ]_+ & -[ \omega ]_+t+Rv \\
+            0 & 0 \\
+        \end{bmatrix}
+        ) \tag{14}
+$$
+
+According to (12), we can rewrite (14) as:
+$$
+\exp(\widehat{J_A\delta}) 
+=-\exp(\widehat{\begin{bmatrix}  -[ \omega ]_+t+Rv \\ w 
+    \end{bmatrix}}) \\
+=-\exp(\widehat{\begin{bmatrix}  -\omega t^{\perp} +Rv \\ w 
+    \end{bmatrix}}) \\
+=-\exp(\widehat{
+    \begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
+    \begin{bmatrix}  v\\ w \end{bmatrix}
+    })
+$$
+
+Where $t^{\perp} = [1]_+  t=\begin{bmatrix} -t_2 \\ t_1 \end{bmatrix}$ 
+
+Hence: 
+$$
+   J_A = -\begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
+   =  -\begin{bmatrix}  R_{BA} & -t_{BA}^{\perp}\\ 0 & 1 \end{bmatrix} \tag{15}
+$$
+
+similer with (11):
+
+$$
+J_B = I \tag{16}
+$$
+
+
+
+### If A and B are SE3
+
+The small incremental matrix of SE3 can be shown as follow: 
+$$
+  \hat{\delta} = 
+  \begin{bmatrix}
+[ \omega ]_{\times} & v \\
+0 & 0 \\
+\end{bmatrix}
+\tag{17}
+$$
+
+
+Where $\delta = \begin{bmatrix} v \\ w \end{bmatrix} \in \mathfrak{se}(3) $
+$\omega$: the parameters of rotation (is a 3d vector). $[w]_{\times}$ is the skew symmetric matrix of $w$. 
+
+$v$: the parameters of translation (is a 3d vector).
+
+Similar to (14), we get:
 $$
     \exp(\widehat{J_A\delta}) 
     = -\exp(T_{BA} \hat{\delta} T_{BA}^{{-1}}) \\
@@ -168,49 +270,59 @@ $$
         ) \\
      = -\exp
         (\begin{bmatrix}
-             R[ \omega ]_{\times}R^T & R[ \omega ]_{\times}(-R^Tt)+Rv \\
+             R[ \omega ]_{\times} R^T & -R[ \omega ]_{\times}R^Tt+Rv \\
             0 & 0 \\
         \end{bmatrix}
-        ) \quad \\
+        ) \\
      = -\exp
         (\begin{bmatrix}
-             [ \omega ]_{\times} & -[ \omega ]_{\times}t+Rv \\
+             [ R\omega ]_{\times} & -[ R\omega ]_{\times}t+Rv \\
             0 & 0 \\
         \end{bmatrix}
-        ) \quad \\
-     = -\exp
-        (\begin{bmatrix}
-             [ \omega ]_{\times} & -[ \omega ]_{\times}t+Rv \\
-            0 & 0 \\
-        \end{bmatrix}
-        ) \tag{14}
+        ) \tag{18}
 $$
 
-According to (12), we can rewrite (14) as:
+According to (12), we can rewrite (18) as:
 $$
 \exp(\widehat{J_A\delta}) 
-=-\exp(\widehat{\begin{bmatrix}  -[ \omega ]_{\times}t+Rv \\ w 
-    \end{bmatrix}}) \\
-=-\exp(\widehat{\begin{bmatrix}  -\omega t^{\perp} +Rv \\ w 
+=-\exp(\widehat{
+    \begin{bmatrix}
+          -[R\omega]_{\times}t+Rv \\
+           Rw 
     \end{bmatrix}}) \\
 =-\exp(\widehat{
-    \begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
-    \begin{bmatrix}  v\\ w \end{bmatrix}
-    })
+    \begin{bmatrix} 
+         [t]_{\times}R\omega  +Rv \\
+          Rw 
+    \end{bmatrix}}) \\
+=-\exp(\widehat{
+    \begin{bmatrix}  
+        R & [t]_{\times}R \\
+        0 & R 
+    \end{bmatrix}
+    \begin{bmatrix} 
+        v \\
+        w
+    \end{bmatrix}
+    })\tag{19}
 $$
-
-Where $t^{\perp} = [1]_{\times}  t=\begin{bmatrix} -t_2 \\ t_1 \end{bmatrix}$ 
 
 Hence: 
 $$
-   J_A = -\begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
-   =  -\begin{bmatrix}  R_{BA} & -t_{BA}^{\perp}\\ 0 & 1 \end{bmatrix} \tag{15}
+   J_A = -\begin{bmatrix}  
+        R_{BA} & [t_{BA}]_{\times}R_{BA}  \\
+        0 & R_{BA} 
+    \end{bmatrix} \tag{20} 
 $$
 
 similer with (11):
 
 $$
-J_B = I \tag{16}
+J_B = I \tag{21}
 $$
+
+
+
+
 
 

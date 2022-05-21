@@ -12,7 +12,7 @@ class pose3dEdge:
         self.type = 'one'
     def func(self, nodes):
         """
-        The proof of Jocabian of SE3 is given in a graph_optimization.md (15)(16)
+        The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
         Tzx = np.linalg.inv(expSE3(self.z)).dot(expSE3(nodes[self.i].x))
         return logSE3(Tzx), np.eye(6)
@@ -27,17 +27,19 @@ class pose3dbetweenEdge:
         self.flag = flag
     def func(self, nodes):
         """
-        The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
+        The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
         T1 = expSE3(nodes[self.i].x)
         T2 = expSE3(nodes[self.j].x)
-        R1,t1 = makeRt(T1)
-        R2,t2 = makeRt(T2)
+
         T12 = np.linalg.inv(T1).dot(T2)
+        T21 = np.linalg.inv(T12)
+        R,t = makeRt(T21)
         J = np.zeros([6,6])
-        J[0:3,0:3] = -R2.T.dot(R1)
-        J[3:6,0:3] = R2.T.dot(skew(t2-t1).dot(R1))
-        J[3:6,3:6] = J[0:3,0:3]
+        J[0:3,0:3] = R
+        J[0:3,3:6] = skew(t).dot(R)
+        J[3:6,3:6] = R
+        J = -J
         return logSE3(np.linalg.inv(expSE3(self.z)).dot(T12)), J, np.eye(6)
 
 class pose3Node:
