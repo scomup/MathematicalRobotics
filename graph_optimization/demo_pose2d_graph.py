@@ -19,12 +19,12 @@ class pose2dEdge:
 
 
 class pose2dbetweenEdge:
-    def __init__(self, i, j, z, flag = 'none'):
+    def __init__(self, i, j, z, color = 'black'):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
-        self.flag = flag
+        self.color = color
     def func(self, nodes):
         """
         The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
@@ -61,10 +61,7 @@ def draw(figname, gs):
         _, tj = makeRt(v2m(gs.nodes[j].x))
         x = [ti[0],tj[0]]
         y = [ti[1],tj[1]]
-        color = 'black'
-        if(e.flag == 'loop'):
-            color = 'red'
-        axes.plot(x,y,c=color,linestyle=':')
+        axes.plot(x,y,c=e.color,linestyle=':')
 
 
 if __name__ == '__main__':
@@ -84,7 +81,7 @@ if __name__ == '__main__':
         j = (i + 1)
         gs.addEdge(pose2dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
         
-    gs.addEdge(pose2dbetweenEdge(n-1, 0, odom, 'loop'))
+    gs.addEdge(pose2dbetweenEdge(n-1, 0, odom, 'red'))
 
 
     draw('before loop-closing', gs)

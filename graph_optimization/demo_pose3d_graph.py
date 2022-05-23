@@ -19,12 +19,12 @@ class pose3dEdge:
 
 
 class pose3dbetweenEdge:
-    def __init__(self, i, j, z, flag = 'none'):
+    def __init__(self, i, j, z, color = 'black'):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
-        self.flag = flag
+        self.color = color
     def func(self, nodes):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
@@ -66,10 +66,7 @@ def draw(figname, gs):
         x = [ti[0],tj[0]]
         y = [ti[1],tj[1]]
         z = [ti[2],tj[2]]
-        color = 'black'
-        if(e.flag == 'loop'):
-            color = 'red'
-        axes.plot(x,y,z,c=color,linestyle=':')
+        axes.plot(x,y,z,c=e.color,linestyle=':')
     set_axes_equal(figname)
 
 
@@ -92,7 +89,7 @@ if __name__ == '__main__':
         j = (i + 1)
         gs.addEdge(pose3dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
         
-    gs.addEdge(pose3dbetweenEdge(n-1, 0, odom, 'loop'))
+    gs.addEdge(pose3dbetweenEdge(n-1, 0, odom, 'red'))
 
 
     draw('before loop-closing', gs)
