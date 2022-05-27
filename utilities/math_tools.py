@@ -58,6 +58,21 @@ def expSE3(x):
     else:
         return makeT(R, v)
 
+def expSE3test(x):
+    hat_x = np.zeros([4,4])
+    omega = x[3:6]
+    v = x[0:3]
+    hat_x[0:3,0:3] = skew(omega) 
+    hat_x[0:3,3] = v
+    hat_x_powk = hat_x.copy()
+    T = np.eye(4)
+    k_factorial = 1
+    for k in range(1,20):
+        k_factorial *= k
+        T += hat_x_powk / k_factorial
+        hat_x_powk = hat_x_powk.dot(hat_x)
+    return T
+
 def logSE3(pose):
     w = logSO3(pose[0:3,0:3])
     T = pose[0:3,3]
@@ -88,6 +103,17 @@ def expSO3(omega):
         one_minus_cos = 1 - np.cos(theta)
         R = np.eye(3) + sin_theta * K + one_minus_cos * KK
         return R 
+
+def expSO3test(x):
+    hat_x = skew(x) 
+    T = np.eye(3)
+    k_factorial = 1
+    hat_x_powk = hat_x.copy()
+    for k in range(1,20):
+        k_factorial *= k
+        T += hat_x_powk / k_factorial
+        hat_x_powk = hat_x_powk.dot(hat_x)
+    return T
 
 def logSO3(R):
     R11, R12, R13 = R[0, :]
@@ -169,7 +195,12 @@ if __name__ == '__main__':
     v = np.array([1,0.3,2])
     R = expSO3(v)
     R2 = expSO3(logSO3(R))
+    R3 = expSO3test(logSO3(R))
     if(np.linalg.norm(R - R2) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(R2 - R3) < 0.0001):
         print('OK')
     else:
         print('NG')
@@ -179,8 +210,14 @@ if __name__ == '__main__':
     v = np.array([1,0.3,2,1,-3.2,0.2])
     R = expSE3(v)
     R2 = expSE3(logSE3(R))
+    R3 = expSE3test(logSE3(R))
 
     if(np.linalg.norm(R - R2) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    if(np.linalg.norm(R2 - R3) < 0.0001):
         print('OK')
     else:
         print('NG')

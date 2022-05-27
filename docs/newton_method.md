@@ -100,9 +100,8 @@ We use a first-order Taylor expansion to approximate the original equation:
 
 $$T(x_{0}\oplus\delta) = T_{0}\exp( \delta ) \cong T_{0} + T_{0}\widehat{\delta}$$
 
-The f(x) is the objective function. 
-We want to find the optimal parameters (x) that minimize the result of the objective function.
-$$f(x) = T(x)a - b$$
+The r(x) is the residual function. 
+$$r(x) = T(x)a - b$$
 
 a is the target point:
 b is the reference point.
@@ -111,7 +110,7 @@ We can use gauss-newton method to solve this problem.
 According to gauss-newton method, we need to find the Jacobian matrix
 for f(x).
 
-$$\dot{f} = \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta}$$
+$$\dot{r} = \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta}$$
 
 $$\cong \frac{T_{0}a + T_{0}\widehat{\delta}a - T_{0}a}{\delta}$$
 
@@ -125,7 +124,7 @@ $$= - T_{0}\widehat{a} $$
 $T_0$ is a 3d rotation matrix($R_0$),
 and $\widehat{a}$ is defined as a skew symmetric matrix for vector $a$
 
-$$\dot{f} = - R_{0}[ a ]_{\times}$$
+$$\dot{r} = - R_{0}[ a ]_{\times}$$
 
 ####  When $\delta \in \mathfrak{se}(3)$
 
@@ -140,7 +139,7 @@ $$\widehat{\delta} = \begin{bmatrix}
 0 & 0 \\
 \end{bmatrix}$$
 
-$$\dot{f} = \frac{R_{0}\widehat{\delta}a}{\delta}$$
+$$\dot{r} = \frac{R_{0}\widehat{\delta}a}{\delta}$$
 
 $$= \frac{T_{0}\begin{bmatrix}
 [ \omega ]_{\times} & v \\
