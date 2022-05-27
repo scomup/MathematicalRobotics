@@ -2,10 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 # Christopher Zach. “Robust bundle adjustment revisited” (11)(12)
 
+class gaussianKernel:
+    def __init__(self, d):
+        self.d = d
+
+    def apply(self, e2):
+        rho = [None,None,None]
+        t = np.exp(-self.d*e2)
+        rho[0] = 1-t
+        rho[1] = t * self.d
+        rho[2] = - t * rho[1]
+        return rho
+
 class L2Kernel:
     def __init__(self):
         pass
-    def apply(e2):
+    def apply(self, e2):
         rho = [None,None,None]
         rho[0] = e2
         rho[1] = 1.
@@ -15,7 +27,7 @@ class L2Kernel:
 class L1Kernel:
     def __init__(self):
         pass
-    def apply(e2):
+    def apply(self, e2):
         rho = [None,None,None]
         rho[0] = np.sqrt(e2)
         rho[1] = 1/(2*np.sqrt(e2))
@@ -69,16 +81,19 @@ class CauchyKernel:
 
 
 def drawKernel():
-    e = np.arange(-10,10, 0.1)
+    e = np.arange(-5,5, 0.03)
     e2 = e**2
-    eHuber = PseudoHuberKernel(2).apply(e2)
-    eCauchy = CauchyKernel(2).apply(e2)
-    eL1 = L1Kernel.apply(e2)
+    eHuber = PseudoHuberKernel(1).apply(e2)
+    eCauchy = CauchyKernel(1).apply(e2)
+    #eL1 = L1Kernel().apply(e2)
+    eGaussian = gaussianKernel(1).apply(e2)
     plt.plot(e, eHuber[0], label='HuberKernel')
     plt.plot(e, eCauchy[0], label='CauchyKernel')
     plt.plot(e, e2, label='L2')
-    plt.plot(e, eL1[0], label='L1')
+    #plt.plot(e, eL1[0], label='L1')
+    plt.plot(e, eGaussian[0], label='GaussianKernel')
     plt.legend()
+    plt.ylim(0,5)
     plt.show()
 
 if __name__ == '__main__':
