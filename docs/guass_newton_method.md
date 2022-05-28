@@ -4,15 +4,15 @@
 * Nonlinear: A function cannot be expressed as a polynomial of degree 1.
 
 ### What is Least-Squares Problem?  
-f(x) is the objective function, x is the parameter vector.  
-The least-squares problem tries to find optimal parameters to minimize the overall cost. 
+r(x) is the residual function, x is the parameter vector.  
+The least-squares problem tries to find optimal parameters to minimize the sum of squared residuals. 
 $$ 
-cost = \sum_{i=0}^{n}f(x)^2 \tag{1}
+cost = \sum_{i=0}^{n}r(x)^2 \tag{1}
 $$
 
 ### What is Gauss-Newton Methods?  
 The gauss–newton methods is used to solve nonlinear least-squares problems.  
-Unlike Newton's method, gauss-newton methods are not necessary to calculate second derivatves, which may difficult to compute in some cases.  
+Unlike Newton's method, gauss-newton methods are not necessary to calculate second derivatves of residual function, which may difficult to compute in some cases.  
 Gauss–newton methods update x using iterative method, the update amount is Δx. 
 
 $$ 
@@ -20,15 +20,15 @@ $$
 $$
 here: g is the gradient vector; H is the hessian matrix.
 $$ 
-g = J^Te \tag{3}
+g = \sum g_i= \sum J_i^Tr_i \tag{3}
 $$
 $$ 
-H \approx J^TJ  \tag{4}
+H  \sum H_i \approx J_i^TJ_i  \tag{4}
 $$
-J is the jacobian matrix, e is the residual vector. 
+* r is the residual vector. 
+* J is the jacobian matrix of r.
 
-
-### The jacabian matrix of 3d rotation or 3d transform 
+### The problem of 3D points matching
 
 If we define the increment of SO3/SE3 as:
 
@@ -40,18 +40,17 @@ We use a first-order Taylor expansion to approximate the original equation:
 
 $$T(x_{0}\oplus\delta) = T_{0}\exp( \delta ) \cong T_{0} + T_{0}\widehat{\delta} \tag{6} $$
 
-The f(x) is the objective function. 
-We want to find the optimal parameters (x) that minimize the result of the objective function.
-$$f(x) = T(x)a - b \tag{7} $$
+The the residual function of 3D points matching problem can be defined as: 
+$$r(x) = T(x)a - b \tag{7} $$
 
 a is the target point:
 b is the reference point.
 
 We can use gauss-newton method to solve this problem.
-According to gauss-newton method, we need to find the Jacobian matrix
-for f(x).
+According to gauss-newton method, we need to find the Jacobian matrix of r
 
-$$\dot{f} = \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta} \\
+
+$$\dot{r} = \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta} \\
 \cong \frac{T_{0}a + T_{0}\widehat{\delta}a - T_{0}a}{\delta}  \\
 = \frac{T_{0}\widehat{\delta}a}{\delta}  \\
 = - \frac{T_{0}\delta\widehat{a}}{\delta}  \\
@@ -62,7 +61,7 @@ $$
 $T_0$ is a 3d rotation matrix($R_0$),
 and $\widehat{a}$ is defined as a skew symmetric matrix for vector $a$
 
-$$\dot{f} = - R_{0}[ a ]_{\times}  \tag{9}$$
+$$\dot{r} = - R_{0}[ a ]_{\times}  \tag{9}$$
 
 ###  When $\delta \in \mathfrak{se}(3)$
 
@@ -77,7 +76,7 @@ $$\widehat{\delta} = \begin{bmatrix}
 0 & 0 \\
 \end{bmatrix} \tag{11}$$
 
-$$\dot{f} = \frac{R_{0}\widehat{\delta}a}{\delta}$$
+$$\dot{r} = \frac{R_{0}\widehat{\delta}a}{\delta}$$
 
 $$= \frac{T_{0}\begin{bmatrix}
 [ \omega ]_{\times} & v \\
