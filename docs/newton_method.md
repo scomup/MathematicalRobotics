@@ -1,4 +1,4 @@
-## Robust kernel Newton Methods.  
+## Robust kernel newton methods.  
 
 ### Optimization Problem
 Optimization problem tries to find a set of best parameters to minimize the overall cost. 
@@ -82,77 +82,36 @@ H = \dot{\rho} \dot{r}^T \Sigma \dot{r} \tag{13}
 $$
 
 
-### The jacabian matrix of 3d rotation or 3d transform ($\dot{r}$) 
+### Jacobian and Hessian matrix
 
-If we define the increment of SO3/SE3 as:
+The jacobian matrix of r is a matrix, which contain the first-order partial derivatives of all parameters of r.
+x denote the parameters of r.  
+* $x \in \Bbb R_n $
+* $r \in \Bbb R_m $ 
 
-$$T(x_{0}\oplus\delta) \triangleq T(x_{0})\exp( \delta )$$
+Jacobian matrix of r is a $m \times n$ matrix. 
 
-The $\delta \in \mathfrak{so}(3)$ or $\delta \in \mathfrak{se}(3)$
+$$
+\dot{r} = J_r = 
+\begin{bmatrix}
+ \frac{\partial{r_1}}{\partial{x_1}}    & \cdots & \frac{\partial{r_1}}{\partial{x_n}}       \\  
+ \vdots & \ddots & \vdots\\  
+ \frac{\partial{r_m}}{\partial{x_0}}    & \cdots & \frac{\partial{r_m}}{\partial{x_n}}       \\  
+\end{bmatrix} \tag{14}
+$$
 
-We use a first-order Taylor expansion to approximate the original equation:  
 
-$$T(x_{0}\oplus\delta) = T_{0}\exp( \delta ) \cong T_{0} + T_{0}\widehat{\delta}$$
 
-The r(x) is the residual function. 
-$$r(x) = T(x)a - b$$
+The Hessian of r is a $ m \times n \times n$ Tensor. 
 
-a is the target point:
-b is the reference point.
-
-We can use gauss-newton method to solve this problem.
-According to gauss-newton method, we need to find the Jacobian matrix
-for f(x).
-
-$$\dot{r} = \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta}$$
-
-$$\cong \frac{T_{0}a + T_{0}\widehat{\delta}a - T_{0}a}{\delta}$$
-
-$$= \frac{T_{0}\widehat{\delta}a}{\delta}$$
-
-$$= - \frac{T_{0}\delta\widehat{a}}{\delta}$$
-
-$$= - T_{0}\widehat{a} $$
-
-#### When $\delta \in \mathfrak{so}(3)$
-$T_0$ is a 3d rotation matrix($R_0$),
-and $\widehat{a}$ is defined as a skew symmetric matrix for vector $a$
-
-$$\dot{r} = - R_{0}[ a ]_{\times}$$
-
-####  When $\delta \in \mathfrak{se}(3)$
-
-$$\delta = [\ v, \omega ]$$
-
-$\omega$: the parameter of rotation.
-
-$v$: the parameter of translation.
-
-$$\widehat{\delta} = \begin{bmatrix}
-[ \omega ]_{\times} & v \\
-0 & 0 \\
-\end{bmatrix}$$
-
-$$\dot{r} = \frac{R_{0}\widehat{\delta}a}{\delta}$$
-
-$$= \frac{T_{0}\begin{bmatrix}
-[ \omega ]_{\times} & v \\
-0 & 0 \\
-\end{bmatrix}\begin{bmatrix}
-a \\
-1 \\
-\end{bmatrix}}{[ \omega,\ v ]}$$
-
-$$= \frac{T_{0}\begin{bmatrix}
-[ - a ]_{\times} & I \\
-0 & 0 \\
-\end{bmatrix}\begin{bmatrix}
-\omega \\
-v \\
-\end{bmatrix}}{[ \omega,\ v ]}$$
-
-$$= T_{0}\begin{bmatrix}
-[ - a ]_{\times} & I \\
-0 & 0 \\
-\end{bmatrix}$$
+$$
+\ddot{r_i} = H_{r_i} = 
+\begin{bmatrix}
+ \frac{\partial^2{r_i}}{\partial{x_1}\partial{x_1}} & \frac{\partial^2{r_i}}{\partial{x_1}\partial{x_2}}  & \cdots & \frac{\partial{r_i}}{\partial{x_1}\partial{x_n}}       \\  
+  \frac{\partial^2{r_i}}{\partial{x_2}\partial{x_1}} & \frac{\partial^2{r_i}}{\partial{x_2}\partial{x_2}}  & \cdots & \frac{\partial{r_i}}{\partial{x_2}\partial{x_n}}       \\ 
+ \vdots & \vdots  & \ddots & \vdots\\  
+ \frac{\partial^2{r_i}}{\partial{x_n}\partial{x_1}} & \frac{\partial^2{r_i}}{\partial{x_n}\partial{x_2}}  & \cdots & \frac{\partial{r_i}}{\partial{x_n}\partial{x_n}}      \\  
+\end{bmatrix} 
+ \tag{15}
+$$
 

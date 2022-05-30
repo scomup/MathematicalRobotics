@@ -23,7 +23,7 @@ $$
 g = \sum g_i= \sum J_i^Tr_i \tag{3}
 $$
 $$ 
-H  \sum H_i \approx J_i^TJ_i  \tag{4}
+H  = \sum H_i \approx J_i^TJ_i  \tag{4}
 $$
 * r is the residual vector. 
 * J is the jacobian matrix of r.
