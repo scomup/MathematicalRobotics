@@ -1,4 +1,5 @@
 import numpy as np
+from sympy import reshape
 
 # solve y = f(a,x) - b
 class guassNewton:
@@ -30,12 +31,12 @@ class guassNewton:
                 score += e2
             else:
                 rho = self.kernel.apply(e2)
-                W = np.eye(j_i.shape[0]) * rho[1]
-                H += j_i.T.dot(W.dot(j_i))
-                g += j_i.T.dot(rho[1]*r_i) 
+                g_i = rho[1]*j_i.T.dot(r_i)
+                g += g_i 
+                g_i = g_i.reshape([g_i.shape[0],1])
+                H += rho[1]*j_i.T.dot(j_i) + rho[2] * g_i.dot(g_i.T) 
                 score += rho[0]
-        H_inv = np.linalg.inv(H)
-        dx = np.dot(H_inv, -g)
+        dx = np.linalg.solve(H, -g)
         return dx, score
 
     def solve(self, x):
