@@ -31,10 +31,10 @@ class guassNewton:
                 score += e2
             else:
                 rho = self.kernel.apply(e2)
-                g_i = rho[1]*j_i.T.dot(r_i)
-                g += g_i 
-                g_i = g_i.reshape([g_i.shape[0],1])
-                H += rho[1]*j_i.T.dot(j_i) + rho[2] * g_i.dot(g_i.T) 
+                df = j_i.T.dot(r_i)
+                g += rho[1]*j_i.T.dot(r_i) 
+                #df = df.reshape([df.shape[0],1])
+                H += rho[1]*j_i.T.dot(j_i) #+ rho[2] * df.dot(df.T) 
                 score += rho[0]
         dx = np.linalg.solve(H, -g)
         return dx, score

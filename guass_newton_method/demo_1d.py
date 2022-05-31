@@ -5,21 +5,39 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
 
-def func(a, x):
-    r = a*x[0]
-    j = x[0]
-    return np.array([r]), np.array([[a]])
+
+a = np.arange(-10,10, 0.1)
+
+#kernel = gaussianKernel(0.01)
+kernel = PseudoHuberKernel(2)
+#kernel = CauchyKernel(2)
+#kernel = HuberKernel(2)
+f = a*a/2
+rho = kernel.apply(f)
+dr = a*rho[1]
+d2r = rho[1] + rho[2]*a**2
+
 
 if __name__ == '__main__':
-    a = np.arange(0,8, 0.5)
-    b = a*2
-    #b = b + np.random.normal(0,0.6,a.shape)
-    b[9] = 4
-    b[13] = 6    
-    x = np.array([0.])
-    plt.scatter(a,b, c='black')
-    gn = guassNewton(a,b,func, None, CauchyKernel(1))
-    x2 = gn.solve(x)
-    plt.plot(a,a*x2[0],label='Cauchy')
-    #plt.legend()
+    x= -5
+    dx = 1000
+    while(np.abs(dx)>0.0001):
+        ro = kernel.apply(x*x/2)
+        g = ro[1]*x
+        H = ro[1]
+        plt.cla()
+        plt.plot(a,rho[0],label='rho0(f)')
+        plt.plot(a,dr,label='d_rho/d_x')
+        plt.plot(a,d2r,label='d2_rho/dxdx')
+        plt.plot(a,-dr/d2r,label='step')
+        plt.plot(a,-dr/(rho[1]),label='step2')
+        plt.scatter(x,ro[0],c='red',s=100)
+        plt.legend()
+        plt.ylim(-1,10)
+        plt.pause(1)
+        if(H == 0):
+            break
+        dx = -g/H
+        x += dx
+        print(x)
     plt.show()
