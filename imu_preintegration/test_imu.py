@@ -14,7 +14,7 @@ imu_params = gtsam.PreintegrationParams.MakeSharedU(G)
 prevBias = gtsam.imuBias.ConstantBias()
 imuIntegratorR = gtsam.PreintegratedImuMeasurements(imu_params, gtsam.imuBias.ConstantBias(np.array([0.007,-0.038,-0.001]),np.array([0.,0.,0.])))
 
-imu = np.load('/home/liu/bag/warehouse/b3_imu.npy')
+imu = np.load('/home/liu/bag/warehouse/b2_imu.npy')
 
 #check imuFactor.pdf: Derivative of The Local Coordinate Mapping
 def H(theta):
@@ -87,7 +87,7 @@ for i in imu:
     imuTime = i[0]
     dt = 0
     if(lastImuTime < 0):
-        dt = 0.005
+        dt = 0.01
     else:
         dt = imuTime - lastImuTime
     if dt <= 0:
