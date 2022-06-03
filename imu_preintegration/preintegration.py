@@ -52,7 +52,7 @@ imu_predict_pose  = np.array(imu_predict_pose)
 
 
 priorPoseNoise  = gtsam.noiseModel.Diagonal.Sigmas(np.array([1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2]) ) # rad,rad,rad,m, m, m
-odom = 1e2
+odom = 1e-3
 OdometryNoise  = gtsam.noiseModel.Diagonal.Sigmas(np.array([odom, odom, odom, odom, odom, odom]) ) 
 priorVelNoise = gtsam.noiseModel.Isotropic.Sigma(3, 100) 
 priorBiasNoise = gtsam.noiseModel.Isotropic.Sigma(6, 1e-4) 
@@ -118,8 +118,8 @@ for i in range(n-1):
     bias_factor = gtsam.BetweenFactorConstantBias( B(i), B(i+1), gtsam.imuBias.ConstantBias(), \
         gtsam.noiseModel.Diagonal.Sigmas( np.sqrt(imuIntegratorOpt.deltaTij())* noiseModelBetweenBias ))
     graphFactors.add(bias_factor)
-    vel_factor = gtsam.BetweenFactorPoint3( V(i), V(i+1), gtsam.Point3(0,0,0), \
-        gtsam.noiseModel.Isotropic.Sigma(3, 1e-4)  )
+    #vel_factor = gtsam.BetweenFactorPoint3( V(i), V(i+1), gtsam.Point3(0,0,0), \
+    #    gtsam.noiseModel.Isotropic.Sigma(3, 1e-4)  )
     #graphFactors.add(vel_factor)
     #graphFactors.add(gtsam.PriorFactorPoint3(V(i), graphValues.atPoint3(V(i)), gtsam.noiseModel.Isotropic.Sigma(3, 1e-5) ))
 
@@ -137,7 +137,7 @@ bias_gyo_opt = []
 #pose_opt = pose_data.copy()
 vel_opt = []
 for i in range(n-1):
-    #pose_opt[i,1:4] = result.atPose3(X(i)).translation()
+    pose_opt[i,1:4] = result.atPose3(X(i)).translation()
     bias_acc_opt.append(result.atConstantBias(B(i)).accelerometer())
     bias_gyo_opt.append(result.atConstantBias(B(i)).gyroscope())
     vel_opt.append(result.atPoint3(V(i)))
