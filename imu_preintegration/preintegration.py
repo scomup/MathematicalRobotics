@@ -52,10 +52,10 @@ imu_predict_pose  = np.array(imu_predict_pose)
 
 
 priorPoseNoise  = gtsam.noiseModel.Diagonal.Sigmas(np.array([1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2]) ) # rad,rad,rad,m, m, m
-odom = 1e-3
+odom = 1e2
 OdometryNoise  = gtsam.noiseModel.Diagonal.Sigmas(np.array([odom, odom, odom, odom, odom, odom]) ) 
 priorVelNoise = gtsam.noiseModel.Isotropic.Sigma(3, 100) 
-priorBiasNoise = gtsam.noiseModel.Isotropic.Sigma(6, 1e-4) 
+priorBiasNoise = gtsam.noiseModel.Isotropic.Sigma(6, 1e-18) 
 correctionNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([ 0.05, 0.05, 0.05, 1, 1, 1]))
 
 optParameters = gtsam.ISAM2Params()
@@ -70,7 +70,7 @@ noiseModelBetweenBias = np.array([imuAccBiasN, imuAccBiasN, imuAccBiasN, imuGyrB
 
 initb = gtsam.imuBias.ConstantBias(np.array([0.0,-0.0,-0.00]),np.array([0,0,0]))
 n= pose_data.shape[0]
-#n= 200
+n= 2
 #Add nodes to graph
 imu_group = []
 begin_idx = 0
@@ -86,6 +86,8 @@ for i in range(n):
         p1 = pose_data[i+1]
         dt = p1[0] - p0[0]
         vel = (p1[1:4] - p0[1:4])/dt
+        #vel[0] = 0
+        #vel[1] = 0
         vel[2] = 0
         graphValues.insert(X(i), curPose)
         graphValues.insert(V(i), vel)
@@ -126,7 +128,7 @@ for i in range(n-1):
     odometry = graphValues.atPose3(X(i)).inverse()*graphValues.atPose3(X(i+1))
     graphFactors.add(gtsam.BetweenFactorPose3(X(i), X(i+1), odometry, OdometryNoise))
 
-
+result = graphValues
 optimizer.update(graphFactors, graphValues)
 optimizer.update()
 result = optimizer.calculateEstimate()
@@ -149,34 +151,34 @@ vel_opt = np.array(vel_opt)
 np.save(os.path.splitext(pose_file)[0][:-5]+'_opt_pose.npy', pose_opt)
 
 fig = plt.figure('imu')
-plt.plot(imu_data[:,1],color='r', label='acc x')
-plt.plot(imu_data[:,2],color='g', label='acc y')
-plt.plot(imu_data[:,3],color='b', label='acc z')
+plt.plot(imu_data[0:n,1],color='r', label='acc x')
+plt.plot(imu_data[0:n,2],color='g', label='acc y')
+plt.plot(imu_data[0:n,3],color='b', label='acc z')
 plt.legend()
 
 fig = plt.figure('acc bias')
-plt.plot(bias_acc_opt[:,0],color='r', label='bias x')
-plt.plot(bias_acc_opt[:,1],color='g', label='bias y')
-plt.plot(bias_acc_opt[:,2],color='b', label='bias z')
+plt.plot(bias_acc_opt[0:n,0],color='r', label='bias x')
+plt.plot(bias_acc_opt[0:n,1],color='g', label='bias y')
+plt.plot(bias_acc_opt[0:n,2],color='b', label='bias z')
 plt.legend()
 
 fig = plt.figure('gyo bias')
-plt.plot(bias_gyo_opt[:,0],color='r', label='bias x')
-plt.plot(bias_gyo_opt[:,1],color='g', label='bias y')
-plt.plot(bias_gyo_opt[:,2],color='b', label='bias z')
+plt.plot(bias_gyo_opt[0:n,0],color='r', label='bias x')
+plt.plot(bias_gyo_opt[0:n,1],color='g', label='bias y')
+plt.plot(bias_gyo_opt[0:n,2],color='b', label='bias z')
 plt.legend()
 
 fig = plt.figure('vel')
-plt.plot(vel_opt[:,0],color='r', label='vel x')
-plt.plot(vel_opt[:,1],color='g', label='vel y')
-plt.plot(vel_opt[:,2],color='b', label='vel z')
+plt.plot(vel_opt[0:n,0],color='r', label='vel x')
+plt.plot(vel_opt[0:n,1],color='g', label='vel y')
+plt.plot(vel_opt[0:n,2],color='b', label='vel z')
 plt.legend()
 
 fig = plt.figure('pose')
-plt.scatter(pose_data[:,1],pose_data[:,2],s=5,label = 'raw path')
-plt.scatter(pose_opt[:,1],pose_opt[:,2],s=5,label = 'imu path')
-plt.scatter(pose_truth_data[:,1],pose_truth_data[:,2],s=5,label = 'truth path')
-plt.scatter(imu_predict_pose[:,0],imu_predict_pose[:,1],s=5,label = 'imu predict')
+plt.scatter(pose_data[0:n,1],pose_data[0:n,2],s=10,label = 'raw path')
+plt.scatter(pose_opt[0:n,1],pose_opt[0:n,2],s=5,label = 'imu path')
+plt.scatter(pose_truth_data[0:20*n,1],pose_truth_data[0:20*n,2],s=5,label = 'truth path')
+plt.scatter(imu_predict_pose[0:10*n,0],imu_predict_pose[0:10*n,1],s=5,label = 'imu predict')
 
 plt.legend()
 plt.show()
