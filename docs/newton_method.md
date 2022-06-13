@@ -96,7 +96,7 @@ $$
 \begin{bmatrix}
  \frac{\partial{r_1}}{\partial{x_1}}    & \cdots & \frac{\partial{r_1}}{\partial{x_n}}       \\  
  \vdots & \ddots & \vdots\\  
- \frac{\partial{r_m}}{\partial{x_0}}    & \cdots & \frac{\partial{r_m}}{\partial{x_n}}       \\  
+ \frac{\partial{r_m}}{\partial{x_1}}    & \cdots & \frac{\partial{r_m}}{\partial{x_n}}       \\  
 \end{bmatrix} \tag{14}
 $$
 
