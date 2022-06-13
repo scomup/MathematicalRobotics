@@ -21,13 +21,13 @@ class plot3D:
     def show(self):
         plt.show()
 
-def func(a, x):
+def residual(x, a, b):
     """
     The residual vector of 3d point matching is given by guass_newton_method.md (7)
     The proof of Jocabian of 3d point matching is given in a guass_newton_method.md (12)
     """
     R, t = makeRt(expSE3(x))
-    r = R.dot(a) + t
+    r = R.dot(a) + t - b
     M = R.dot(skew(-a))
     j = np.hstack([R,M])
     return r.flatten(), j
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     a = (np.random.rand(elements,3)-0.5)*2
     b = transform3d(x_truth, a.T).T
     b += np.random.normal(0, 0.03, (elements,3))
-    gn = guassNewton(a,b,func, plus)
+    gn = guassNewton(a,b,residual, plus)
     x_cur = np.array([0.,0.,0., 0.,0.,0.])
     cur_a = a.copy()
     last_score = None

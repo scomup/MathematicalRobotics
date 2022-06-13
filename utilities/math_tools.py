@@ -190,6 +190,17 @@ def transform3d(x,p, x2T = expSE3):
     tp = np.dot(R,p).reshape(3, -1) + np.array([t,]*(element)).transpose()
     return tp
 
+def numericalDerivative(func, plus, x, a):
+    delta = 1e-5
+    m = func(x, a).shape[0]
+    n = x.shape[0]
+    J = np.zeros([m,n])
+    for j in range(n):
+        dx = np.zeros(n)
+        dx[j] = delta
+        J[:,j] = (func(plus(x,dx),a) - func(x,a))/delta
+    return J
+
 if __name__ == '__main__':
     print('test SO3')
     v = np.array([1,0.3,2])
@@ -218,6 +229,37 @@ if __name__ == '__main__':
         print('NG')
 
     if(np.linalg.norm(R2 - R3) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    x = np.array([0.5,0.2,0.2])
+    R = expSO3(x)
+    
+    print('test numerical derivative')
+    def residual(x, a):
+        """
+        residual function of 3D rotation (SO3)
+        guass_newton_method.md (7)
+        """
+        R = expSO3(x)
+        r = R.dot(a)
+        return r.flatten()
+
+    def plus(x1, x2):
+        """
+        The increment of SO3
+        guass_newton_method.md (5)
+        """
+        return logSO3(expSO3(x1).dot(expSO3(x2)))
+
+    a = np.array([1.,2.,3.])
+    """
+    The jocabian of 3D rotation (SO3)
+    guass_newton_method.md (9)
+    """
+    J = -R.dot(skew(a))
+    J_numerical = numericalDerivative(residual, plus, x, a)
+    if(np.linalg.norm(J - J_numerical) < 0.0001):
         print('OK')
     else:
         print('NG')

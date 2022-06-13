@@ -6,9 +6,9 @@ from guass_newton import *
 from demo_3d import plot3D
 
 
-def func(a, x):
+def residual(x, a, b):
     R, t = makeRt(p2m(x))
-    r = R.dot(a) + t
+    r = R.dot(a) + t - b
     j = np.array([[1,0,0,0, a[2], -a[1]], 
                  [0,1,0,-a[2], 0, a[0]], 
                  [0,0,1,a[1], -a[0], 0]])
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     a = (np.random.rand(elements,3)-0.5)*2
     b = transform3d(x_truth, a.T,p2m).T
     b += np.random.normal(0, 0.03, (elements,3))
-    gn = guassNewton(a,b,func, plus)
+    gn = guassNewton(a,b,residual, plus)
     x_cur = np.array([0.,0.,0., 0.,0.,0.])
     cur_a = a.copy()
     last_score = None

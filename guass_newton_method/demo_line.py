@@ -5,8 +5,8 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
 
-def func(a, x):
-    r = a*x[0] + x[1]
+def residual(x, a, b):
+    r = a*x[0] + x[1] - b
     j = x[0]
     return np.array([r]), np.array([[a,1.]])
 
@@ -18,13 +18,13 @@ if __name__ == '__main__':
     b[13] = 6    
     x = np.array([0.,0])
     plt.scatter(a,b, c='black')
-    gn = guassNewton(a,b,func, None, None)
+    gn = guassNewton(a,b,residual, None, None)
     x1 = gn.solve(x)
-    gn = guassNewton(a,b,func, None, CauchyKernel(1))
+    gn = guassNewton(a,b,residual, None, CauchyKernel(1))
     x2 = gn.solve(x)
-    gn = guassNewton(a,b,func, None, HuberKernel(1))
+    gn = guassNewton(a,b,residual, None, HuberKernel(1))
     x3 = gn.solve(x)
-    gn = guassNewton(a,b,func, None, gaussianKernel(0.01))
+    gn = guassNewton(a,b,residual, None, gaussianKernel(0.01))
     x4 = gn.solve(x)
     plt.plot(a,a*x1[0] + x1[1],label='None')
     plt.plot(a,a*x2[0] + x2[1],label='Cauchy')

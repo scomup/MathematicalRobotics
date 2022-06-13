@@ -17,13 +17,13 @@ class plot2D:
     def show(self):
         plt.show()
 
-def func(a, x):
+def residual(x, a, b):
     """
     The residual vector of 2d point matching is given by guass_newton_method.md (7)
     The proof of Jocabian of 2d point matching is given in a guass_newton_method.md (12)
     """
     R, t = makeRt(v2m(x))
-    r = R.dot(a) + t
+    r = R.dot(a) + t - b
     j = np.array([[1, 0, -a[1]],
                   [0, 1,  a[0]]])
     j = R.dot(j)
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     
     #b += np.random.normal(0, 0.03, (elements,2))
     kernel = CauchyKernel(0.1)
-    gn = guassNewton(a,b,func, plus, kernel)
+    gn = guassNewton(a,b,residual, plus, kernel)
     x_cur = np.array([0.,0.,0.])
     cur_a = a.copy()
     last_score = None

@@ -7,11 +7,11 @@ class guassNewton:
     A guass newton solver.
     more information is written in guass_newton_method.md
     """
-    def __init__(self, a, b, func, plus=None, kernel=None):
+    def __init__(self, a, b, residual, plus=None, kernel=None):
 
         self.a = a
         self.b = b
-        self.func = func
+        self.residual = residual
         self.plus = plus
         self.kernel = kernel
 
@@ -22,8 +22,7 @@ class guassNewton:
         score = 0
         for i, a_i in enumerate(self.a):
             b_i = self.b[i]
-            f_i, j_i = self.func(a_i, x)
-            r_i = f_i - b_i
+            r_i, j_i = self.residual(x, a_i, b_i)
             e2 = r_i.T.dot(r_i)
             if(self.kernel is None):
                 H += j_i.T.dot(j_i)
@@ -66,12 +65,12 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from utilities.math_tools import *
 
-    def func(a, x):
-        r = transform3d(x, a)
+    def residual(x, a, b):
+        r = transform3d(x, a).flatten() - b
         j = np.array([[1,0,0,0, a[2], -a[1]], 
                      [0,1,0,-a[2], 0, a[0]], 
                      [0,0,1,a[1], -a[0], 0]])
-        return r.flatten(), j
+        return r, j
 
     x = np.array([0.1,-0.1,0.1, 2.1, 2.2,-1.3])
 
@@ -81,6 +80,6 @@ if __name__ == '__main__':
     b = transform3d(x, a)
     b += np.random.normal(0, 0.03, (3, elements))
 
-    gn = guassNewton(a.T,b.T,func)
+    gn = guassNewton(a.T,b.T,residual)
     x_init = np.array([0.,0.,0., 0.,0.,0.])
     x_new = gn.solve(x_init)
