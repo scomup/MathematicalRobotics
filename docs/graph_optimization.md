@@ -94,8 +94,8 @@ $$
 
 
 $$
-    \exp(\widehat{J_B\delta}) = (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}A B \exp{(\hat{\delta}})) \\
-    = B^{-1}AZ Z^{-1}A B \exp{(\hat{\delta}}) \\
+    \exp(\widehat{J_B\delta}) = (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}A^{-1} B \exp{(\hat{\delta}})) \\
+    = B^{-1}AZ Z^{-1}A^{-1} B \exp{(\hat{\delta}}) \\
     = \exp(\hat{\delta}) \tag{10}
 $$
 

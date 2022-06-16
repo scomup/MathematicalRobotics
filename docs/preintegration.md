@@ -167,8 +167,22 @@ $$
 
 ### Predict $s_j$
 Up to then, we can use $\bar{\zeta}$ to predict $s_j$
-$$s_j^* = s_j\oplus\bar{\zeta} $$
+$$s_j^* = s_j\oplus\zeta $$
 * $s_j^*$ is the predicted $s_j$.
+
+$$
+R_{nc}^{j^*} = R_{nb}^i\exp{\theta_{bc}} \\
+t_{c}^{j^*} = t_n^i + R_{nb}^i t_b \\
+v_{c}^{j^*} = v_n^i + R_{nb}^i v_b
+$$
+#### Derivative of $s_i$
+$$
+J^{s_j^*}_{s_i}=\begin{bmatrix}
+ \exp{(-\theta_b)} & 0_{3\times3} & 0_{3\times3}\\  
+  R_{nc}^{-1} R_{nb} \widehat{-t_b} & I_{3\times3} & 0_{3\times3}\\  
+ R_{nb}^i \widehat{-v_b} & 0_{3\times3} & I_{3\times3}\\   
+\end{bmatrix} \\
+$$
 
 ### Derivative of an Inverse Action
 $$g = T^{-1}(x)p $$
@@ -186,3 +200,43 @@ $$\frac{\partial{g}}{\partial p} = \frac{T^{-1} (p + \delta{p})-T^{-1}p }{\delta
 = \frac{T^{-1} \delta{p}}{\delta{p}} \\
 = T^{-1}
 $$
+
+
+$$
+    \exp(\widehat{J\delta}) = \varphi(x)^{-1}\varphi(x\oplus\delta)
+    \tag{6}
+$$
+
+$$
+    \varphi(A,B) = AB \tag{7}
+$$
+
+Where $A$ and $B$ are the two lie groups, which represent the poses of two nodes. The $Z$ represents the relative pose of $A$ nad $B$, which usually measured by odometry or loop-closing.
+
+### If A and B are SO3
+
+$$
+    \exp(\widehat{J_A\delta}) = (AB)^{-1}(A\exp(\hat{\delta})B) \\
+    = B^{-1}A^{-1}A\exp(\hat{\delta})B \\
+    = \exp(B^{-1}\hat{\delta} B) \\
+    = \exp(\widehat{B^{-1}\delta})
+     \tag{8}
+$$
+
+Hence:
+$$
+   J_A = B^{-1} \tag{9}
+$$
+
+$$
+    \exp(\widehat{J_B\delta}) = (AB)^{-1}(AB\exp(\hat{\delta})) \\
+    = B^{-1}A^{-1}AB\exp(\hat{\delta}) \\
+    = \exp(\hat{\delta}) \\
+     \tag{8}
+$$
+
+Hence:
+$$
+   J_B = I
+$$
+
