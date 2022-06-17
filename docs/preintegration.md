@@ -3,15 +3,16 @@
 ### Our problem
 Suppose we know the state of the robot at time i and j, as well as the IMU measurements between the 2 time points. We can then obtain the following imu constraints.
 $$ 
-r = F(s_i,\zeta)\ominus s_j
+r = F(s_i,\zeta, b)\ominus s_j
 $$
 We can build the optimization problem subject to the above constraints
 * navigation state is combined by attitude $\theta_{nb}$, position $p_n$ and velocity $v_n$.   
 * $\zeta$ is the preintegration imu measurement.
+* $b$ is the IMU bias.
 
 
 ### PIM (preintegration measurement)
-For the convenience, we integrate all the IMU measurements first, without considering the state of the robot and the gravity.
+For the convenience, we integrate all the IMU measurements first, without considering the state of the bias and the gravity.
 $$
 \zeta = (\theta, p ,v)
 $$
@@ -123,17 +124,19 @@ $$
 
 navigation state is combined by attitude $\theta_{nb}$, position $p_n$ and velocity $v_n$.   
 $$
-s = (\theta_{nb}, p_{n}, v_{n}) 
+s_i = (\theta_{nb}, p_{nb}, v_{nb}) \\
+s_j = (\theta_{nc}, p_{nc}, v_{nc}) 
 $$
 We can correct $\zeta$ vector with given navigation state.   
 
 $$
-\bar{\theta_{b}} = \tilde{\theta_b} \\
-\bar{p_{b}} = \tilde{p_b} + R_{nb}^{-1} v_n \Delta{t} + R_{nb}^{-1} g \frac{\Delta{t}^2}{2} \\
-\bar{v_{b}} = \tilde{v_b} + R_{nb}^{-1} g \Delta{t} \\
+R_{nc}^{*} = R_{nb}\exp{\theta_{bc}} \\
+p_{nc}^{*} = p_{nb} + R_{nb} p_{bc} + v_{nb} \Delta{t} +  g \frac{\Delta{t}^2}{2} \\
+v_{nc}^{*} = v_{nb} + R_{nb} v_{bc} + g \Delta{t}
 $$
+
 * $g$ is the gravity vector.
-* $\bar{}$ denotes the bavigation state corrected measurement.
+* $*$ denotes the predicted navigation state.
 
 
 #### The jocabian matrix of navigation state
@@ -171,9 +174,9 @@ $$s_j^* = s_j\oplus\zeta $$
 * $s_j^*$ is the predicted $s_j$.
 
 $$
-R_{nc}^{j^*} = R_{nb}^i\exp{\theta_{bc}} \\
-t_{c}^{j^*} = t_n^i + R_{nb}^i t_b \\
-v_{c}^{j^*} = v_n^i + R_{nb}^i v_b
+R_{nc}^{*} = R_{nb}\exp{\theta_{bc}} \\
+p_{nc}^{*} = p_{nb} + R_{nb} p_{bc} \\
+v_{nc}^{*} = v_{nb} + R_{nb} v_{bc}
 $$
 #### Derivative of $s_i$
 $$
