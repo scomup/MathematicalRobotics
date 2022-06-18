@@ -1,21 +1,37 @@
 ## Imu preintegration.  
 
 ### Our problem
-Suppose we know the state of the robot at time i and j, as well as the IMU measurements between the 2 time points. We can then obtain the following imu constraints.
+Suppose we know the state of the robot at time i , as well as the IMU measurements from the i time to j time. We want predict the state of robot at time j.
 $$ 
-r = F(s_i,\zeta, b)\ominus s_j
+s_j^* = \rho(d(\xi(\zeta, b), s_i),s_i) \\
 $$
-We can build the optimization problem subject to the above constraints
-* navigation state is combined by attitude $\theta_{nb}$, position $p_n$ and velocity $v_n$.   
-* $\zeta$ is the preintegration imu measurement.
-* $b$ is the IMU bias.
+The state of robot combined by attitude $\theta$, position $p$ and velocity $v$.   
+$$
+s_i = (\theta_{nb}, p_{nb}, v_{nb}) \\
+s_j = (\theta_{nc}, p_{nc}, v_{nc}) \\
+$$
+* n denotes navigation state frame.
+* b denotes body frame in time i.
+* c denotes current frame in time j.
 
+Function $\rho$ which predict $s_j$ take 2 parameters, $s_i$ and $d$. The $d$ represents the difference between two $s_i$ and $s_j$.
+$$
+\rho = s_i \oplus d \\
+d(\xi,s_i) = (\theta_{nc}, p_{nc}, v_{nc}) \\
+$$
+$\xi$ represents bias corrected PIM (preintegration measurement), which take 2 parameters, the PIM $\zeta$ and IMU bias b.
+
+#### The Jacobian of $s_i$
+$$
+J^{s_j^*}_{s_i} = J^{\rho}_{s_i} + J^{\rho}_{d} J^{d}_{s_i}
+$$ 
+#### The Jacobian of $b$
+$$
+J^{s_j^*}_{b} = J^{\rho}_{d} J^{d}_{\xi} J^{\xi}_{b}
+$$ 
 
 ### PIM (preintegration measurement)
-For the convenience, we integrate all the IMU measurements first, without considering the state of the bias and the gravity.
-$$
-\zeta = (\theta, p ,v)
-$$
+The PIM $\zeta(\theta, p ,v)$ integrates all the IMU measurements  without considering the state of the bias and the gravity.
 $\omega^b_k$,$a^b_k$ are the acceleration and angular velocity measured by IMU (accelerometer + gyroscope) respectively.
 $$
 \theta_{k+1} = \theta_k + H(\theta_k)^{-1}\omega^b_k\Delta{t} \\
@@ -78,17 +94,15 @@ C = \frac{\partial{\zeta_{k+1}}}{\partial \omega^b_k} =
 $$
 ### Bias correct
 We want correct $\zeta$ by a given accelerometer and gyroscope bias.   
-
 $$
-\tilde{\zeta_{k+1}} = \zeta_{k+1} + \Delta b_{acc} \frac{\partial{\zeta_{k+1}}}{\partial b_{acc}} +
-\Delta b_{\omega} \frac{\partial{\zeta_{k+1}}}{\partial b_{\omega}} 
+\xi(\zeta,b+\Delta{b}) = \zeta + \Delta b_{acc} \frac{\partial{\zeta}}{\partial b_{acc}} +
+\Delta b_{\omega} \frac{\partial{\zeta}}{\partial b_{\omega}} 
 $$
 * $b_{acc}$ is bias for accelerometer.
 * $b_{\omega}$ is bias for gyroscope.
-* ~ denotes the corrected measurement.
-#### The jocabian matrix of bias for bias corrected mesurement.
+#### The jocabian of bias for corrected PIM.
 $$
-J^{\tilde{\zeta}}_{b_{all}} =  [ \frac{\partial{\zeta_{k+1}}}{\partial b_{acc}}, \frac{\partial{\zeta_{k+1}}}{\partial b_{\omega}}] 
+J^{\xi}_{b} =  [ \frac{\partial{\zeta}}{\partial b_{acc}}, \frac{\partial{\zeta}}{\partial b_{\omega}}] 
 $$
 
 #### Find the partial derivatives of accelerometer's bias
@@ -120,19 +134,19 @@ $$
 * ~ denotes the corrected measurement.
 
 
-### Navigation state correct
-
-navigation state is combined by attitude $\theta_{nb}$, position $p_n$ and velocity $v_n$.   
+### Delta between two states
+The $d$ represents the difference between two $s_i$ and $s_j$.   
 $$
-s_i = (\theta_{nb}, p_{nb}, v_{nb}) \\
-s_j = (\theta_{nc}, p_{nc}, v_{nc}) 
+d = (\theta_{bc}, p_{bc}, v_{bc}) \\
 $$
-We can correct $\zeta$ vector with given navigation state.   
+We can calculate $d$ from corrected PIM $\xi(\theta_{bc}^{\xi},p_{bc}^{\xi},v_{bc}^{\xi})$ and velocity, which is included in $s_i$.
 
 $$
-R_{nc}^{*} = R_{nb}\exp{\theta_{bc}} \\
-p_{nc}^{*} = p_{nb} + R_{nb} p_{bc} + v_{nb} \Delta{t} +  g \frac{\Delta{t}^2}{2} \\
-v_{nc}^{*} = v_{nb} + R_{nb} v_{bc} + g \Delta{t}
+d(\xi,s_i)=\begin{bmatrix}
+\theta_{bc}^{\xi}\\  
+p_{bc}^{\xi} + R_{nb}^{-1} v_{nb} \Delta{t} + R_{nb}^{-1} g \frac{\Delta{t}^2}{2} \\  
+v_{bc}^{\xi} + R_{nb}^{-1} g \Delta{t}\\   
+\end{bmatrix}
 $$
 
 * $g$ is the gravity vector.
@@ -141,36 +155,38 @@ $$
 
 #### The jocabian matrix of navigation state
 $$
-J^{\bar{\zeta}}_{s}=\begin{bmatrix}
+J^{d}_{s_i}=\begin{bmatrix}
  0_{3\times3}  & 0_{3\times3} & 0_{3\times3}\\  
- \frac{\partial{\bar{p_{b}}}}{\partial \theta_b}   & 0_{3\times3} &  \frac{\partial\bar{{p_{b}}}}{\partial v_b} \\  
-\frac{\partial{\bar{v_{b}}}}{\partial \theta_b}  &  0_{3\times3} &  0_{3\times3}\\   
+ \frac{\partial{p_{bc}}}{\partial \theta_{nb}} & 0_{3\times3} &  \frac{\partial p_{bc}}{\partial v_{nb}} \\  
+\frac{\partial{v_{bc}}}{\partial \theta_{nb}}  &  0_{3\times3} &  0_{3\times3}\\   
 \end{bmatrix} \\
 $$
+
 where:
 $$
-\frac{\partial{\bar{p_{b}}}}{\partial \theta_b} = \widehat{R_{nb}^{-1}v_n} \Delta{t} + \widehat{R_{nb}^{-1}g} \frac{\Delta{t}^2}{2}
+\frac{\partial{p_{bc}}}{\partial \theta_{nb}} = \widehat{R_{nb}^{-1}v_{nb}} \Delta{t} + \widehat{R_{nb}^{-1}g} \frac{\Delta{t}^2}{2}
 $$
 
 $$
-\frac{\partial\bar{{p_{b}}}}{\partial v_b} = R_{nb}^{-1}R_{nb} \Delta{t} 
+\frac{\partial\ p_{bc}}{\partial v_{nb}} = R_{nb}^{-1}R_{nb} \Delta{t} 
 $$
 
 $$
-\frac{\partial{\bar{v_{b}}}}{\partial \theta_b} = \widehat{R_{nb}^{-1}g} \Delta{t}
+\frac{\partial{ v_{bc}}}{\partial \theta_{nb}} = \widehat{R_{nb}^{-1}g} \Delta{t}
 $$
-#### The jocabian matrix of bias
+#### The jocabian matrix of $\xi$
 $$
-J^{\bar{\zeta}}_{b_{all}}=\begin{bmatrix}
+J^{d}_{\xi}=\begin{bmatrix}
  I_{3\times3} & 0_{3\times3} & 0_{3\times3}\\  
  0_{3\times3} & I_{3\times3} & 0_{3\times3}\\  
  0_{3\times3} & 0_{3\times3} & I_{3\times3}\\   
 \end{bmatrix} \\
 $$
 
-### Predict $s_j$
-Up to then, we can use $\bar{\zeta}$ to predict $s_j$
-$$s_j^* = s_j\oplus\zeta $$
+
+### Predict function $\rho$
+Function $\rho$ which predict $s_j$ take 2 parameters, $s_i$ and $d$ to predict $s_j^*$
+
 * $s_j^*$ is the predicted $s_j$.
 
 $$
@@ -180,10 +196,10 @@ v_{nc}^{*} = v_{nb} + R_{nb} v_{bc}
 $$
 #### Derivative of $s_i$
 $$
-J^{s_j^*}_{s_i}=\begin{bmatrix}
- \exp{(-\theta_b)} & 0_{3\times3} & 0_{3\times3}\\  
-  R_{nc}^{-1} R_{nb} \widehat{-t_b} & I_{3\times3} & 0_{3\times3}\\  
- R_{nb}^i \widehat{-v_b} & 0_{3\times3} & I_{3\times3}\\   
+J^{\rho}_{s_i}=\begin{bmatrix}
+ \exp{(-\theta_{bc})} & 0_{3\times3} & 0_{3\times3}\\  
+  R_{nc}^{-1} R_{nb} \widehat{-p_{bc}} & \exp{(-\theta_{bc})} & 0_{3\times3}\\  
+ R_{nb}^i \widehat{-v_{bc}} & 0_{3\times3} & I_{3\times3}\\   
 \end{bmatrix} \\
 $$
 
