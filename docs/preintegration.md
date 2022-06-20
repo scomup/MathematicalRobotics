@@ -190,18 +190,28 @@ Function $\rho$ which predict $s_j$ take 2 parameters, $s_i$ and $d$ to predict 
 * $s_j^*$ is the predicted $s_j$.
 
 $$
-R_{nc}^{*} = R_{nb}\exp{\theta_{bc}} \\
+R_{nc}^{*} = R_{nb}R_{bc} \\
 p_{nc}^{*} = p_{nb} + R_{nb} p_{bc} \\
 v_{nc}^{*} = v_{nb} + R_{nb} v_{bc}
 $$
 #### Derivative of $s_i$
 $$
 J^{\rho}_{s_i}=\begin{bmatrix}
- \exp{(-\theta_{bc})} & 0_{3\times3} & 0_{3\times3}\\  
-  R_{nc}^{-1} R_{nb} \widehat{-p_{bc}} & \exp{(-\theta_{bc})} & 0_{3\times3}\\  
- R_{nb}^i \widehat{-v_{bc}} & 0_{3\times3} & I_{3\times3}\\   
+ R_{bc}^{-1} & 0_{3\times3} & 0_{3\times3}\\  
+ R_{bc}^{-1} \widehat{-p_{bc}} & R_{bc}^{-1} & 0_{3\times3}\\  
+ R_{bc}^{-1} \widehat{-v_{bc}} & 0_{3\times3} & R_{bc}^{-1}\\   
 \end{bmatrix} \\
 $$
+
+#### Derivative of $d$
+$$
+J^{\rho}_{d}=\begin{bmatrix}
+ H(\theta_{bc}) & 0_{3\times3} & 0_{3\times3}\\  
+ 0_{3\times3} & R_{bc}^{-1} & 0_{3\times3}\\  
+ 0_{3\times3} & 0_{3\times3} & R_{bc}^{-1}\\   
+\end{bmatrix} \\
+$$
+Where H is the derivative of the exponential map in $\theta$.
 
 ### Derivative of an Inverse Action
 $$g = T^{-1}(x)p $$

@@ -201,7 +201,65 @@ def numericalDerivative(func, plus, x, a):
         J[:,j] = (func(plus(x,dx),a) - func(x,a))/delta
     return J
 
+def HSO3(omega):
+    theta2 = omega.dot(omega)
+    theta = np.sqrt(theta2)
+    near_zero = theta2 <= epsilon
+    W = skew(omega)
+    K =  W / theta
+    KK = K.dot(K)
+    if(near_zero):
+        dexp = np.eye(3) - 0.5 * W
+    else:
+        sin_theta = np.sin(theta)
+        s2 = np.sin(theta / 2.0)
+        one_minus_cos =2.0 * s2 * s2 # [1 - cos(theta)]
+        a = one_minus_cos / theta
+        b = 1.0 - sin_theta / theta
+        dexp = np.eye(3) - a * K + b * KK
+    return dexp
+
+def dHinvSO3(omega,v):
+    theta2 = omega.dot(omega)
+    theta = np.sqrt(theta2)
+    H = HSO3(omega)
+    Hinv = np.linalg.inv(H)
+    W = skew(omega)
+    K =  W / theta
+    c = Hinv.dot(v)
+    theta2 = omega.dot(omega)
+    theta = np.sqrt(theta2)
+    near_zero = theta2 <= epsilon
+    if(near_zero):
+        dHinv = skew(c) * 0.5
+    else:
+        sin_theta = np.sin(theta)
+        s2 = np.sin(theta / 2.0)
+        one_minus_cos =2.0 * s2 * s2 # [1 - cos(theta)]
+        Kv = K.dot(c)
+        a = one_minus_cos / theta
+        b = 1.0 - sin_theta / theta
+        Da = (sin_theta - 2.0 * a) / theta2
+        Db = (one_minus_cos - 3.0 * b) / theta2
+        tmp = (Db * K - Da * np.eye(3)).dot( Kv.reshape([3,1]).dot(omega.reshape([1,3]))) - \
+            skew(Kv * b / theta) + \
+            (a * np.eye(3) - b * K).dot(skew(c / theta))
+        dHinv = -Hinv.dot(tmp)
+    return dHinv
+
+
 if __name__ == '__main__':
+    print('test HSO3')
+    x = np.array([0.5,0.6,0.7])
+    dx = np.array([0.02,0.03,0.03])
+    R1 = (expSO3(x+dx))
+    R2 = (expSO3(x).dot(expSO3(HSO3(x).dot(dx))))
+    if(np.linalg.norm(R1 - R2) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    # exit(0)
     print('test SO3')
     v = np.array([1,0.3,2])
     R = expSO3(v)
