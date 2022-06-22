@@ -1,11 +1,11 @@
-## Imu preintegration.  
+# Imu preintegration.  
 
-### Our problem
-Suppose we know the state of the robot at time i , as well as the IMU measurements from the i time to j time. We want predict the state of robot at time j.
+## Predicting navigation state by IMU
+Suppose we know the navigation state of the robot at time i ,as well as the IMU measurements from the i time to j time. We want predict the state of robot at time j.
 $$ 
-s_j^* = \rho(d(\xi(\zeta, b), s_i),s_i) \\
+s_j^* = \mathscr{R}(s_i, \mathscr{D}(\xi(\zeta, b))) \\
 $$
-The state of robot combined by attitude $\theta$, position $p$ and velocity $v$.   
+The navigation state combined by attitude $\theta$, position $p$ and velocity $v$.   
 $$
 s_i = (\theta_{nb}, p_{nb}, v_{nb}) \\
 s_j = (\theta_{nc}, p_{nc}, v_{nc}) \\
@@ -14,23 +14,23 @@ $$
 * b denotes body frame in time i.
 * c denotes current frame in time j.
 
-Function $\rho$ which predict $s_j$ take 2 parameters, $s_i$ and $d$. The $d$ represents the difference between two $s_i$ and $s_j$.
+The retract action $\mathscr{R}$ which defined on navigation state  takes 2 parameters: $s_i$ and $\mathscr{D}$ to predict $s_j$. The $\mathscr{D}$ represents the difference between $s_i$ and $s_j$.
 $$
-\rho = s_i \oplus d \\
+\mathscr{R} = s_i \oplus d \\
 d(\xi,s_i) = (\theta_{nc}, p_{nc}, v_{nc}) \\
 $$
-$\xi$ represents bias corrected PIM (preintegration measurement), which take 2 parameters, the PIM $\zeta$ and IMU bias b.
+$\xi$ represents bias corrected preintegration measurement (PIM), which take 2 parameters, the PIM $\zeta$ and IMU bias b.
 
 #### The Jacobian of $s_i$
 $$
-J^{s_j^*}_{s_i} = J^{\rho}_{s_i} + J^{\rho}_{d} J^{d}_{s_i}
+J^{s_j^*}_{s_i} = J^{\mathscr{R}}_{s_i} + J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{s_i}
 $$ 
 #### The Jacobian of $b$
 $$
-J^{s_j^*}_{b} = J^{\rho}_{d} J^{d}_{\xi} J^{\xi}_{b}
+J^{s_j^*}_{b} = J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{\xi} J^{\xi}_{b}
 $$ 
 
-### PIM (preintegration measurement)
+### Preintegration measurement (PIM)
 The PIM $\zeta(\theta, p ,v)$ integrates all the IMU measurements  without considering the state of the bias and the gravity.
 $\omega^b_k$,$a^b_k$ are the acceleration and angular velocity measured by IMU (accelerometer + gyroscope) respectively.
 $$
@@ -135,14 +135,14 @@ $$
 
 
 ### Delta between two states
-The $d$ represents the difference between two $s_i$ and $s_j$.   
+The $\mathscr{D}$ represents the difference between two $s_i$ and $s_j$.   
 $$
-d = (\theta_{bc}, p_{bc}, v_{bc}) \\
+\mathscr{D} = (\theta_{bc}, p_{bc}, v_{bc}) \\
 $$
-We can calculate $d$ from corrected PIM $\xi(\theta_{bc}^{\xi},p_{bc}^{\xi},v_{bc}^{\xi})$ and velocity, which is included in $s_i$.
+We can calculate $\mathscr{D}$ from corrected PIM $\xi(\theta_{bc}^{\xi},p_{bc}^{\xi},v_{bc}^{\xi})$ and velocity, which is included in $s_i$.
 
 $$
-d(\xi,s_i)=\begin{bmatrix}
+\mathscr{D}(\xi,s_i)=\begin{bmatrix}
 \theta_{bc}^{\xi}\\  
 p_{bc}^{\xi} + R_{nb}^{-1} v_{nb} \Delta{t} + R_{nb}^{-1} g \frac{\Delta{t}^2}{2} \\  
 v_{bc}^{\xi} + R_{nb}^{-1} g \Delta{t}\\   
@@ -155,7 +155,7 @@ $$
 
 #### The jocabian matrix of navigation state
 $$
-J^{d}_{s_i}=\begin{bmatrix}
+J^{\mathscr{D}}_{s_i}=\begin{bmatrix}
  0_{3\times3}  & 0_{3\times3} & 0_{3\times3}\\  
  \frac{\partial{p_{bc}}}{\partial \theta_{nb}} & 0_{3\times3} &  \frac{\partial p_{bc}}{\partial v_{nb}} \\  
 \frac{\partial{v_{bc}}}{\partial \theta_{nb}}  &  0_{3\times3} &  0_{3\times3}\\   
@@ -176,7 +176,7 @@ $$
 $$
 #### The jocabian matrix of $\xi$
 $$
-J^{d}_{\xi}=\begin{bmatrix}
+J^{\mathscr{D}}_{\xi}=\begin{bmatrix}
  I_{3\times3} & 0_{3\times3} & 0_{3\times3}\\  
  0_{3\times3} & I_{3\times3} & 0_{3\times3}\\  
  0_{3\times3} & 0_{3\times3} & I_{3\times3}\\   
@@ -184,9 +184,8 @@ J^{d}_{\xi}=\begin{bmatrix}
 $$
 
 
-### Predict function $\rho$
-Function $\rho$ which predict $s_j$ take 2 parameters, $s_i$ and $d$ to predict $s_j^*$
-
+### Retraction $\mathscr{R}$
+The retract action $\mathscr{R}$ which defined on navigation state  takes 2 parameters: $s_i$ and $\mathscr{D}$ to predict $s_j$.
 * $s_j^*$ is the predicted $s_j$.
 
 $$
@@ -196,7 +195,7 @@ v_{nc}^{*} = v_{nb} + R_{nb} v_{bc}
 $$
 #### Derivative of $s_i$
 $$
-J^{\rho}_{s_i}=\begin{bmatrix}
+J^{\mathscr{R}}_{s_i}=\begin{bmatrix}
  R_{bc}^{-1} & 0_{3\times3} & 0_{3\times3}\\  
  R_{bc}^{-1} \widehat{-p_{bc}} & R_{bc}^{-1} & 0_{3\times3}\\  
  R_{bc}^{-1} \widehat{-v_{bc}} & 0_{3\times3} & R_{bc}^{-1}\\   
@@ -205,7 +204,7 @@ $$
 
 #### Derivative of $d$
 $$
-J^{\rho}_{d}=\begin{bmatrix}
+J^{\mathscr{R}}_{d}=\begin{bmatrix}
  H(\theta_{bc}) & 0_{3\times3} & 0_{3\times3}\\  
  0_{3\times3} & R_{bc}^{-1} & 0_{3\times3}\\  
  0_{3\times3} & 0_{3\times3} & R_{bc}^{-1}\\   
@@ -213,7 +212,61 @@ J^{\rho}_{d}=\begin{bmatrix}
 $$
 Where H is the derivative of the exponential map in $\theta$.
 
+
+## Navigation state prediction error (residual function)
+
+If navigtion $state_j$ is measured by sensors, we can calculate the error between $state_j$ and $state_j^*$.
+
+$$
+r_{jj^*}=\mathscr{L}(s_j,s_j^*) =
+\begin{bmatrix}
+ \delta{\theta} \\  
+ \delta{p}  \\  
+ \delta{v} \\   
+\end{bmatrix} =
+\begin{bmatrix}
+ \log(R_j^{-1} R_j^*) \\  
+ R_j^{-1} (p_j^* - p_j)  \\  
+ R_j^{-1} (v_j^* - v_j) \\   
+\end{bmatrix} \\
+$$
+Local $\mathscr{L}$  is the inverse function of $\mathscr{R}$, which takes two navigation states, and get the delta between the two states in tangent vector space
+#### Derivative of an $s_j$
+$$
+J^{\mathscr{L}}_{s_j}=\begin{bmatrix}
+ -J^{\log}_{\delta{R}} \delta{R}  & 0_{3\times3} & 0_{3\times3}\\  
+ \widehat{\delta{p}} & -I_{3\times3} & 0_{3\times3}\\  
+ \widehat{\delta{v}} & 0_{3\times3} &-I_{3\times3}\\   
+\end{bmatrix} \\
+$$
+#### Derivative of an $s_j^*$
+$$
+J^{\mathscr{L}}_{s_j^*}=\begin{bmatrix}
+ J^{\log}_{\delta{R}} & 0_{3\times3} & 0_{3\times3}\\  
+ \widehat{\delta{p}} & \delta{R} & 0_{3\times3}\\  
+ \widehat{\delta{v}} & 0_{3\times3} &\delta{R}\\   
+\end{bmatrix} \\
+$$
+
+### Overall Jaccobian for prediction error
+
+To summarize, The prediction error $r$ takes 3 parameters $s_i$, $s_j$ and $b$. According to the chain rule, their Jaccobian can be written in the following form.
+$$
+J^r_{s_j} = J^{\mathscr{L}}_{s_j}
+$$
+$$
+J^r_{s_i} = J^{\mathscr{L}}_{s_j^*} J^{s_j^*}_{s_i} = 
+J^{\mathscr{L}}_{s_j^*}(J^{\mathscr{R}}_{s_i} + J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{s_i})
+$$
+$$
+J^r_{b} = J^{\mathscr{L}}_{s_j^*} J^{s_j^*}_{b} = 
+J^{\mathscr{L}}_{s_j^*}J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{\xi} J^{\xi}_{b}
+$$
+
+---
+
 ### Derivative of an Inverse Action
+
 $$g = T^{-1}(x)p $$
 
 $$\frac{\partial{g}}{\partial x} = \frac{(T e^{\widehat{\delta{x}}})^{-1} p - T^{-1}p}{\delta{x}} \\ 

@@ -247,6 +247,14 @@ def dHinvSO3(omega,v):
         dHinv = -Hinv.dot(tmp)
     return dHinv
 
+def dLogSO3(omega):
+        theta2 = omega.dot(omega)
+        if (theta2 <= epsilon):
+            return np.eye(3)
+        theta = np.sqrt(theta2)
+        W = skew(omega)
+        WW = W.dot(W)
+        return np.eye(3) + 0.5 * W +  (1 / (theta * theta) - (1 + np.cos(theta)) / (2 * theta * np.sin(theta))) * WW
 
 if __name__ == '__main__':
     print('test HSO3')
