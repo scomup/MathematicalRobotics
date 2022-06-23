@@ -67,7 +67,7 @@ class biasNode:
     def update(self, dx):
         self.bias = self.bias + dx
 
-def draw(figname, gs):
+def draw(figname, gs, color):
     fig = plt.figure(figname)
     axes = fig.gca()
 
@@ -77,7 +77,7 @@ def draw(figname, gs):
             continue
         pose_trj.append(n.state.p)
     pose_trj = np.array(pose_trj)
-    axes.scatter(pose_trj[:,0],pose_trj[:,1], c='red', s=5)
+    axes.scatter(pose_trj[:,0],pose_trj[:,1], c=color, s=10, label='pose')
     imu_trj = []
     for e in gs.edges:
         if(not isinstance(e, imuEdge)):
@@ -90,7 +90,7 @@ def draw(figname, gs):
             state_new = imuIntegrator.predict(statei,biasi)
             imu_trj.append(state_new.p)
     imu_trj = np.array(imu_trj)
-    axes.scatter(imu_trj[:,0],imu_trj[:,1], c='blue', s=2)
+    axes.scatter(imu_trj[:,0],imu_trj[:,1], c=color, s=2,label='imu predict')
 
 if __name__ == '__main__':
     imuIntegrator = imuIntegration(9.80)
@@ -110,6 +110,7 @@ if __name__ == '__main__':
         if(i == 0):
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],np.array([0,0,0]))
             last_state_idx = gs.addNode(naviNode(state))
+            gs.addEdge(naviEdge(last_state_idx, state)) 
             last_state_stamp = p[0]
         else:
             #p0 = pose_data[i-1]
@@ -122,6 +123,7 @@ if __name__ == '__main__':
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],vel)
             cur_state_idx = gs.addNode(naviNode(state)) # add node to graph
             bias_idx = gs.addNode(biasNode(np.array([0,0,0,0,0,0]))) # add node to graph
+            gs.addEdge(naviEdge(cur_state_idx, state)) 
             imuij = []
             for imu in imu_data[begin_idx:]:
                 begin_idx += 1
@@ -138,8 +140,11 @@ if __name__ == '__main__':
             gs.addEdge(imuEdge(last_state_idx, cur_state_idx, bias_idx, imuIntegrator))
             last_state_idx = cur_state_idx
             last_state_stamp = p[0]
-    draw(1,gs)
-    print("socre:%f"%gs.getScore())
+    draw("1",gs,'red')
+    print("score:%f"%gs.getScore())
+    gs.solve()
+    draw("1",gs,'green')
+    print("score:%f"%gs.getScore())
     plt.legend()
     plt.show()
 

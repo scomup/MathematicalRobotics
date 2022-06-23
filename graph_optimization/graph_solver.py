@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.sparse.linalg import spsolve
+from scipy.sparse import csc_matrix
 
 class graphSolver:
     """
@@ -76,7 +78,9 @@ class graphSolver:
                 g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(r)
                 g[node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(r)
                 score += r.dot(r)
-        dx = np.linalg.solve(H, -g)
+        #dx = np.linalg.solve(H, -g)
+        #much faster than np.linalg.solve!
+        dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
         return dx, score
 
     def solve(self):
