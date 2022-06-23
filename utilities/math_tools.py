@@ -206,11 +206,11 @@ def HSO3(omega):
     theta = np.sqrt(theta2)
     near_zero = theta2 <= epsilon
     W = skew(omega)
-    K =  W / theta
-    KK = K.dot(K)
     if(near_zero):
         dexp = np.eye(3) - 0.5 * W
     else:
+        K =  W / theta
+        KK = K.dot(K)
         sin_theta = np.sin(theta)
         s2 = np.sin(theta / 2.0)
         one_minus_cos =2.0 * s2 * s2 # [1 - cos(theta)]

@@ -21,14 +21,34 @@ class graphSolver:
     def addEdge(self, edge):
         self.edges.append(edge)
 
+    def getScore(self):
+        score = 0
+        for edge in self.edges:
+            if(edge.type == 'one'):
+                r, _ = edge.residual(self.nodes)
+                score += r.dot(r)
+            elif(edge.type == 'two'):
+                r, _, _ = edge.residual(self.nodes)
+                score += r.dot(r)
+            elif(edge.type == 'three'):
+                r, _, _, _ = edge.residual(self.nodes)
+                score += r.dot(r)
+        return score
+
+
     def solve_once(self):
         H = np.zeros([self.psize,self.psize])
         g = np.zeros([self.psize])
         score = 0
         for edge in self.edges:
-            #jacobian = np.zeros([3, self.psize])
-            if(edge.type == 'two'):
-                r, jacobian_i, jacobian_j = edge.func(self.nodes)
+            if(edge.type == 'one'):
+                node_i = self.nodes[edge.i]
+                r, jacobian_i = edge.residual(self.nodes)
+                H[node_i.loc:node_i.loc+ node_i.size,node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(jacobian_i) 
+                g[node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(r)
+                score += r.dot(r)
+            elif(edge.type == 'two'):
+                r, jacobian_i, jacobian_j = edge.residual(self.nodes)
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
                 H[node_i.loc:node_i.loc+node_i.size,node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(jacobian_i) 
@@ -38,12 +58,23 @@ class graphSolver:
                 g[node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(r)
                 g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(r)
                 score += r.dot(r)
-
-            elif(edge.type == 'one'):
+            elif(edge.type == 'three'):
                 node_i = self.nodes[edge.i]
-                r, jacobian_i = edge.func(self.nodes)
-                H[node_i.loc:node_i.loc+ node_i.size,node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(jacobian_i) 
-                g[node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(r)
+                node_j = self.nodes[edge.j]
+                node_k = self.nodes[edge.k]
+                r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.nodes)
+                H[node_i.loc:node_i.loc+node_i.size,node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(jacobian_i) 
+                H[node_j.loc:node_j.loc+node_j.size,node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(jacobian_j) 
+                H[node_k.loc:node_k.loc+node_k.size,node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(jacobian_k) 
+                H[node_i.loc:node_i.loc+node_i.size,node_j.loc:node_j.loc+node_j.size] += jacobian_i.T.dot(jacobian_j)  
+                H[node_j.loc:node_j.loc+node_j.size,node_i.loc:node_i.loc+node_i.size] += jacobian_j.T.dot(jacobian_i)  
+                H[node_i.loc:node_i.loc+node_i.size,node_k.loc:node_k.loc+node_k.size] += jacobian_i.T.dot(jacobian_k)  
+                H[node_k.loc:node_k.loc+node_k.size,node_i.loc:node_i.loc+node_i.size] += jacobian_k.T.dot(jacobian_i)  
+                H[node_j.loc:node_j.loc+node_j.size,node_k.loc:node_k.loc+node_k.size] += jacobian_j.T.dot(jacobian_k)  
+                H[node_k.loc:node_k.loc+node_k.size,node_j.loc:node_j.loc+node_j.size] += jacobian_k.T.dot(jacobian_j)  
+                g[node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(r)
+                g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(r)
+                g[node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(r)
                 score += r.dot(r)
         dx = np.linalg.solve(H, -g)
         return dx, score

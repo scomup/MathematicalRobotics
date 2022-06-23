@@ -10,7 +10,7 @@ def plot_pose2_on_axes(axes,
                        pose,
                        axis_length: float = 0.1):
 
-    gRp, origin = makeRt(v2m(pose))
+    gRp, origin = makeRt(pose)
 
     x_axis = origin + gRp[:, 0] * axis_length
     line = np.append(origin[np.newaxis], x_axis[np.newaxis], axis=0)
@@ -45,7 +45,7 @@ def plot_pose2(
 
 def plot_pose3_on_axes(axes, pose, axis_length=0.1, scale=1):
     # get rotation and translation (center)
-    gRp, origin = makeRt(expSE3(pose))
+    gRp, origin = makeRt(pose)
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -115,17 +115,17 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from utilities.math_tools import *
 
-    cur_pose = np.array([0,0,0])
-    odom = np.array([0.2, 0, 0.5])
+    cur_pose = np.eye(3)
+    odom = v2m(np.array([0.2, 0, 0.5]))
     for i in range(12):
-        cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
+        cur_pose = cur_pose.dot(odom)
         plot_pose2('test plot 2d', cur_pose, 0.05)
     plt.axis('equal')
 
-    cur_pose = np.array([0,0,0,0,0,0])
-    odom = np.array([0.2, 0, 0.01, 0, 0, 0.5])
+    cur_pose = np.eye(4)
+    odom = expSE3(np.array([0.2, 0, 0.01, 0, 0, 0.5]))
     for i in range(12):
-        cur_pose = logSE3(expSE3(cur_pose).dot(expSE3(odom)))
+        cur_pose = cur_pose.dot(odom)
         plot_pose3('test plot 3d', cur_pose, 0.05)
     set_axes_equal('test plot 3d')
 

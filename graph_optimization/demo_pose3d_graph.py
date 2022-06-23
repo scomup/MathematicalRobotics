@@ -10,7 +10,7 @@ class pose3dEdge:
         self.i = i
         self.z = z
         self.type = 'one'
-    def func(self, nodes):
+    def residual(self, nodes):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
@@ -25,7 +25,7 @@ class pose3dbetweenEdge:
         self.z = z
         self.type = 'two'
         self.color = color
-    def func(self, nodes):
+    def residual(self, nodes):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
@@ -53,7 +53,7 @@ class pose3Node:
 
 def draw(figname, gs):
     for n in gs.nodes:
-        plot_pose3(figname, n.x, 0.05)
+        plot_pose3(figname, expSE3(n.x), 0.05)
     fig = plt.figure(figname)
     axes = fig.gca()
     for e in gs.edges:

@@ -1,184 +1,177 @@
-
-from typing import Optional, Sequence
-
-import gtsam
-import matplotlib.pyplot as plt
 import numpy as np
-from gtsam.utils.plot import plot_pose3
-from mpl_toolkits.mplot3d import Axes3D
+
+import matplotlib.pyplot as plt
 from gtsam.symbol_shorthand import B, V, X
 import sys,os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-#from utilities.math_tools import *
-from graph_optimization.plot_pose import *
-
-GRAVITY = 9.80
-IMU_RATE = 0.01
+from utilities.math_tools import *
 
 
-#pose_data = np.load('/home/liu/bag/pose0.npy') 
-#imu_data = np.load('/home/liu/bag/imu0.npy')
-#pose_file = '/home/liu/bag/warehouse/2022-06-01-19-06-46_pose.npy'
-pose_file = '/home/liu/bag/warehouse/b2_mapping_pose.npy'
-pose_data = np.load(pose_file) 
-#pose_data = pose_data[::20]
-imu_data = np.load('/home/liu/bag/warehouse/b2_imu.npy')
-pose_truth_data = np.load('/home/liu/bag/warehouse/b2_pose.npy')
-pose_opt = pose_data.copy()
+imu = np.load('/home/liu/bag/warehouse/b2_imu.npy')
 
-imu_params = gtsam.PreintegrationParams.MakeSharedU(GRAVITY)
-imu_params.setAccelerometerCovariance(np.eye(3) * np.power( 0.01, 2))
-imu_params.setIntegrationCovariance(np.eye(3) * np.power( 0, 2))
-imu_params.setGyroscopeCovariance(np.eye(3) * np.power(  0.00175, 2))
-imu_params.setOmegaCoriolis(np.zeros(3))
-imuIntegratorOpt = gtsam.PreintegratedImuMeasurements(imu_params, gtsam.imuBias.ConstantBias())
+class navState:
+    def __init__(self,theta=np.zeros(3),p=np.zeros(3),v=np.zeros(3)):
+        if(theta.shape==(3,)):
+            self.R = expSO3(theta)
+        elif(theta.shape==(3,3)):
+            self.R = theta
+        self.p = p
+        self.v = v
 
-imuPredicter = gtsam.PreintegratedImuMeasurements(imu_params, gtsam.imuBias.ConstantBias())
-imu_predict_pose = []
-curPose = gtsam.Pose3(gtsam.Rot3.Quaternion(*pose_truth_data[0,4:8]), gtsam.Point3(*pose_truth_data[0,1:4]))
+    def vec(self):
+        return np.hstack([logSO3(self.R),self.p, self.v])
 
-state = gtsam.NavState(gtsam.Pose3(gtsam.Rot3.Quaternion(*pose_truth_data[0,4:8]), gtsam.Point3(*pose_truth_data[0,1:4])), gtsam.Point3(0,0,0))
+    def retract(self, zeta, calc_J = False):
+        R_bc = expSO3(zeta[0:3])
+        p_bc = zeta[3:6]
+        v_bc = zeta[6:9]
+        R_nb = self.R
+        p_nb = self.p
+        v_nb = self.v
+        R_nc = R_nb.dot(R_bc)
+        p_nc = p_nb + R_nb.dot(p_bc)
+        v_nc = v_nb + R_nb.dot(v_bc)
+        state = navState(R_nc, p_nc, v_nc)
+        if(calc_J == False):
+            return state
+        else:
+            R_cb = R_bc.T
+            J_retract_state = np.zeros([9,9])
+            J_retract_state[0:3,0:3] = R_cb
+            J_retract_state[3:6,3:6] = R_cb
+            J_retract_state[6:9,6:9] = R_cb
+            J_retract_state[3:6,0:3] = R_cb.dot(skew(-p_bc))
+            J_retract_state[6:9,0:3] = R_cb.dot(skew(-v_bc))
+            J_retract_delta = np.zeros([9,9])
+            J_retract_delta[0:3,0:3] = HSO3(logSO3(R_bc))
+            J_retract_delta[3:6,3:6] = R_cb
+            J_retract_delta[6:9,6:9] = R_cb
+            return state, J_retract_state, J_retract_delta
 
-startState = gtsam.NavState(gtsam.Pose3(gtsam.Rot3.Quaternion(1,0,0,0), gtsam.Point3(0,0,0)) , gtsam.Point3(0,0,0))
-for imu in imu_data:
-    imuPredicter.integrateMeasurement(imu[1:4], imu[4:7], IMU_RATE)
-    state = imuPredicter.predict(startState, gtsam.imuBias.ConstantBias())
-    #print(state)
-    imu_predict_pose.append(state.pose().translation())
-imu_predict_pose  = np.array(imu_predict_pose)
+    def local(self, state, calc_J = False):
+        dR = self.R.T.dot(state.R)
+        dp = self.R.T.dot(state.p - self.p)
+        dv = self.R.T.dot(state.v - self.v)
+        dtheta = logSO3(dR)
+        delta = np.hstack([dtheta, dp, dv])
+        if(calc_J == False):
+            return delta
+        else:
+            dlog = dLogSO3(dtheta)
+            J_local_statei = -np.eye(9)
+            J_local_statei[0:3,0:3] = dlog.dot(-dR.T)
+            J_local_statei[3:6,0:3] = skew(dp)
+            J_local_statei[6:9,0:3] = skew(dv)
+            J_local_statej = np.eye(9)
+            J_local_statej[0:3,0:3] = dlog
+            J_local_statej[3:6,3:6] = dR
+            J_local_statej[6:9,6:9] = dR
+            return delta, J_local_statei, J_local_statej
+
+class imuIntegration:
+    def __init__(self,G):
+        self.d_thetaij = np.array([0,0,0])
+        self.d_pij = np.array([0,0,0])
+        self.d_vij = np.array([0,0,0])
+        self.d_tij = 0
+        self.gravity = np.array([0,0,-G])
+        self.J_zeta_bacc = np.zeros([9,3])
+        self.J_zeta_bgyo = np.zeros([9,3])
+
+        self.bacc = np.array([0,0,0])
+        self.bgyo = np.array([0,0,0])
+        self.acc_buf = []
+        self.gyo_buf = []
+        self.dt_buf = []
+        
+    def update(self, acc, gyo, dt):
+        """
+        #check imuFactor.pdf: A Simple Euler Scheme (11~13)
+        """
+        self.acc_buf.append(acc)
+        self.gyo_buf.append(gyo)
+        self.dt_buf.append(dt)
+        acc_unbias = acc - self.bacc
+        gyo_unbias = gyo - self.bgyo
+        R = expSO3(self.d_thetaij)
+        H = HSO3(self.d_thetaij)
+        H_inv = np.linalg.inv(H)
+        Ra = R.dot(acc_unbias)
+        #dHinv = dHinvSO3(self.d_thetaij, gyo_unbias)
+        dHinv = -skew(gyo_unbias) * 0.5
+
+        self.d_thetaij = self.d_thetaij + H_inv.dot(gyo_unbias) * dt
+        self.d_pij = self.d_pij + self.d_vij * dt + Ra*dt*dt/2
+        self.d_vij = self.d_vij + Ra * dt 
+        self.d_tij += dt
+        
+        A = np.eye(9)
+        dt22 = 0.5 * dt * dt
+        a_nav_H_theta = R.dot(skew(acc_unbias)).dot(H)
+        A[0:3,0:3] = np.eye(3) + dHinv * dt
+        A[3:6,0:3] = -a_nav_H_theta * dt22
+        A[3:6,6:9] = np.eye(3) * dt
+        A[6:9,0:3] = -a_nav_H_theta * dt
+
+        B = np.zeros([9,3])
+        B[3:6,0:3] = R * dt22
+        B[6:9,0:3] = R * dt
+
+        C = np.zeros([9,3])
+        C[0:3,0:3] = H_inv * dt
+        self.J_zeta_bacc = A.dot(self.J_zeta_bacc) - B
+        self.J_zeta_bgyo = A.dot(self.J_zeta_bgyo) - C
+        
+
+    def biasCorrect(self, bias, calc_J = False):
+        bacc_inc = bias[0:3] - self.bacc
+        bgyo_inc = bias[3:6] - self.bgyo
+        zeta = np.hstack([self.d_thetaij,self.d_pij,self.d_vij ])
+        xi = zeta + self.J_zeta_bacc.dot(bacc_inc) + self.J_zeta_bgyo.dot(bgyo_inc)
+        if(calc_J == False):
+            return xi
+        else:
+            J_xi_bias = np.hstack([self.J_zeta_bacc, self.J_zeta_bgyo])
+            return xi, J_xi_bias
+
+    def calcDelta(self, xi, state, calc_J = False):
+        p = xi[3:6]
+        v = xi[6:9]
+        dt = self.d_tij
+        dt22 = 0.5 * self.d_tij * self.d_tij
+        R_bn = state.R.T
+        v_nb = state.v
+        p_bc = p + dt * R_bn.dot(v_nb) + dt22 * R_bn.dot(self.gravity)
+        v_bc = v + dt * R_bn.dot(self.gravity)
+        delta = np.hstack([xi[0:3], p_bc, v_bc])
+        if(calc_J == False):
+            return delta
+        else:
+            J_delta_state = np.zeros([9,9])
+            J_delta_state[3:6,0:3] = dt * skew(R_bn.dot(v_nb)) + dt22 * skew(R_bn.dot(self.gravity))
+            J_delta_state[3:6,6:9] = np.eye(3) * dt
+            J_delta_state[6:9,0:3] = dt * skew(R_bn.dot(self.gravity))
+            J_delta_xi = np.eye(9)
+            return delta, J_delta_state, J_delta_xi
 
 
-
-
-
-priorPoseNoise  = gtsam.noiseModel.Diagonal.Sigmas(np.array([1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2]) ) # rad,rad,rad,m, m, m
-odom = 1e2
-OdometryNoise  = gtsam.noiseModel.Diagonal.Sigmas(np.array([odom, odom, odom, odom, odom, odom]) ) 
-priorVelNoise = gtsam.noiseModel.Isotropic.Sigma(3, 100) 
-priorBiasNoise = gtsam.noiseModel.Isotropic.Sigma(6, 1e-18) 
-correctionNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([ 0.05, 0.05, 0.05, 1, 1, 1]))
-
-optParameters = gtsam.ISAM2Params()
-optParameters.setRelinearizeThreshold(0.1)
-optimizer = gtsam.ISAM2(optParameters)
-graphFactors = gtsam.NonlinearFactorGraph()
-graphValues = gtsam.Values()
-
-imuAccBiasN = 6.4356659353532566e-10
-imuGyrBiasN = 3.5640318696367613e-10
-noiseModelBetweenBias = np.array([imuAccBiasN, imuAccBiasN, imuAccBiasN, imuGyrBiasN, imuGyrBiasN, imuGyrBiasN])
-
-initb = gtsam.imuBias.ConstantBias(np.array([0.0,-0.0,-0.00]),np.array([0,0,0]))
-n= pose_data.shape[0]
-n= 2
-#Add nodes to graph
-imu_group = []
-begin_idx = 0
-for i in range(n):
-    p0 = pose_data[i]
-    curPose = gtsam.Pose3(gtsam.Rot3.Quaternion(*p0[4:8]), gtsam.Point3(*p0[1:4]))
-    if(i == n - 1):
-        graphValues.insert(X(i), curPose)
-        graphValues.insert(V(i), graphValues.atPoint3(V(i-1)))
-        graphValues.insert(B(i), initb)
-        break
-    else:
-        p1 = pose_data[i+1]
-        dt = p1[0] - p0[0]
-        vel = (p1[1:4] - p0[1:4])/dt
-        #vel[0] = 0
-        #vel[1] = 0
-        vel[2] = 0
-        graphValues.insert(X(i), curPose)
-        graphValues.insert(V(i), vel)
-        graphValues.insert(B(i), initb)
-    tmp = []
-    for imu in imu_data[begin_idx:]:
-        begin_idx += 1
-        if(imu[0]< p0[0] ):
-            continue
-        if(imu[0] > p1[0]):
-            break
-        if dt <= 0:
-            continue
-        tmp.append(imu)
-    imu_group.append(tmp)
-
-
-#Add edges to graph
-graphFactors.add(gtsam.PriorFactorPose3(X(0), graphValues.atPose3(X(0)), priorPoseNoise))
-graphFactors.add(gtsam.PriorFactorPoint3(V(0), graphValues.atPoint3(V(0)), priorVelNoise))
-graphFactors.add(gtsam.PriorFactorConstantBias(B(0), graphValues.atConstantBias(B(0)), priorBiasNoise))
-
-for i in range(n-1):
-    pass
-    imuIntegratorOpt.resetIntegrationAndSetBias(gtsam.imuBias.ConstantBias())
-    for imu in imu_group[i]:
-        imuIntegratorOpt.integrateMeasurement(imu[1:4], imu[4:7], IMU_RATE)
-    imu_factor = gtsam.ImuFactor(X(i), V(i), X(i+1), V(i+1), B(i), imuIntegratorOpt)
-    graphFactors.add(imu_factor)
-    bias_factor = gtsam.BetweenFactorConstantBias( B(i), B(i+1), gtsam.imuBias.ConstantBias(), \
-        gtsam.noiseModel.Diagonal.Sigmas( np.sqrt(imuIntegratorOpt.deltaTij())* noiseModelBetweenBias ))
-    graphFactors.add(bias_factor)
-    #vel_factor = gtsam.BetweenFactorPoint3( V(i), V(i+1), gtsam.Point3(0,0,0), \
-    #    gtsam.noiseModel.Isotropic.Sigma(3, 1e-4)  )
-    #graphFactors.add(vel_factor)
-    #graphFactors.add(gtsam.PriorFactorPoint3(V(i), graphValues.atPoint3(V(i)), gtsam.noiseModel.Isotropic.Sigma(3, 1e-5) ))
-
-    odometry = graphValues.atPose3(X(i)).inverse()*graphValues.atPose3(X(i+1))
-    graphFactors.add(gtsam.BetweenFactorPose3(X(i), X(i+1), odometry, OdometryNoise))
-
-result = graphValues
-optimizer.update(graphFactors, graphValues)
-optimizer.update()
-result = optimizer.calculateEstimate()
-
-
-bias_acc_opt = []
-bias_gyo_opt = []
-#pose_opt = pose_data.copy()
-vel_opt = []
-for i in range(n-1):
-    pose_opt[i,1:4] = result.atPose3(X(i)).translation()
-    bias_acc_opt.append(result.atConstantBias(B(i)).accelerometer())
-    bias_gyo_opt.append(result.atConstantBias(B(i)).gyroscope())
-    vel_opt.append(result.atPoint3(V(i)))
-
-bias_acc_opt = np.array(bias_acc_opt)
-bias_gyo_opt = np.array(bias_gyo_opt)
-pose_opt = np.array(pose_opt)
-vel_opt = np.array(vel_opt)
-np.save(os.path.splitext(pose_file)[0][:-5]+'_opt_pose.npy', pose_opt)
-
-fig = plt.figure('imu')
-plt.plot(imu_data[0:n,1],color='r', label='acc x')
-plt.plot(imu_data[0:n,2],color='g', label='acc y')
-plt.plot(imu_data[0:n,3],color='b', label='acc z')
-plt.legend()
-
-fig = plt.figure('acc bias')
-plt.plot(bias_acc_opt[0:n,0],color='r', label='bias x')
-plt.plot(bias_acc_opt[0:n,1],color='g', label='bias y')
-plt.plot(bias_acc_opt[0:n,2],color='b', label='bias z')
-plt.legend()
-
-fig = plt.figure('gyo bias')
-plt.plot(bias_gyo_opt[0:n,0],color='r', label='bias x')
-plt.plot(bias_gyo_opt[0:n,1],color='g', label='bias y')
-plt.plot(bias_gyo_opt[0:n,2],color='b', label='bias z')
-plt.legend()
-
-fig = plt.figure('vel')
-plt.plot(vel_opt[0:n,0],color='r', label='vel x')
-plt.plot(vel_opt[0:n,1],color='g', label='vel y')
-plt.plot(vel_opt[0:n,2],color='b', label='vel z')
-plt.legend()
-
-fig = plt.figure('pose')
-plt.scatter(pose_data[0:n,1],pose_data[0:n,2],s=10,label = 'raw path')
-plt.scatter(pose_opt[0:n,1],pose_opt[0:n,2],s=5,label = 'imu path')
-plt.scatter(pose_truth_data[0:20*n,1],pose_truth_data[0:20*n,2],s=5,label = 'truth path')
-plt.scatter(imu_predict_pose[0:10*n,0],imu_predict_pose[0:10*n,1],s=5,label = 'imu predict')
-
-plt.legend()
-plt.show()
+    def predict(self, state, bias, calc_J = False):
+        """
+        #check imuFactor.pdf: Application: The New IMU Factor
+        #b: body frame, the local imu frame
+        #c: the current imu frame
+        #n: the nav frame (world frame)
+        """
+        if(calc_J == False):
+            xi = self.biasCorrect(bias)
+            delta = self.calcDelta(xi, state)
+            state_j = state.retract(delta)
+            return state_j
+        else:
+            xi, J_xi_bias = self.biasCorrect(bias, True)
+            delta, J_delta_state, J_delta_xi = self.calcDelta(xi, state, True)
+            state_j, J_retract_state, J_retract_delta = state.retract(delta, True)
+            J_predict_state = J_retract_state + J_retract_delta.dot(J_delta_state)
+            J_predict_bias = J_retract_delta.dot(J_delta_xi.dot(J_xi_bias))
+            return state_j, J_predict_state, J_predict_bias

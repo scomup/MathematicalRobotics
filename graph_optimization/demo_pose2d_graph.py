@@ -10,7 +10,7 @@ class pose2dEdge:
         self.i = i
         self.z = z
         self.type = 'one'
-    def func(self, nodes):
+    def residual(self, nodes):
         """
         The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
         """
@@ -25,7 +25,7 @@ class pose2dbetweenEdge:
         self.z = z
         self.type = 'two'
         self.color = color
-    def func(self, nodes):
+    def residual(self, nodes):
         """
         The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
         """
@@ -51,7 +51,7 @@ def draw(figname, gs):
     fig = plt.figure(figname)
     axes = fig.gca()
     for n in gs.nodes:
-        plot_pose2(figname, n.x, 0.05)
+        plot_pose2(figname, v2m(n.x), 0.05)
     for e in gs.edges:
         if(e.type=='one'):
             continue
