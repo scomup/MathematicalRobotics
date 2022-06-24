@@ -6,10 +6,14 @@ from utilities.math_tools import *
 from graph_optimization.plot_pose import *
 
 class pose3dEdge:
-    def __init__(self, i, z):
+    def __init__(self, i, z, omega = None):
         self.i = i
         self.z = z
         self.type = 'one'
+        self.omega = omega
+        if(self.omega is None):
+            self.omega = np.eye(self.z.shape[0])
+
     def residual(self, nodes):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
@@ -19,12 +23,17 @@ class pose3dEdge:
 
 
 class pose3dbetweenEdge:
-    def __init__(self, i, j, z, color = 'black'):
+    def __init__(self, i, j, z, omega = None, color = 'black'):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
         self.color = color
+        self.omega = omega
+        if(self.omega is None):
+            self.omega = np.eye(self.z.shape[0])
+
+
     def residual(self, nodes):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
@@ -89,7 +98,7 @@ if __name__ == '__main__':
         j = (i + 1)
         gs.addEdge(pose3dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
         
-    gs.addEdge(pose3dbetweenEdge(n-1, 0, odom, 'red'))
+    gs.addEdge(pose3dbetweenEdge(n-1, 0, odom, color='red'))
 
 
     draw('before loop-closing', gs)

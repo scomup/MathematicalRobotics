@@ -7,8 +7,9 @@
 r(x) is the residual function, x is the parameter vector.  
 The least-squares problem tries to find optimal parameters to minimize the sum of squared residuals. 
 $$ 
-cost = \sum_{i=0}^{n}r(x)^2 \tag{1}
+cost = \sum_{i=0}^{n} (\frac{r^T \Sigma r}{2}) \tag{1}
 $$
+Where $\Sigma$ is the information matrix for the measurement. In the simple case, it can be the identity matrix.
 
 ### What is Gauss-Newton Methods?  
 The gauss–newton methods is used to solve nonlinear least-squares problems.  
@@ -20,10 +21,10 @@ $$
 $$
 here: g is the gradient vector; H is the hessian matrix.
 $$ 
-g = \sum g_i= \sum J_i^Tr_i \tag{3}
+g = \sum g_i= \sum J_i^T \Sigma r_i \tag{3}
 $$
 $$ 
-H  = \sum H_i \approx J_i^TJ_i  \tag{4}
+H  = \sum H_i \approx J_i^T \Sigma J_i  \tag{4}
 $$
 * r is the residual vector. 
 * J is the jacobian matrix of r.

@@ -9,19 +9,13 @@ import matplotlib.pyplot as plt
 from graph_optimization.plot_pose import *
 import quaternion
 
-def to2d(x):
-    R = expSO3(x[0:3])
-    theta = np.arctan2( R[1,0], R[0,0])
-    x2d = np.zeros(3)
-    x2d[0:2] = x[3:5]
-    x2d[2] = theta
-    return x2d
 
 class naviEdge:
     def __init__(self, i, z):
         self.i = i
         self.z = z
         self.type = 'one'
+        self.omega = np.eye(9)
     def residual(self, nodes):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
@@ -38,6 +32,7 @@ class imuEdge:
         self.k = k
         self.z = z
         self.type = 'three'
+        self.omega = np.eye(9)
     def residual(self, nodes):
         pim = self.z
         statei = nodes[self.i].state
@@ -66,6 +61,14 @@ class biasNode:
         self.loc = 0
     def update(self, dx):
         self.bias = self.bias + dx
+
+def to2d(x):
+    R = expSO3(x[0:3])
+    theta = np.arctan2( R[1,0], R[0,0])
+    x2d = np.zeros(3)
+    x2d[0:2] = x[3:5]
+    x2d[2] = theta
+    return x2d
 
 def draw(figname, gs, color):
     fig = plt.figure(figname)

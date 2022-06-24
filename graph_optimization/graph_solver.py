@@ -46,38 +46,41 @@ class graphSolver:
             if(edge.type == 'one'):
                 node_i = self.nodes[edge.i]
                 r, jacobian_i = edge.residual(self.nodes)
-                H[node_i.loc:node_i.loc+ node_i.size,node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(jacobian_i) 
-                g[node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(r)
-                score += r.dot(r)
+                omega = edge.omega
+                H[node_i.loc:node_i.loc+ node_i.size,node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                g[node_i.loc:node_i.loc+ node_i.size] += jacobian_i.T.dot(omega.dot(r))
+                score += r.dot(omega.dot(r))
             elif(edge.type == 'two'):
                 r, jacobian_i, jacobian_j = edge.residual(self.nodes)
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
-                H[node_i.loc:node_i.loc+node_i.size,node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(jacobian_i) 
-                H[node_j.loc:node_j.loc+node_j.size,node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(jacobian_j) 
-                H[node_i.loc:node_i.loc+node_i.size,node_j.loc:node_j.loc+node_j.size] += jacobian_i.T.dot(jacobian_j)  
-                H[node_j.loc:node_j.loc+node_j.size,node_i.loc:node_i.loc+node_i.size] += jacobian_j.T.dot(jacobian_i)  
-                g[node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(r)
-                g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(r)
-                score += r.dot(r)
+                omega = edge.omega
+                H[node_i.loc:node_i.loc+node_i.size,node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                H[node_j.loc:node_j.loc+node_j.size,node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(omega.dot(jacobian_j)) 
+                H[node_i.loc:node_i.loc+node_i.size,node_j.loc:node_j.loc+node_j.size] += jacobian_i.T.dot(omega.dot(jacobian_j))  
+                H[node_j.loc:node_j.loc+node_j.size,node_i.loc:node_i.loc+node_i.size] += jacobian_j.T.dot(omega.dot(jacobian_i))  
+                g[node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(omega.dot(r))
+                g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(omega.dot(r))
+                score += r.dot(omega.dot(r))
             elif(edge.type == 'three'):
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
                 node_k = self.nodes[edge.k]
+                omega = edge.omega
                 r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.nodes)
-                H[node_i.loc:node_i.loc+node_i.size,node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(jacobian_i) 
-                H[node_j.loc:node_j.loc+node_j.size,node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(jacobian_j) 
-                H[node_k.loc:node_k.loc+node_k.size,node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(jacobian_k) 
-                H[node_i.loc:node_i.loc+node_i.size,node_j.loc:node_j.loc+node_j.size] += jacobian_i.T.dot(jacobian_j)  
-                H[node_j.loc:node_j.loc+node_j.size,node_i.loc:node_i.loc+node_i.size] += jacobian_j.T.dot(jacobian_i)  
-                H[node_i.loc:node_i.loc+node_i.size,node_k.loc:node_k.loc+node_k.size] += jacobian_i.T.dot(jacobian_k)  
-                H[node_k.loc:node_k.loc+node_k.size,node_i.loc:node_i.loc+node_i.size] += jacobian_k.T.dot(jacobian_i)  
-                H[node_j.loc:node_j.loc+node_j.size,node_k.loc:node_k.loc+node_k.size] += jacobian_j.T.dot(jacobian_k)  
-                H[node_k.loc:node_k.loc+node_k.size,node_j.loc:node_j.loc+node_j.size] += jacobian_k.T.dot(jacobian_j)  
-                g[node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(r)
-                g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(r)
-                g[node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(r)
-                score += r.dot(r)
+                H[node_i.loc:node_i.loc+node_i.size,node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                H[node_j.loc:node_j.loc+node_j.size,node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(omega.dot(jacobian_j)) 
+                H[node_k.loc:node_k.loc+node_k.size,node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(omega.dot(jacobian_k)) 
+                H[node_i.loc:node_i.loc+node_i.size,node_j.loc:node_j.loc+node_j.size] += jacobian_i.T.dot(omega.dot(jacobian_j))  
+                H[node_j.loc:node_j.loc+node_j.size,node_i.loc:node_i.loc+node_i.size] += jacobian_j.T.dot(omega.dot(jacobian_i))  
+                H[node_i.loc:node_i.loc+node_i.size,node_k.loc:node_k.loc+node_k.size] += jacobian_i.T.dot(omega.dot(jacobian_k))  
+                H[node_k.loc:node_k.loc+node_k.size,node_i.loc:node_i.loc+node_i.size] += jacobian_k.T.dot(omega.dot(jacobian_i))  
+                H[node_j.loc:node_j.loc+node_j.size,node_k.loc:node_k.loc+node_k.size] += jacobian_j.T.dot(omega.dot(jacobian_k))  
+                H[node_k.loc:node_k.loc+node_k.size,node_j.loc:node_j.loc+node_j.size] += jacobian_k.T.dot(omega.dot(jacobian_j))  
+                g[node_i.loc:node_i.loc+node_i.size] += jacobian_i.T.dot(omega.dot(r))
+                g[node_j.loc:node_j.loc+node_j.size] += jacobian_j.T.dot(omega.dot(r))
+                g[node_k.loc:node_k.loc+node_k.size] += jacobian_k.T.dot(omega.dot(r))
+                score += r.dot(omega.dot(r))
         #dx = np.linalg.solve(H, -g)
         #much faster than np.linalg.solve!
         dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
