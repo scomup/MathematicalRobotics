@@ -5,6 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
 import quaternion
+import time
 
 class pose3dEdge:
     def __init__(self, i, z, omega = None):
@@ -55,8 +56,6 @@ class pose3Node:
     def __init__(self, x):
         self.x = x
         self.size = x.size
-        self.loc = 0
-
     def update(self, dx):
         self.x = logSE3(expSE3(self.x).dot(expSE3(dx)))
 

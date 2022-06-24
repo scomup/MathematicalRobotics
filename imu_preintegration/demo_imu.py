@@ -50,7 +50,6 @@ class naviNode:
     def __init__(self, state):
         self.state = state
         self.size = 9
-        self.loc = 0
     def update(self, dx):
         self.state = self.state.retract(dx)
 
@@ -58,7 +57,6 @@ class biasNode:
     def __init__(self, bias):
         self.bias = bias
         self.size = 6
-        self.loc = 0
     def update(self, dx):
         self.bias = self.bias + dx
 

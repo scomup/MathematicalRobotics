@@ -49,7 +49,6 @@ class pose2Node:
     def __init__(self, x):
         self.x = x
         self.size = x.size
-        self.loc = 0
 
     def update(self, dx):
         self.x = m2v(v2m(self.x).dot(v2m(dx)))

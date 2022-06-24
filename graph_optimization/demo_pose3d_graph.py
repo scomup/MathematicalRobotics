@@ -55,8 +55,6 @@ class pose3Node:
     def __init__(self, x):
         self.x = x
         self.size = x.size
-        self.loc = 0
-
     def update(self, dx):
         self.x = logSE3(expSE3(self.x).dot(expSE3(dx)))
 
