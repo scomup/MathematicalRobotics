@@ -425,7 +425,7 @@ According to A2-2 and (22):
 
 $$
  \frac{\partial p_{bc}}{\partial v_{nb}} =
- \frac{ R_{nb}^{-1}(v_{nb} + R_{nb}\delta)- R_{nb}^{-1}v_{nb})}{\delta} \\
+ \frac{ R_{nb}^{-1}(v_{nb} + R_{nb}\delta)- R_{nb}^{-1}v_{nb}}{\delta} \\
  = I_{3\times3}\Delta{t}
 $$
 
@@ -442,39 +442,39 @@ $$
 According to A2-2 and (25): 
 $$
 \frac{\partial{p_{bc}^*}}{\partial R_{nb}} =
-\frac{ R_{nc}^{-1}( R_{nb}\exp(\hat{\delta})p_{bc}- R_{nb}p_{bc})}{\delta} \\
+\frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})p_{bc}- R_{nb}p_{bc})}{\delta \theta_{b}} \\
 = -R^{-1}_{bc} \widehat{p_{bc}}
 $$
 $$
 \frac{\partial{v_{bc}^*}}{\partial R_{nb}} =
-\frac{ R_{nc}^{-1}( R_{nb}\exp(\hat{\delta})v_{bc}- R_{nb}v_{bc})}{\delta} \\
+\frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})v_{bc}- R_{nb}v_{bc})}{\delta \theta_{b}} \\
 = -R^{-1}_{bc} \widehat{v_{bc}}
 $$
 
 
-According to A1-3 and (25): 
+According to A1-3 and (22)(25): 
 $$
 \frac{\partial{p_{bc}^*}}{\partial p_{nb}} =
-\frac{ R_{nc}^{-1}( p_{nb} + R_{nb}\delta -  p_{nb})}{\delta} \\
+\frac{ R_{nc}^{-1}( p_{nb} + R_{nb}\delta{p_{b}} -  p_{nb})}{\delta{p_{b}}} \\
 = R^{-1}_{bc}
 $$
 $$
 \frac{\partial{v_{bc}^*}}{\partial v_{nb}} =
-\frac{ R_{nc}^{-1}( v_{nb} + R_{nb}\delta -  v_{nb})}{\delta} \\
+\frac{ R_{nc}^{-1}( v_{nb} + R_{nb}\delta v_{b} -  v_{nb})}{\delta v_{b}} \\
 = R^{-1}_{bc}
 $$
 
- ### A-4. Proof of (25)
+ ### A-4. Proof of (24)
 
-According to A2-2 and (24): 
+According to A2-2 and (25): 
 $$
 \frac{\partial{p_{nc}^*}}{\partial p_{bc}} =
-\frac{ R_{nc}^{-1}( R_{nb} (p_{bc} + \delta)- R_{nb}p_{bc})}{\delta} \\
+\frac{ R_{nc}^{-1}( R_{nb} (p_{bc} + \delta p_{b})- R_{nb}p_{bc})}{\delta p_{b}} \\
 = R^{-1}_{bc}
 $$
 $$
-\frac{\partial{v_{nc}^*}}{\partial v_{bc}} =
-\frac{ R_{nc}^{-1}( R_{nb} (v_{bc} + \delta)- R_{nb}v_{bc})}{\delta} \\
+\frac{\partial{v_{nc}^*}}{\partial v_{b}} =
+\frac{ R_{nc}^{-1}( R_{nb} (v_{bc} + \delta v_{b})- R_{nb}v_{bc})}{\delta v_{b}} \\
 = R^{-1}_{bc}
 $$
 
