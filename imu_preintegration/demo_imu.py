@@ -22,6 +22,7 @@ class naviEdge:
         """
         state = nodes[self.i].state
         r, j, _ = state.local(self.z, True)
+        r = np.hstack([logSO3(r.R), r.p, r.v])
         return r, j
 
 
@@ -40,6 +41,7 @@ class imuEdge:
         bias = nodes[self.k].bias
         statejstar, J_statejstar_statei, J_statejstar_bias = pim.predict(statei, bias, True)
         r, J_local_statej, J_local_statejstar = statej.local(statejstar, True)
+        r = np.hstack([logSO3(r.R), r.p, r.v])
         J_statei = J_local_statejstar.dot(J_statejstar_statei)
         J_statej = J_local_statej
         J_biasi = J_local_statejstar.dot(J_statejstar_bias)
@@ -51,7 +53,8 @@ class naviNode:
         self.state = state
         self.size = 9
     def update(self, dx):
-        self.state = self.state.retract(dx)
+        d_state = navState(expSO3(dx[0:3]), dx[3:6], dx[6:9])
+        self.state = self.state.retract(d_state)
 
 class biasNode:
     def __init__(self, bias):
@@ -83,7 +86,7 @@ def draw(figname, gs, color):
     for e in gs.edges:
         if(not isinstance(e, imuEdge)):
             continue
-        imuIntegrator = imuIntegration(9.81)
+        imuIntegrator = imuIntegration(9.80)
         statei = gs.nodes[e.i].state
         biasi = gs.nodes[e.k].bias
         for acc, gyo, dt in zip(e.z.acc_buf, e.z.gyo_buf, e.z.dt_buf):

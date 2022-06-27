@@ -5,14 +5,15 @@ Suppose we know the navigation state of the robot at time i ,as well as the IMU 
 $$ 
 s_j^* = \mathscr{R}(s_i, \mathscr{D}(\xi(\zeta, b))) \\
 $$
-The navigation state combined by attitude $\theta$, position $p$ and velocity $v$.   
+The navigation state combined by attitude $R(\theta)$, position $p$ and velocity $v$.   
 $$
-s_i = (\theta_{nb}, p_{nb}, v_{nb}) \\
-s_j = (\theta_{nc}, p_{nc}, v_{nc}) \\
+s_i = (R_{nb}, p_{nb}, v_{nb}) \\
+s_j = (R_{nc}, p_{nc}, v_{nc}) \\
 $$
 * n denotes navigation state frame.
 * b denotes body frame in time i.
 * c denotes current frame in time j.
+* $\theta$ is the lie algebra of R.
 
 The retract action $\mathscr{R}$ which defined on navigation state  takes 2 parameters: $s_i$ and $\mathscr{D}$ to predict $s_j$. The $\mathscr{D}$ represents the difference between $s_i$ and $s_j$.
 $$
@@ -31,10 +32,10 @@ J^{s_j^*}_{b} = J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{\xi} J^{\xi}_{b}
 $$ 
 
 ### Preintegration measurement (PIM)
-The PIM $\zeta(\theta, p ,v)$ integrates all the IMU measurements  without considering the state of the bias and the gravity.
+The PIM $\zeta(R(\theta), p ,v)$ integrates all the IMU measurements  without considering the state of the bias and the gravity.
 $\omega^b_k$,$a^b_k$ are the acceleration and angular velocity measured by IMU (accelerometer + gyroscope) respectively.
 $$
-\theta_{k+1} = \theta_k + H(\theta_k)^{-1}\omega^b_k\Delta{t} \\
+R_{k+1} = R_k \exp(\omega^b_k\Delta{t}) \\
 p_{k+1} = p_k + v_k\Delta{t} +R_k a^b_k \frac{\Delta{t}^2}{2} \\
 v_{k+1} = v_k + R_k a^b_k \Delta{t}
 $$
@@ -43,19 +44,19 @@ $n$: navigation frame, $b$: body frame.
 $$
 A = \frac{\partial{\zeta_{k+1}}}{\partial \zeta_{k}} = 
 \begin{bmatrix}
- \frac{\partial{\theta_{k+1}}}{\partial{\theta_{k}}}  & \frac{\partial{\theta_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{\theta_{k+1}}}{\partial{v_{k}}}\\  
- \frac{\partial{p_{k+1}}}{\partial{\theta_{k}}}  & \frac{\partial{p_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{p_{k+1}}}{\partial{v_{k}}}\\  
- \frac{\partial{v_{k+1}}}{\partial{\theta_{k}}}  & \frac{\partial{v_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{v_{k+1}}}{\partial{v_{k}}}\\   
+ \frac{\partial{R_{k+1}}}{\partial{R_{k}}}  & \frac{\partial{R_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{R_{k+1}}}{\partial{v_{k}}}\\  
+ \frac{\partial{p_{k+1}}}{\partial{R_{k}}}  & \frac{\partial{p_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{p_{k+1}}}{\partial{v_{k}}}\\  
+ \frac{\partial{v_{k+1}}}{\partial{R_{k}}}  & \frac{\partial{v_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{v_{k+1}}}{\partial{v_{k}}}\\   
 \end{bmatrix} 
 =\begin{bmatrix}
- \frac{\partial{\theta_{k+1}}}{\partial{\theta_{k}}}  & 0_{3\times3} & 0_{3\times3}\\  
- \frac{\partial{p_{k+1}}}{\partial{\theta_{k}}}  & I_{3\times3} &  I_{3\times3} \Delta{t}\\  
- \frac{\partial{v_{k+1}}}{\partial{\theta_{k}}}  &  0_{3\times3} &  I_{3\times3}\\   
+ \frac{\partial{R_{k+1}}}{\partial{R_{k}}}  & 0_{3\times3} & 0_{3\times3}\\  
+ \frac{\partial{p_{k+1}}}{\partial{R_{k}}}  & I_{3\times3} &  I_{3\times3} \Delta{t}\\  
+ \frac{\partial{v_{k+1}}}{\partial{R_{k}}}  &  0_{3\times3} &  I_{3\times3}\\   
 \end{bmatrix} \\
 =\begin{bmatrix}
- I_{3\times3}-\frac{\Delta_{t}}{2}\widehat{\omega_{k}^{b}}  & 0_{3\times3} & 0_{3\times3}\\  
- -R_{k}\widehat{a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} &  I_{3\times3} \Delta{t}\\  
- -R_{k}\widehat{a_{k}^{b}}H(\theta_{k})\Delta_{t}  &  0_{3\times3} &  I_{3\times3}\\   
+ I_{3\times3}-\Delta_{t}\widehat{\omega_{k}^{b}}  & 0_{3\times3} & 0_{3\times3}\\  
+ -R_{k}\widehat{a_{k}^{b}}\frac{\Delta_{t}}{2}^{2} & I_{3\times3} &  I_{3\times3} \Delta{t}\\  
+ -R_{k}\widehat{a_{k}^{b}}\Delta_{t}  &  0_{3\times3} &  I_{3\times3}\\   
 \end{bmatrix}
 $$
 #### B:Derivative of input $a$
@@ -87,7 +88,7 @@ C = \frac{\partial{\zeta_{k+1}}}{\partial \omega^b_k} =
  0_{3\times3}  \\   
 \end{bmatrix}  
 =\begin{bmatrix}
- H(\theta_{k})^{-1}{\Delta{t}} \\  
+ I_{3\times3}\Delta{t} \\  
  0_{3\times3}  \\  
  0_{3\times3}  \\   
 \end{bmatrix} 
@@ -95,11 +96,16 @@ $$
 ### Bias correct
 We want correct $\zeta$ by a given accelerometer and gyroscope bias.   
 $$
-\xi(\zeta,b+\Delta{b}) = \zeta + \Delta b_{acc} \frac{\partial{\zeta}}{\partial b_{acc}} +
-\Delta b_{\omega} \frac{\partial{\zeta}}{\partial b_{\omega}} 
+\xi(b+\Delta{b}) = \zeta \oplus (\Delta b_{acc} \frac{\partial{\zeta}}{\partial b_{acc}} +
+\Delta b_{\omega} \frac{\partial{\zeta}}{\partial b_{\omega}} )
 $$
 * $b_{acc}$ is bias for accelerometer.
 * $b_{\omega}$ is bias for gyroscope.
+* Because the parameter $\theta$ cannot be added directly, we define the combination of rotations with the symbol $\oplus$. 
+$$
+a\oplus b = [\log(\exp(\theta_a)\exp(\theta_b)), v_a+v_b, v_a+v_b]
+$$
+
 #### The jocabian of bias for corrected PIM.
 $$
 J^{\xi}_{b} =  [ \frac{\partial{\zeta}}{\partial b_{acc}}, \frac{\partial{\zeta}}{\partial b_{\omega}}] 
@@ -137,13 +143,13 @@ $$
 ### Delta between two states
 The $\mathscr{D}$ represents the difference between two $s_i$ and $s_j$.   
 $$
-\mathscr{D} = (\theta_{bc}, p_{bc}, v_{bc}) \\
+\mathscr{D} = (R_{bc}, p_{bc}, v_{bc}) \\
 $$
-We can calculate $\mathscr{D}$ from corrected PIM $\xi(\theta_{bc}^{\xi},p_{bc}^{\xi},v_{bc}^{\xi})$ and velocity, which is included in $s_i$.
+We can calculate $\mathscr{D}$ from corrected PIM $\xi(R_{bc}^{\xi},p_{bc}^{\xi},v_{bc}^{\xi})$ and velocity, which is included in $s_i$.
 
 $$
 \mathscr{D}(\xi,s_i)=\begin{bmatrix}
-\theta_{bc}^{\xi}\\  
+R_{bc}^{\xi}\\  
 p_{bc}^{\xi} + R_{nb}^{-1} v_{nb} \Delta{t} + R_{nb}^{-1} g \frac{\Delta{t}^2}{2} \\  
 v_{bc}^{\xi} + R_{nb}^{-1} g \Delta{t}\\   
 \end{bmatrix}
@@ -157,22 +163,22 @@ $$
 $$
 J^{\mathscr{D}}_{s_i}=\begin{bmatrix}
  0_{3\times3}  & 0_{3\times3} & 0_{3\times3}\\  
- \frac{\partial{p_{bc}}}{\partial \theta_{nb}} & 0_{3\times3} &  \frac{\partial p_{bc}}{\partial v_{nb}} \\  
-\frac{\partial{v_{bc}}}{\partial \theta_{nb}}  &  0_{3\times3} &  0_{3\times3}\\   
+ \frac{\partial{p_{bc}}}{\partial R_{nb}} & 0_{3\times3} &  \frac{\partial p_{bc}}{\partial v_{nb}} \\  
+\frac{\partial{v_{bc}}}{\partial R_{nb}}  &  0_{3\times3} &  0_{3\times3}\\   
 \end{bmatrix} \\
 $$
 
 where:
 $$
-\frac{\partial{p_{bc}}}{\partial \theta_{nb}} = \widehat{R_{nb}^{-1}v_{nb}} \Delta{t} + \widehat{R_{nb}^{-1}g} \frac{\Delta{t}^2}{2}
+\frac{\partial{p_{bc}}}{\partial R_{nb}} = \widehat{R_{nb}^{-1}v_{nb}} \Delta{t} + \widehat{R_{nb}^{-1}g} \frac{\Delta{t}^2}{2}
 $$
 
 $$
-\frac{\partial\ p_{bc}}{\partial v_{nb}} = R_{nb}^{-1}R_{nb} \Delta{t} 
+\frac{\partial\ p_{bc}}{\partial v_{nb}} = R_{nb}^{-1}R_{nb} \Delta{t} = I_{3\times3}\Delta{t}
 $$
 
 $$
-\frac{\partial{ v_{bc}}}{\partial \theta_{nb}} = \widehat{R_{nb}^{-1}g} \Delta{t}
+\frac{\partial{ v_{bc}}}{\partial R_{nb}} = \widehat{R_{nb}^{-1}g} \Delta{t}
 $$
 #### The jocabian matrix of $\xi$
 $$
@@ -197,21 +203,19 @@ $$
 $$
 J^{\mathscr{R}}_{s_i}=\begin{bmatrix}
  R_{bc}^{-1} & 0_{3\times3} & 0_{3\times3}\\  
- R_{bc}^{-1} \widehat{-p_{bc}} & R_{bc}^{-1} & 0_{3\times3}\\  
- R_{bc}^{-1} \widehat{-v_{bc}} & 0_{3\times3} & R_{bc}^{-1}\\   
+ -R_{bc}^{-1} \widehat{p_{bc}} & R_{bc}^{-1} & 0_{3\times3}\\  
+ -R_{bc}^{-1} \widehat{v_{bc}} & 0_{3\times3} & R_{bc}^{-1}\\   
 \end{bmatrix} \\
 $$
 
 #### Derivative of $d$
 $$
 J^{\mathscr{R}}_{d}=\begin{bmatrix}
- H(\theta_{bc}) & 0_{3\times3} & 0_{3\times3}\\  
+ I_{3\times3} & 0_{3\times3} & 0_{3\times3}\\  
  0_{3\times3} & R_{bc}^{-1} & 0_{3\times3}\\  
  0_{3\times3} & 0_{3\times3} & R_{bc}^{-1}\\   
 \end{bmatrix} \\
 $$
-Where H is the derivative of the exponential map in $\theta$.
-
 
 ## Navigation state prediction error (residual function)
 
@@ -220,12 +224,12 @@ If navigtion $state_j$ is measured by sensors, we can calculate the error betwee
 $$
 r_{jj^*}=\mathscr{L}(s_j,s_j^*) =
 \begin{bmatrix}
- \delta{\theta} \\  
- \delta{p}  \\  
- \delta{v} \\   
+ \Delta{R} \\  
+ \Delta{p}  \\  
+ \Delta{v} \\   
 \end{bmatrix} =
 \begin{bmatrix}
- \log(R_j^{-1} R_j^*) \\  
+ R_j^{-1} R_j^* \\  
  R_j^{-1} (p_j^* - p_j)  \\  
  R_j^{-1} (v_j^* - v_j) \\   
 \end{bmatrix} \\
@@ -234,17 +238,17 @@ Local $\mathscr{L}$  is the inverse function of $\mathscr{R}$, which takes two n
 #### Derivative of an $s_j$
 $$
 J^{\mathscr{L}}_{s_j}=\begin{bmatrix}
- -J^{\log}_{\delta{R}} \delta{R}  & 0_{3\times3} & 0_{3\times3}\\  
- \widehat{\delta{p}} & -I_{3\times3} & 0_{3\times3}\\  
- \widehat{\delta{v}} & 0_{3\times3} &-I_{3\times3}\\   
+ -\Delta{R}  & 0_{3\times3} & 0_{3\times3}\\  
+ \widehat{\Delta{p}} & -I_{3\times3} & 0_{3\times3}\\  
+ \widehat{\Delta{v}} & 0_{3\times3} &-I_{3\times3}\\   
 \end{bmatrix} \\
 $$
 #### Derivative of an $s_j^*$
 $$
 J^{\mathscr{L}}_{s_j^*}=\begin{bmatrix}
- J^{\log}_{\delta{R}} & 0_{3\times3} & 0_{3\times3}\\  
- \widehat{\delta{p}} & \delta{R} & 0_{3\times3}\\  
- \widehat{\delta{v}} & 0_{3\times3} &\delta{R}\\   
+ I_{3\times3}& 0_{3\times3} & 0_{3\times3}\\  
+ 0_{3\times3} & \Delta{R} & 0_{3\times3}\\  
+ 0_{3\times3} & 0_{3\times3} &\Delta{R}\\   
 \end{bmatrix} \\
 $$
 
