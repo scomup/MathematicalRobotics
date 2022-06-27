@@ -10,6 +10,13 @@ from utilities.math_tools import *
 
 class navState:
     def __init__(self,R=np.eye(3),p=np.zeros(3),v=np.zeros(3)):
+        """
+        Check preintegration.md (2)
+        The navigation state combined by attitude R, position p and velocity v
+        """
+        if(R.shape != (3,3) and p.shape != (3,) and v.shape != (3,)):
+            print('Set navsate with a wrong shape.')
+            exit(0)
         self.R = R
         self.p = p
         self.v = v
@@ -18,6 +25,10 @@ class navState:
         return np.hstack([logSO3(self.R),self.p, self.v])
 
     def retract(self, zeta, calc_J = False):
+        """
+        Check preintegration.md (22)(23)(24)
+        Combine 2 navigation states.
+        """
         R_bc = zeta.R
         p_bc = zeta.p
         v_bc = zeta.v
@@ -32,19 +43,22 @@ class navState:
             return state
         else:
             R_cb = R_bc.T
-            J_retract_state = np.zeros([9,9])
+            J_retract_state = np.eye(9)
             J_retract_state[0:3,0:3] = R_cb
             J_retract_state[3:6,3:6] = R_cb
             J_retract_state[6:9,6:9] = R_cb
-            J_retract_state[3:6,0:3] = R_cb.dot(skew(-p_bc))
-            J_retract_state[6:9,0:3] = R_cb.dot(skew(-v_bc))
-            J_retract_delta = np.zeros([9,9])
-            J_retract_delta[0:3,0:3] = np.eye(3)
+            J_retract_state[3:6,0:3] = -R_cb.dot(skew(p_bc))
+            J_retract_state[6:9,0:3] = -R_cb.dot(skew(v_bc))
+            J_retract_delta = np.eye(9)
             J_retract_delta[3:6,3:6] = R_cb
             J_retract_delta[6:9,6:9] = R_cb
             return state, J_retract_state, J_retract_delta
 
     def local(self, state, calc_J = False):
+        """
+        Check preintegration.md (25)(26)(27)
+        Get the difference between 2 navigation states.
+        """
         dR = self.R.T.dot(state.R)
         dp = self.R.T.dot(state.p - self.p)
         dv = self.R.T.dot(state.v - self.v)
@@ -80,7 +94,8 @@ class imuIntegration:
         
     def update(self, acc, gyo, dt):
         """
-        #check imuFactor.pdf: A Simple Euler Scheme (11~13)
+        Check preintegration.md (7)
+        Integrates all the IMU measurements without considering IMU bias and the gravity.
         """
         self.acc_buf.append(acc)
         self.gyo_buf.append(gyo)
@@ -94,7 +109,9 @@ class imuIntegration:
         self.d_pij = self.d_pij + self.d_vij * dt + Ra*dt*dt/2
         self.d_vij = self.d_vij + Ra * dt 
         self.d_tij += dt
-        
+        """
+        Check preintegration.md (8)(9)(10)
+        """
         A = np.eye(9)
         dt22 = 0.5 * dt * dt
         Rahat = R.dot(skew(acc_unbias))
@@ -114,6 +131,10 @@ class imuIntegration:
         
 
     def biasCorrect(self, bias, calc_J = False):
+        """
+        Check preintegration.md (11)~(17)
+        Correct the PIM by a given bias.
+        """
         bacc_inc = bias[0:3] - self.bacc
         bgyo_inc = bias[3:6] - self.bgyo
         d_xi = self.J_zeta_bacc.dot(bacc_inc) + self.J_zeta_bgyo.dot(bgyo_inc)
@@ -128,6 +149,10 @@ class imuIntegration:
             return xi, J_xi_bias
 
     def calcDelta(self, xi, state, calc_J = False):
+        """
+        Check preintegration.md (19)(20)(21)
+        Calculate the delta between two navigation states.
+        """
         p = xi.p
         v = xi.v
         dt = self.d_tij

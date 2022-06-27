@@ -22,7 +22,7 @@ class naviEdge:
         """
         state = nodes[self.i].state
         r, j, _ = state.local(self.z, True)
-        r = np.hstack([logSO3(r.R), r.p, r.v])
+        r = r.vec()
         return r, j
 
 
@@ -41,7 +41,7 @@ class imuEdge:
         bias = nodes[self.k].bias
         statejstar, J_statejstar_statei, J_statejstar_bias = pim.predict(statei, bias, True)
         r, J_local_statej, J_local_statejstar = statej.local(statejstar, True)
-        r = np.hstack([logSO3(r.R), r.p, r.v])
+        r = r.vec()
         J_statei = J_local_statejstar.dot(J_statejstar_statei)
         J_statej = J_local_statej
         J_biasi = J_local_statejstar.dot(J_statejstar_bias)
