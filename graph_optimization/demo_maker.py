@@ -4,60 +4,10 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
+from graph_optimization.demo_pose3d_graph import pose3dEdge, pose3dbetweenEdge, pose3Node
 import quaternion
-import time
 
-class pose3dEdge:
-    def __init__(self, i, z, omega = None):
-        self.i = i
-        self.z = z
-        self.type = 'one'
-        self.omega = omega
-        if(self.omega is None):
-            self.omega = np.eye(self.z.shape[0])
-
-    def residual(self, nodes):
-        """
-        The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
-        """
-        Tzx = np.linalg.inv(expSE3(self.z)).dot(expSE3(nodes[self.i].x))
-        return logSE3(Tzx), np.eye(6)
-
-
-class pose3dbetweenEdge:
-    def __init__(self, i, j, z, omega=None, color = 'black'):
-        self.i = i
-        self.j = j
-        self.z = z
-        self.type = 'two'
-        self.color = color
-        self.omega = omega
-        if(self.omega is None):
-            self.omega = np.eye(self.z.shape[0])
-
-    def residual(self, nodes):
-        """
-        The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
-        """
-        T1 = expSE3(nodes[self.i].x)
-        T2 = expSE3(nodes[self.j].x)
-
-        T12 = np.linalg.inv(T1).dot(T2)
-        T21 = np.linalg.inv(T12)
-        R,t = makeRt(T21)
-        J = np.zeros([6,6])
-        J[0:3,0:3] = R
-        J[0:3,3:6] = skew(t).dot(R)
-        J[3:6,3:6] = R
-        J = -J
-        return logSE3(np.linalg.inv(expSE3(self.z)).dot(T12)), J, np.eye(6)
-
-class pose3Node:
-    def __init__(self, x):
-        self.x = x
-        self.size = x.size
-    def update(self, dx):
-        self.x = logSE3(expSE3(self.x).dot(expSE3(dx)))
+FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
 def draw(figname, gs):
     for n in gs.nodes:
@@ -126,8 +76,8 @@ def find_nearest(data, stamp):
 
 if __name__ == '__main__':
     
-    pose_file = '/home/liu/bag/warehouse/b2_mapping_pose.npy'
-    truth_file = '/home/liu/bag/warehouse/b2_pose.npy'
+    pose_file = FILE_PATH+'/data/ndt_pose.npy'
+    truth_file = FILE_PATH+'/data/truth_pose.npy'
     pose_data = np.load(pose_file) 
     truth_data = np.load(truth_file)
     gs = graphSolver()
@@ -135,7 +85,6 @@ if __name__ == '__main__':
     T0 = None
     T0_idx = 0
     last_marker_T = None
-    #omegaOdom = np.linalg.inv(np.diag(np.ones([6])*1)*1e-4) 
     omegaOdom = np.linalg.inv(np.diag(np.ones(6)*4e-4))
     omegaMaker = np.linalg.inv(np.diag(np.ones(6)*1e-2)) 
     mark_dist = 5

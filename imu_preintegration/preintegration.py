@@ -1,9 +1,5 @@
 import numpy as np
-
-import matplotlib.pyplot as plt
-from gtsam.symbol_shorthand import B, V, X
 import sys,os
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 
