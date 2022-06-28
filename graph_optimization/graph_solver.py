@@ -27,15 +27,9 @@ class graphSolver:
     def getScore(self):
         score = 0
         for edge in self.edges:
-            if(edge.type == 'one'):
-                r, _ = edge.residual(self.nodes)
-                score += r.dot(r)
-            elif(edge.type == 'two'):
-                r, _, _ = edge.residual(self.nodes)
-                score += r.dot(r)
-            elif(edge.type == 'three'):
-                r, _, _, _ = edge.residual(self.nodes)
-                score += r.dot(r)
+            r = edge.residual(self.nodes)[0]
+            omega = edge.omega
+            score += r.dot(omega.dot(r))
         return score
 
 
