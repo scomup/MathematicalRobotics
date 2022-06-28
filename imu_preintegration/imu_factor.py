@@ -16,6 +16,29 @@ class biasNode:
     def update(self, dx):
         self.bias = self.bias + dx
 
+class biasEdge:
+    def __init__(self, i, z, omega = np.eye(6)):
+        self.i = i #bias i
+        self.type = 'one'
+        self.z = z
+        self.omega = omega
+    def residual(self, nodes):
+        bias_i = nodes[self.i].bias
+        r = bias_i - self.z 
+        return r, np.eye(6)
+
+class biasbetweenEdge:
+    def __init__(self, i, j, omega = np.eye(6)):
+        self.i = i #bias i
+        self.j = j #bias j
+        self.type = 'two'
+        self.omega = omega
+    def residual(self, nodes):
+        bias_i = nodes[self.i].bias
+        bias_j = nodes[self.j].bias
+        r = bias_i - bias_j 
+        return r, np.eye(6), -np.eye(6)
+
 class naviEdge:
     def __init__(self, i, z, omega = np.eye(9)):
         self.i = i
@@ -44,13 +67,13 @@ class navibetweenEdge:
         return r, j1, j2
 
 class imuEdge:
-    def __init__(self, i, j, k, z):
+    def __init__(self, i, j, k, z, omega = np.eye(9)):
         self.i = i #state i
         self.j = j #state j
         self.k = k #bias i
         self.z = z #pim between ij
         self.type = 'three'
-        self.omega = np.eye(9)
+        self.omega = omega
     def residual(self, nodes):
         pim = self.z
         statei = nodes[self.i].state
