@@ -51,11 +51,15 @@ We can use gauss-newton method to solve this problem.
 According to gauss-newton method, we need to find the Jacobian matrix of r
 
 
-$$\dot{r} = \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta} \\
-\cong \frac{T_{0}a + T_{0}\widehat{\delta}a - T_{0}a}{\delta}  \\
-= \frac{T_{0}\widehat{\delta}a}{\delta}  \\
-= - \frac{T_{0}\delta\widehat{a}}{\delta}  \\
-= - T_{0}\widehat{a} \tag{8} 
+$$
+\begin{aligned}
+\dot{r} &= \frac{T_{0}\exp\left( \delta \right)a - T_{0}a}{\delta} \\
+&\cong \frac{T_{0}a + T_{0}\widehat{\delta}a - T_{0}a}{\delta}  \\
+&= \frac{T_{0}\widehat{\delta}a}{\delta}  \\
+&= - \frac{T_{0}\delta\widehat{a}}{\delta}  \\
+&= - T_{0}\widehat{a} 
+\end{aligned}
+\tag{8} 
 $$
 
 ### When $\delta \in \mathfrak{so}(3)$
@@ -77,24 +81,31 @@ $$\widehat{\delta} = \begin{bmatrix}
 0 & 0 \\
 \end{bmatrix} \tag{11}$$
 
-$$\dot{r} = \frac{R_{0}\widehat{\delta}a}{\delta}$$
-
-$$= \frac{T_{0}\begin{bmatrix}
+$$
+\begin{aligned}
+\dot{r} 
+&= \frac{R_{0}\widehat{\delta}a}{\delta} \\
+&=\frac{T_{0}\begin{bmatrix}
 [ \omega ]_{\times} & v \\
 0 & 0 \\
-\end{bmatrix}\begin{bmatrix}
+\end{bmatrix}
+\begin{bmatrix}
 a \\
 1 \\
-\end{bmatrix}}{[v,\omega ]} \\
-= \frac{T_{0}\begin{bmatrix}
+\end{bmatrix}}
+{[v,\omega ]} \\
+&= \frac{T_{0}\begin{bmatrix}
 I & [ - a ]_{\times} \\
 0 & 0 \\
 \end{bmatrix}\begin{bmatrix}
 v \\
 \omega \\
 \end{bmatrix}}{[v,\omega ]} \\
-= T_{0}\begin{bmatrix}
+&= T_{0}\begin{bmatrix}
 I & [ - a ]_{\times} \\
 0 & 0 \\
-\end{bmatrix} \tag{12}$$
+\end{bmatrix} 
+\end{aligned}
+\tag{12}
+$$
 

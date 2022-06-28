@@ -79,12 +79,15 @@ Where $A$ and $B$ are the two lie groups, which represent the poses of two nodes
 ### If A and B are SO3
 
 $$
-    \exp(\widehat{J_A\delta}) = (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}(A\exp(\hat{\delta}))^{{-1}}B) \\
-    = B^{-1}AZ Z^{-1}\exp(-\hat{\delta})A^{{-1}}B \\
-    = B^{-1}A\exp(-\hat{\delta})A^{{-1}}B \\
-    = -\exp(B^{-1}A \hat{\delta} A^{{-1}}B) \\
-    = -\exp(\widehat{B^{-1}A\delta})
-     \tag{8}
+\begin{aligned}
+    \exp(\widehat{J_A\delta}) 
+    &= (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}(A\exp(\hat{\delta}))^{{-1}}B) \\
+    &= B^{-1}AZ Z^{-1}\exp(-\hat{\delta})A^{{-1}}B \\
+    &= B^{-1}A\exp(-\hat{\delta})A^{{-1}}B \\
+    &= -\exp(B^{-1}A \hat{\delta} A^{{-1}}B) \\
+    &= -\exp(\widehat{B^{-1}A\delta})
+\end{aligned}
+\tag{8}
 $$
 
 Hence:
@@ -94,9 +97,13 @@ $$
 
 
 $$
-    \exp(\widehat{J_B\delta}) = (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}A^{-1} B \exp{(\hat{\delta}})) \\
-    = B^{-1}AZ Z^{-1}A^{-1} B \exp{(\hat{\delta}}) \\
-    = \exp(\hat{\delta}) \tag{10}
+\begin{aligned}
+    \exp(\widehat{J_B\delta}) 
+    &= (Z^{-1}A^{{-1}}B)^{-1}(Z^{-1}A^{-1} B \exp{(\hat{\delta}})) \\
+    &= B^{-1}AZ Z^{-1}A^{-1} B \exp{(\hat{\delta}}) \\
+    &= \exp(\hat{\delta}) 
+\end{aligned}
+\tag{10}
 $$
 
 Hence:
@@ -135,15 +142,16 @@ $$
 
 We substitute (12) and (13) into (8), we get:
 $$
+\begin{aligned}
     \exp(\widehat{J_A\delta}) 
-    = -\exp(T_{BA} \hat{\delta} T_{BA}^{{-1}}) \\
-    = -\exp(T_{BA} 
+    &= -\exp(T_{BA} \hat{\delta} T_{BA}^{{-1}}) \\
+    &= -\exp(T_{BA} 
           \begin{bmatrix}
             [ \omega ]_+ & v \\
             0 & 0 \\
             \end{bmatrix}
         T_{BA}^{{-1}}) \\
-    = -\exp
+    &= -\exp
         (\begin{bmatrix}
              R & t \\
             0 & 1 \\
@@ -157,7 +165,7 @@ $$
             0 & 1 \\
         \end{bmatrix}
         ) \\
-    = -\exp
+    &= -\exp
         (\begin{bmatrix}
              R[ \omega ]_+ & Rv \\
             0 & 0 \\
@@ -167,37 +175,41 @@ $$
             0 & 1 \\
         \end{bmatrix}
         ) \\
-     = -\exp
+     &= -\exp
         (\begin{bmatrix}
              R[ \omega ]_+R^T & R[ \omega ]_+(-R^Tt)+Rv \\
             0 & 0 \\
         \end{bmatrix}
         ) \quad \\
-     = -\exp
+     &= -\exp
         (\begin{bmatrix}
              [ \omega ]_+ & -[ \omega ]_+t+Rv \\
             0 & 0 \\
         \end{bmatrix}
         ) \quad \\
-     = -\exp
+     &= -\exp
         (\begin{bmatrix}
              [ \omega ]_+ & -[ \omega ]_+t+Rv \\
             0 & 0 \\
         \end{bmatrix}
-        ) \tag{14}
+)
+\end{aligned} 
+\tag{14}
 $$
 
 According to (12), we can rewrite (14) as:
 $$
+\begin{aligned}
 \exp(\widehat{J_A\delta}) 
-=-\exp(\widehat{\begin{bmatrix}  -[ \omega ]_+t+Rv \\ w 
+&=-\exp(\widehat{\begin{bmatrix}  -[ \omega ]_+t+Rv \\ w 
     \end{bmatrix}}) \\
-=-\exp(\widehat{\begin{bmatrix}  -\omega t^{\perp} +Rv \\ w 
+&=-\exp(\widehat{\begin{bmatrix}  -\omega t^{\perp} +Rv \\ w 
     \end{bmatrix}}) \\
-=-\exp(\widehat{
+&=-\exp(\widehat{
     \begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
     \begin{bmatrix}  v\\ w \end{bmatrix}
     })
+\end{aligned} 
 $$
 
 Where $t^{\perp} = [1]_+  t=\begin{bmatrix} -t_2 \\ t_1 \end{bmatrix}$ 
@@ -236,15 +248,16 @@ $v$: the parameters of translation (is a 3d vector).
 
 Similar to (14), we get:
 $$
+\begin{aligned}
     \exp(\widehat{J_A\delta}) 
-    = -\exp(T_{BA} \hat{\delta} T_{BA}^{{-1}}) \\
-    = -\exp(T_{BA} 
+    &= -\exp(T_{BA} \hat{\delta} T_{BA}^{{-1}}) \\
+    &= -\exp(T_{BA} 
           \begin{bmatrix}
             [ \omega ]_{\times} & v \\
             0 & 0 \\
             \end{bmatrix}
         T_{BA}^{{-1}}) \\
-    = -\exp
+    &= -\exp
         (\begin{bmatrix}
              R & t \\
             0 & 1 \\
@@ -258,7 +271,7 @@ $$
             0 & 1 \\
         \end{bmatrix}
         ) \\
-    = -\exp
+    &= -\exp
         (\begin{bmatrix}
              R[ \omega ]_{\times} & Rv \\
             0 & 0 \\
@@ -268,34 +281,37 @@ $$
             0 & 1 \\
         \end{bmatrix}
         ) \\
-     = -\exp
+     &= -\exp
         (\begin{bmatrix}
              R[ \omega ]_{\times} R^T & -R[ \omega ]_{\times}R^Tt+Rv \\
             0 & 0 \\
         \end{bmatrix}
         ) \\
-     = -\exp
+     &= -\exp
         (\begin{bmatrix}
              [ R\omega ]_{\times} & -[ R\omega ]_{\times}t+Rv \\
             0 & 0 \\
         \end{bmatrix}
-        ) \tag{18}
+        ) 
+\end{aligned}
+\tag{18}
 $$
 
 According to (12), we can rewrite (18) as:
 $$
+\begin{aligned}
 \exp(\widehat{J_A\delta}) 
-=-\exp(\widehat{
+&=-\exp(\widehat{
     \begin{bmatrix}
           -[R\omega]_{\times}t+Rv \\
            Rw 
     \end{bmatrix}}) \\
-=-\exp(\widehat{
+&=-\exp(\widehat{
     \begin{bmatrix} 
          [t]_{\times}R\omega  +Rv \\
           Rw 
     \end{bmatrix}}) \\
-=-\exp(\widehat{
+&=-\exp(\widehat{
     \begin{bmatrix}  
         R & [t]_{\times}R \\
         0 & R 
@@ -304,7 +320,9 @@ $$
         v \\
         w
     \end{bmatrix}
-    })\tag{19}
+    })
+\end{aligned}
+\tag{19}
 $$
 
 Hence: 

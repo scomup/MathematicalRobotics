@@ -425,7 +425,7 @@ According to A2-2 and (22):
 
 $$
  \frac{\partial p_{bc}}{\partial v_{nb}} =
- \frac{ R_{nb}^{-1}(v_{nb} + R_{nb}\delta)- R_{nb}^{-1}v_{nb}}{\delta} \\
+ \frac{ R_{nb}^{-1}(v_{nb} + R_{nb}\delta v_b)- R_{nb}^{-1}v_{nb}}{\delta v_b} \\
  = I_{3\times3}\Delta{t}
 $$
 
