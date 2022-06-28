@@ -61,10 +61,16 @@ class navibetweenEdge:
     def residual(self, nodes):
         state_i = nodes[self.i].state
         state_j = nodes[self.j].state
-        r, j1, j2 = state_i.local(state_j, True)
-        r = self.z.local(r, False)
-        r = r.vec()
-        return r, j1, j2
+        r = self.z.local(state_i.local(state_j)).vec()
+        Ji = np.eye(9)
+        Rji = state_j.R.T.dot(state_i.R)
+        Ji[0:3,0:3] = -Rji
+        Ji[3:6,3:6] = -Rji
+        Ji[6:9,6:9] = -Rji
+        Ji[3:6,0:3] = Rji.dot(skew(state_j.p-state_i.p))
+        Ji[6:9,0:3] = Rji.dot(skew(state_j.v-state_i.v))
+        Jj = np.eye(9)
+        return r, Ji, Jj
 
 class imuEdge:
     def __init__(self, i, j, k, z, omega = np.eye(9)):
@@ -94,3 +100,52 @@ def to2d(x):
     x2d[0:2] = x[3:5]
     x2d[2] = theta
     return x2d
+
+def func(a,b,z):
+    return z.local(a.local(b))
+
+def numericalDerivativeA(func, a, b, z):
+    delta = 1e-5
+    m = func(a, b, z).vec().shape[0]
+    n = a.vec().shape[0]
+    J = np.zeros([m,n])
+    for j in range(n):
+        dx = np.zeros(n)
+        dx[j] = delta
+        ds = navState()
+        ds.set(dx)
+        J[:,j] = func(a,b,z).local(func(a.retract(ds),b,z)).vec()/delta
+    return J
+
+def numericalDerivativeB(func, a, b, z):
+    delta = 1e-5
+    m = func(a, b, z).vec().shape[0]
+    n = a.vec().shape[0]
+    J = np.zeros([m,n])
+    for j in range(n):
+        dx = np.zeros(n)
+        dx[j] = delta
+        ds = navState()
+        ds.set(dx)
+        J[:,j] = func(a,b,z).local(func(a,b.retract(ds),z)).vec()/delta
+    return J
+"""
+Ja =
+[ [-Rb.T*Ra, 0, 0],
+  [Rb.T*Ra*skew(pb-pa),-Rb.T*Ra,0],
+  [Rb.T*Ra*skew(vb-va),0,-Rb.T*Ra]]
+"""
+"""
+Jb =
+[ [I 0, 0],
+  [0,I,0],
+  [0,0,I]
+"""
+if __name__ == '__main__':
+    a = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
+    b = navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.5,0.6,0.7]))
+    z = navState(expSO3(np.array([0.3,0.4,0.5])),np.array([0.5,0.6,0.7]),np.array([0.7,0.8,0.9]))
+    Ja = numericalDerivativeA(func,a,b,z)
+    Jb = numericalDerivativeB(func,a,b,z)
+    
+    
