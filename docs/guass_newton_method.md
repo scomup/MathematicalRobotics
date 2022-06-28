@@ -24,7 +24,7 @@ $$
 g = \sum g_i= \sum J_i^T \Sigma r_i \tag{3}
 $$
 $$ 
-H  = \sum H_i \approx J_i^T \Sigma J_i  \tag{4}
+H  = \sum H_i \approx \sum J_i^T \Sigma J_i  \tag{4}
 $$
 * r is the residual vector. 
 * J is the jacobian matrix of r.
