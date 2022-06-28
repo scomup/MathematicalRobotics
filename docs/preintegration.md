@@ -326,7 +326,7 @@ Proof of (8):
 According to A1-1:
 $$
 \frac{\partial{R_{k+1}}}{\partial{R_{k}}} 
-= -\exp(\omega^b_k \Delta t) \\
+= \exp(-\omega^b_k \Delta t) \\
 = I_{3\times3}-\Delta{t}\widehat{\omega_{k}^{b}}
 $$
 
