@@ -52,7 +52,7 @@ class naviEdge:
         return r, j
 
 class velocityEdge:
-    def __init__(self, i, j, z, omega = np.eye(9)):
+    def __init__(self, i, j, z, omega = np.eye(3)):
         self.i = i #state i
         self.j = j #state j
         self.z = z #time
@@ -61,15 +61,13 @@ class velocityEdge:
     def residual(self, nodes):
         state_i = nodes[self.i].state
         state_j = nodes[self.j].state
-        t_inv = 1/self.z
-        r = np.zeros(9)
-        r[6:9] = state_i.v - (state_j.p - state_i.p)*t_inv
-        Ji = np.zeros([9,9])
-        Ji[6:9,3:6] = np.eye(3)*t_inv
-        Ji[6:9,6:9] = np.eye(3)
-        Jj = np.zeros([9,9])
-        Jj[6:9,3:6] = -np.eye(3)*t_inv
-        Jj = np.eye(9)
+        t_inv = 1./self.z
+        r = state_j.v - (state_j.p - state_i.p)*t_inv
+        Ji = np.zeros([3,9])
+        Jj = np.zeros([3,9])
+        Ji[:,3:6] = state_i.R*t_inv
+        Jj[:,3:6] = -state_j.R*t_inv
+        Jj[:,6:9] = state_j.R
         return r, Ji, Jj
 
 

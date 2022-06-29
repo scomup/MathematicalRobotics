@@ -60,8 +60,36 @@ def draw_bias(figname, gs):
     axes.plot(bias[:,4], label='bias gyo y')
     axes.plot(bias[:,5], label='bias gyo z')
     axes.legend()
+def draw_vel(figname, gs):
+    fig = plt.figure(figname)
+    axes = fig.gca()
+    vel = []
+    for n in gs.nodes:
+        if(not isinstance(n, naviNode)):
+            continue
+        vel.append(n.state.v)
+    vel = np.array(vel)
+    axes.plot(vel[:,0], label='vel x')
+    axes.plot(vel[:,1], label='vel y')
+    axes.plot(vel[:,2], label='vel z')
+    axes.legend()
+"""
+gs = graphSolver()
+omegaNdtPose = np.linalg.inv(np.diag(np.array([1e-2,1e-2,1e-2,1e-2,1e-2,1e-2,100,100,100])))
+omegavelocity = np.linalg.inv(np.diag(np.ones(3)*0.1))
 
+statei = navState(expSO3(np.array([0,0,0])),np.array([1,2,3]),np.array([0,0,0]))
+statej = navState(expSO3(np.array([0,0,0])),np.array([1.1,2.2,3.3]),np.array([0,0,0]))
+gs.addNode(naviNode(statei))
+gs.addNode(naviNode(statej))
+gs.addEdge(naviEdge(0, statei,omegaNdtPose))
+gs.addEdge(naviEdge(1, statej,omegaNdtPose))
+gs.addEdge(velocityEdge(0,1, 0.01,omegavelocity))
 
+gs.solve()
+print(gs.nodes[1].state.vec()[6:9]) 
+exit(0)
+"""
 if __name__ == '__main__':
     imuIntegrator = imuIntegration(9.80)
     pose_file = FILE_PATH+'/data/ndt_pose.npy'
@@ -72,8 +100,8 @@ if __name__ == '__main__':
     omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-2))
     omegaBias = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
     omegaPIM = np.linalg.inv(np.diag(np.array([1e-2,1e-2,1e-2,1e-2,1e-2,1e-2,1,1,1])))
-    omegaNdtPose = np.linalg.inv(np.diag(np.array([1e-2,1e-2,1e-2,1e-2,1e-2,1e-2,10,10,10])))
-    omegavelocity = np.linalg.inv(np.diag(np.ones(9)*10))
+    omegaNdtPose = np.linalg.inv(np.diag(np.array([1e-2,1e-2,1e-2,1e-2,1e-2,1e-2,100,100,100])))
+    omegavelocity = np.linalg.inv(np.diag(np.ones(3)*0.1))
 
 
     pose_data = np.load(pose_file) 
@@ -105,13 +133,13 @@ if __name__ == '__main__':
             if(dist < 0.1):
                 continue
             vel = (p[1:4] - pre_p)/dt
-            state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],vel)
+            state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],np.array([0,0,0]))
             cur_state_idx = gs.addNode(naviNode(state)) # add node to graph
             cur_bias_idx = gs.addNode(biasNode(np.zeros(6)))
-            gs.addEdge(naviEdge(cur_state_idx, state,omegaNdtPose)) 
             imuIntegrator = getPIM(imu_data, pre_stamp, cur_stamp)
+            gs.addEdge(naviEdge(cur_state_idx, state,omegaNdtPose))
             gs.addEdge(imuEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,omegaPIM))
-            #gs.addEdge(velocityEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij,omegavelocity))
+            gs.addEdge(velocityEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, omegavelocity))#omegavelocity
             gs.addEdge(biasbetweenEdge(pre_bias_idx, cur_bias_idx, np.eye(6)))
             pre_state_idx = cur_state_idx
             pre_stamp = cur_stamp
@@ -128,7 +156,8 @@ if __name__ == '__main__':
     gs.solve()
     draw('imu pose', gs,'green','after')
     plt.grid()
-    draw_bias('bias', gs)
+    #draw_bias('bias', gs)
+    draw_vel('vel', gs)
     plt.grid()
     plt.show()
 
