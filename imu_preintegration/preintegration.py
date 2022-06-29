@@ -194,6 +194,9 @@ class imuIntegration:
             J_predict_bias = J_retract_delta.dot(J_delta_xi.dot(J_xi_bias))
             return state_j, J_predict_state, J_predict_bias
 
+def find_nearest(data, stamp):
+    idx = (np.abs(data[:,0] - stamp)).argmin()
+    return data[idx,:]
 
 """
 Ja =
@@ -208,91 +211,14 @@ Jb =
   [0,0,I]
 """
 if __name__ == '__main__':
-    def numericalDerivativeA(func, a, b):
-        delta = 1e-8
-        m = func(a, b).vec().shape[0]
-        n = a.vec().shape[0]
-        J = np.zeros([m,n])
-        for j in range(n):
-            dx = np.zeros(n)
-            dx[j] = delta
-            ds = navState()
-            ds.set(dx)
-            J[:,j] = func(a,b).local(func(a.retract(ds),b)).vec()/delta
-        return J
-
-    def numericalDerivativeB(func, a, b):
-        delta = 1e-8
-        m = func(a, b).vec().shape[0]
-        n = a.vec().shape[0]
-        J = np.zeros([m,n])
-        for j in range(n):
-            dx = np.zeros(n)
-            dx[j] = delta
-            ds = navState()
-            ds.set(dx)
-            Rb = b.R
-            pb = b.p
-            vb = b.v
-            dR = ds.R
-            dp = ds.p
-            dv = ds.v
-            R_nc = Rb.dot(dR)
-            p_nc = pb + dp
-            v_nc = vb + dv
-            b_dx = navState(R_nc, p_nc, v_nc)
-
-
-            J[:,j] = func(a,b).local(func(a,b_dx)).vec()/delta
-        return J
-        
-    def numericalDerivativeB2(func, a, b):
-        delta = 1e-8
-        m = func(a, b).vec().shape[0]
-        n = b.shape[0]
-        J = np.zeros([m,n])
-        for j in range(n):
-            dx = np.zeros(n)
-            dx[j] = delta
-            J[:,j] = func(a,b).local(func(a,b + dx)).vec()/delta
-        return J
 
     state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
     state_j = navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.5,0.6,0.7]))
     print('test state retract')
-    r, Ji, Jj = state_i.retract(state_j,True)
-    Jim =  numericalDerivativeA(navState.retract, state_i, state_j)
-    Jjm =  numericalDerivativeB(navState.retract, state_i, state_j)
-    if(np.linalg.norm(Jim - Ji) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    if(np.linalg.norm(Jjm - Jj) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-
-
     bias = np.array([0.1,0.2,0.3,-0.1,-0.2,-0.3])
     ipi = imuIntegration(9.8)
     ipi.update(np.array([0.1,0.1,0.1]),np.array([0.2,0.2,0.2]),0.1)
     ipi.update(np.array([0.1,0.1,0.1]),np.array([0.2,0.2,0.2]),0.1)
     ipi.update(np.array([0.1,0.1,0.1]),np.array([0.2,0.2,0.2]),0.1)
-    state_j, J_predict_state, J_predict_bias = ipi.predict(state_i, bias,True)
-    J_predict_state_numerical = numericalDerivativeA(ipi.predict, state_i, bias)
-    J_predict_bias_numerical = numericalDerivativeB2(ipi.predict, state_i, bias)
-    print('test J_predict_state')
-    if(np.linalg.norm(J_predict_state_numerical - J_predict_state) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    print('test J_predict_bias')
-    if(np.linalg.norm(J_predict_bias_numerical - J_predict_bias) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-
-    
-    #Ja = numericalDerivativeA(func,a,b,z)
-    #Jb = numericalDerivativeB(func,a,b,z)
+    state_j, J_predict_state, J_predict_bias = ipi.predict(state_i, bias, True)
     

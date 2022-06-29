@@ -69,19 +69,24 @@ if __name__ == '__main__':
     imu_file = FILE_PATH+'/data/imu_data.npy'
 
     #omegaOdom = np.linalg.inv(np.diag(np.ones(9)*4e-4))
-    #omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-2))
+    omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-2))
     omegaBias = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
     omegaPIM = np.linalg.inv(np.diag(np.array([1e-2,1e-2,1e-2,1e-2,1e-2,1e-2,1,1,1])))
+    omegaNdtPose = np.linalg.inv(np.diag(np.array([1e-2,1e-2,1e-2,1e-2,1e-2,1e-2,10,10,10])))
+    omegavelocity = np.linalg.inv(np.diag(np.ones(9)*10))
 
 
     pose_data = np.load(pose_file) 
     imu_data = np.load(imu_file)
+    truth_data = np.load(truth_file)
     gs = graphSolver()
     n= pose_data.shape[0]
     imu_group = []
     begin_idx = 0
     pre_state_idx = 0
     pre_stamp = 0
+    mark_dist = 2
+    last_marker = None
     for i in range(n):
         p = pose_data[i]
         cur_stamp = p[0]
@@ -91,7 +96,7 @@ if __name__ == '__main__':
             pre_bias_idx = gs.addNode(biasNode(np.zeros(6)))
             gs.addEdge(naviEdge(pre_state_idx, state)) 
             gs.addEdge(biasEdge(pre_bias_idx, np.zeros(6), omegaBias))
-
+            last_marker = state
             pre_stamp = cur_stamp
         else:
             pre_p = gs.nodes[pre_state_idx].state.p
@@ -103,12 +108,22 @@ if __name__ == '__main__':
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],vel)
             cur_state_idx = gs.addNode(naviNode(state)) # add node to graph
             cur_bias_idx = gs.addNode(biasNode(np.zeros(6)))
-            gs.addEdge(naviEdge(cur_state_idx, state)) 
+            gs.addEdge(naviEdge(cur_state_idx, state,omegaNdtPose)) 
             imuIntegrator = getPIM(imu_data, pre_stamp, cur_stamp)
             gs.addEdge(imuEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,omegaPIM))
+            #gs.addEdge(velocityEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij,omegavelocity))
             gs.addEdge(biasbetweenEdge(pre_bias_idx, cur_bias_idx, np.eye(6)))
             pre_state_idx = cur_state_idx
             pre_stamp = cur_stamp
+
+            #if( np.linalg.norm(last_marker.local(state).p)>mark_dist):
+            #    last_marker = state
+            #    marker = find_nearest(truth_data, p[0])
+            #    marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
+            #    #marker_T[0:3,3] += np.random.normal(0, 0.01, 3)
+            #    gs.addEdge(naviEdge(cur_state_idx, marker, omegaMaker)) # add prior pose to graph
+
+
     draw('imu pose', gs,'red','before')
     gs.solve()
     draw('imu pose', gs,'green','after')
