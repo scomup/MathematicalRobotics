@@ -384,4 +384,21 @@ if __name__ == '__main__':
     else:
         print('NG')
 
+    print('test delta')
+    xi = navDelta(expSO3(np.array([0.5,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
+    state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
+    imu = imuIntegration(9.8)
+    imu.d_tij = 1
+    r, Ja, Jb =  imu.calcDelta(xi, state_i, True)
+
+    Jam =  numericalDerivative(imu.calcDelta, [xi, state_i],0)
+    Jbm =  numericalDerivative(imu.calcDelta, [xi, state_i],1)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
     
