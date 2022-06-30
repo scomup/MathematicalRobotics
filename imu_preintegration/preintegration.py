@@ -2,7 +2,58 @@ import numpy as np
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
+#from __future__ import annotations
+from typing import get_type_hints
 
+class navDelta:
+    def __init__(self,R=np.eye(3),p=np.zeros(3,),v=np.zeros(3,)):
+        if(R.shape != (3,3) and p.shape != (3,) and v.shape != (3,)):
+            print('Set navDelta with a wrong shape.')
+            exit(0)
+        self.R = R
+        self.p = p
+        self.v = v
+
+    def vec(self):
+        return np.hstack([logSO3(self.R),self.p, self.v])
+
+    def set(self, x):
+        self.R = expSO3(x[0:3])
+        self.p = x[3:6]
+        self.v = x[6:9]
+
+    def retract(self:'navDelta', b: 'navDelta', calc_J = False) ->'navDelta':
+        R_j = b.R
+        p_j = b.p
+        v_j = b.v
+        R_i = self.R
+        p_i = self.p
+        v_i = self.v
+        R = R_i.dot(R_j)
+        p = p_i + p_j
+        v = v_i + v_j
+        state = navDelta(R, p, v)
+        if(calc_J == False):
+            return state
+        else:
+            J_retract_i = np.eye(9)
+            J_retract_i[0:3,0:3] = R_j.T
+            J_retract_j = np.eye(9)
+            return state, J_retract_i, J_retract_j
+
+    def local(self:'navDelta', state: 'navDelta', calc_J = False) ->'navDelta':
+        dR = self.R.T.dot(state.R)
+        dp = state.p - self.p
+        dv = state.v - self.v
+        delta = navState(dR, dp, dv)
+        if(calc_J == False):
+            return delta
+        else:
+            J_local_i = -np.eye(9)
+            J_local_i[0:3,0:3] = -dR.T
+            J_local_j = np.eye(9)
+            J_local_j[0:3,0:3] = np.eye(3)
+            return delta, J_local_i, J_local_j
 
 class navState:
     def __init__(self,R=np.eye(3),p=np.zeros(3,),v=np.zeros(3,)):
@@ -25,11 +76,14 @@ class navState:
         self.p = x[3:6]
         self.v = x[6:9]
 
-    def retract(self, zeta, calc_J = False):
+    def retract(self:'navState', zeta: navDelta, calc_J = False) -> 'navState':
         """
         Check preintegration.md (22)(23)(24)
         Combine 2 navigation states.
         """
+        if(not isinstance(zeta, navDelta)):
+            print('zeta must be navDelta.')
+            exit(0)
         R_bc = zeta.R
         p_bc = zeta.p
         v_bc = zeta.v
@@ -55,15 +109,18 @@ class navState:
             J_retract_delta[6:9,6:9] = R_cb
             return state, J_retract_state, J_retract_delta
 
-    def local(self, state, calc_J = False):
+    def local(self:'navState', state: 'navState', calc_J = False) -> navDelta:
         """
         Check preintegration.md (25)(26)(27)
         Get the difference between 2 navigation states.
         """
+        if(not isinstance(state, navState)):
+            print('state must be navState.')
+            exit(0)
         dR = self.R.T.dot(state.R)
         dp = self.R.T.dot(state.p - self.p)
         dv = self.R.T.dot(state.v - self.v)
-        delta = navState(dR, dp, dv)
+        delta = navDelta(dR, dp, dv)
         if(calc_J == False):
             return delta
         else:
@@ -76,6 +133,63 @@ class navState:
             J_local_statej[3:6,3:6] = dR
             J_local_statej[6:9,6:9] = dR
             return delta, J_local_statei, J_local_statej
+
+class navDelta:
+    def __init__(self,R=np.eye(3),p=np.zeros(3,),v=np.zeros(3,)):
+        if(R.shape != (3,3) and p.shape != (3,) and v.shape != (3,)):
+            print('Set navDelta with a wrong shape.')
+            exit(0)
+        self.R = R
+        self.p = p
+        self.v = v
+
+    def vec(self):
+        return np.hstack([logSO3(self.R),self.p, self.v])
+
+    def set(self, x):
+        self.R = expSO3(x[0:3])
+        self.p = x[3:6]
+        self.v = x[6:9]
+
+    def retract(self, b: navDelta, calc_J = False)-> navDelta:
+        if(not isinstance(b, navDelta)):
+            print('b must be navDelta.')
+            exit(0)
+        R_j = b.R
+        p_j = b.p
+        v_j = b.v
+        R_i = self.R
+        p_i = self.p
+        v_i = self.v
+        R = R_i.dot(R_j)
+        p = p_i + p_j
+        v = v_i + v_j
+        state = navDelta(R, p, v)
+        if(calc_J == False):
+            return state
+        else:
+            J_retract_i = np.eye(9)
+            J_retract_i[0:3,0:3] = R_j.T
+            J_retract_j = np.eye(9)
+            return state, J_retract_i, J_retract_j
+
+    def local(self, b: navDelta, calc_J = False)-> navDelta:
+        if(not isinstance(b, navDelta)):
+            print('b must be navDelta.')
+            exit(0)
+        dR = self.R.T.dot(b.R)
+        dp = b.p - self.p
+        dv = b.v - self.v
+        delta = navState(dR, dp, dv)
+        if(calc_J == False):
+            return delta
+        else:
+            J_local_i = -np.eye(9)
+            J_local_i[0:3,0:3] = -dR.T
+            J_local_j = np.eye(9)
+            J_local_j[0:3,0:3] = np.eye(3)
+            return delta, J_local_i, J_local_j
+
 
 class imuIntegration:
     def __init__(self,G):
@@ -142,7 +256,7 @@ class imuIntegration:
         Rij_unbias = self.d_Rij.dot(expSO3(d_xi[0:3]))
         pij_unbias = self.d_pij + d_xi[3:6]
         vij_unbias = self.d_vij + d_xi[6:9]
-        xi = navState(Rij_unbias,pij_unbias,vij_unbias)
+        xi = navDelta(Rij_unbias,pij_unbias,vij_unbias)
         if(calc_J == False):
             return xi
         else:
@@ -162,7 +276,7 @@ class imuIntegration:
         v_nb = state.v
         p_bc = p + dt * R_bn.dot(v_nb) + dt22 * R_bn.dot(self.gravity)
         v_bc = v + dt * R_bn.dot(self.gravity)
-        delta = navState(xi.R,p_bc,v_bc)
+        delta = navDelta(xi.R,p_bc,v_bc)
         if(calc_J == False):
             return delta
         else:
@@ -198,27 +312,86 @@ def find_nearest(data, stamp):
     idx = (np.abs(data[:,0] - stamp)).argmin()
     return data[idx,:]
 
-"""
-Ja =
-[ [-Rb.T*Ra, 0, 0],
-  [Rb.T*Ra*skew(pb-pa),-Rb.T*Ra,0],
-  [Rb.T*Ra*skew(vb-va),0,-Rb.T*Ra]]
-"""
-"""
-Jb =
-[ [I 0, 0],
-  [0,I,0],
-  [0,0,I]
-"""
-if __name__ == '__main__':
 
+if __name__ == '__main__':
+    def numericalDerivativeA(func, a, b):
+        delta = 1e-8
+        m = func(a, b).vec().shape[0]
+        n = a.vec().shape[0]
+        J = np.zeros([m,n])
+        for j in range(n):
+            dx = np.zeros(n)
+            dx[j] = delta
+            dd = navDelta()
+            dd.set(dx)
+            J[:,j] = func(a,b).local(func(a.retract(dd),b)).vec()/delta
+        return J
+
+    def numericalDerivativeB(func, a, b):
+        delta = 1e-8
+        m = func(a, b).vec().shape[0]
+        n = a.vec().shape[0]
+        J = np.zeros([m,n])
+        for j in range(n):
+            dx = np.zeros(n)
+            dx[j] = delta
+            dd = navDelta()
+            dd.set(dx)
+            J[:,j] = func(a,b).local(func(a,b.retract(dd))).vec()/delta
+
+        return J
+        
+    state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
+    delta = navDelta(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.5,0.6,0.7]))
+    print('test state retract')
+    r, Ja, Jb = state_i.retract(delta,True)
+    Jam =  numericalDerivativeA(navState.retract, state_i, delta)
+    Jbm =  numericalDerivativeB(navState.retract, state_i, delta)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    print('test state local')
     state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
     state_j = navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.5,0.6,0.7]))
-    print('test state retract')
+    r, Ja, Jb = state_i.local(state_j,True)
+    Jam =  numericalDerivativeA(navState.local, state_i, state_j)
+    Jbm =  numericalDerivativeB(navState.local, state_i, state_j)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    """
     bias = np.array([0.1,0.2,0.3,-0.1,-0.2,-0.3])
     ipi = imuIntegration(9.8)
     ipi.update(np.array([0.1,0.1,0.1]),np.array([0.2,0.2,0.2]),0.1)
     ipi.update(np.array([0.1,0.1,0.1]),np.array([0.2,0.2,0.2]),0.1)
     ipi.update(np.array([0.1,0.1,0.1]),np.array([0.2,0.2,0.2]),0.1)
-    state_j, J_predict_state, J_predict_bias = ipi.predict(state_i, bias, True)
+    state_j, J_predict_state, J_predict_bias = ipi.predict(state_i, bias,True)
+    J_predict_state_numerical = numericalDerivativeA(ipi.predict, state_i, bias)
+    J_predict_bias_numerical = numericalDerivativeB2(ipi.predict, state_i, bias)
+    print('test J_predict_state')
+    if(np.linalg.norm(J_predict_state_numerical - J_predict_state) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    print('test J_predict_bias')
+    if(np.linalg.norm(J_predict_bias_numerical - J_predict_bias) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    """
+
+    
+    #Ja = numericalDerivativeA(func,a,b,z)
+    #Jb = numericalDerivativeB(func,a,b,z)
     

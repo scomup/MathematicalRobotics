@@ -292,7 +292,7 @@ $$
 
 # Appendix
 
-### A-1. Proof of (8)(9)(10)
+### A-1. Proof of [Preintegration measurement (PIM)] (8)(9)(10)
 $A$ and $B$ are the two lie groups: $\varphi(A,B) = AB $
 $$
 \begin{aligned}
@@ -322,7 +322,7 @@ $$
    J_B = I 
    \tag{A1-2}
 $$
-Proof of (8):
+#### Proof of (8):
 According to A1-1:
 $$
 \frac{\partial{R_{k+1}}}{\partial{R_{k}}} 
@@ -364,7 +364,7 @@ $$
 = -R_{k}\widehat{a_{k}^{b}}\Delta{t} 
 $$
 
-Proof of (9):
+#### Proof of (9):
 According to A1-4:
 $$
 \frac{\partial{p_{k+1}}}{\partial{a^b_k}} 
@@ -376,14 +376,14 @@ $$
 = R_{k}\Delta{t}
 $$
 
-Proof of (10):
+#### Proof of (10):
 According to A1-2:
 $$
 \frac{\partial{R_{k+1}}}{\partial{\omega^b_k}} 
 = I_{3 \times 3}\Delta{t}
 $$
 
- ### A-2. Proof of (20)
+ ### A-2. Proof of [Delta between two states] (20)
 
 $A$ is a lie group, p is a vector: $\varphi(A,p) = A^{-1}p$
 
@@ -409,6 +409,15 @@ J_p
 \end{aligned}
 \tag{A2-2}
 $$
+#### Proof of  (20)
+The $\mathscr{D}$ function:
+$$
+\mathscr{D}(\xi,s_i)=\begin{bmatrix}
+R_{bc}^{\xi}\\  
+p_{bc}^{\xi} + R_{nb}^{-1} v_{nb} \Delta{t} + R_{nb}^{-1} g \frac{\Delta{t}^2}{2} \\  
+v_{bc}^{\xi} + R_{nb}^{-1} g \Delta{t}\\   
+\end{bmatrix} 
+$$
 
 According to A2-1: 
 $$
@@ -429,24 +438,37 @@ $$
  = I_{3\times3}\Delta{t}
 $$
 
- ### A-3. Proof of (23)
+ ### A-3. Proof of Retraction $\mathscr{R}$ (23)(24)
+ The $\mathscr{R}$ function:
+ $$
+\begin{aligned}
+R_{nc}^{*} &= R_{nb}R_{bc} \\
+p_{nc}^{*} &= p_{nb} + R_{nb} p_{bc} \\
+v_{nc}^{*} &= v_{nb} + R_{nb} v_{bc} 
+\end{aligned}
+$$
+
+The Jacobian of x for F:
+$$
+J^F_x
+=\frac{\mathscr{L}(F(x),F(\mathscr{R(x,\delta{x})}))}{\delta x}
+\tag{A3-1}
+$$
+
+#### Proof of $J^\mathscr{R}_{s_i}$(23):
 According to A1-1: 
 $$
 \frac{\partial{R^*_{nc}}}{\partial R_{nb}} = R_{bc}^{-1}
 $$
 
+According to A2-2 and A3-1: 
 $$
-\frac{\partial{p_{bc}^*}}{\partial R_{nb}} =
-\widehat{R_{nb}^{-1}g} \Delta{t}
-$$
-According to A2-2 and (25): 
-$$
-\frac{\partial{p_{bc}^*}}{\partial R_{nb}} =
-\frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})p_{bc}- R_{nb}p_{bc})}{\delta \theta_{b}} \\
+\frac{\partial{p_{nc}^*}}{\partial R_{nb}} 
+=\frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})p_{bc}- R_{nb}p_{bc})}{\delta \theta_{b}} \\
 = -R^{-1}_{bc} \widehat{p_{bc}}
 $$
 $$
-\frac{\partial{v_{bc}^*}}{\partial R_{nb}} =
+\frac{\partial{v_{nc}^*}}{\partial R_{nb}} =
 \frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})v_{bc}- R_{nb}v_{bc})}{\delta \theta_{b}} \\
 = -R^{-1}_{bc} \widehat{v_{bc}}
 $$
@@ -464,9 +486,9 @@ $$
 = R^{-1}_{bc}
 $$
 
- ### A-4. Proof of (24)
+ #### Proof of $J^\mathscr{R}_{d}$(24)
 
-According to A2-2 and (25): 
+According to A2-2 and A3-1: 
 $$
 \frac{\partial{p_{nc}^*}}{\partial p_{bc}} =
 \frac{ R_{nc}^{-1}( R_{nb} (p_{bc} + \delta p_{b})- R_{nb}p_{bc})}{\delta p_{b}} \\
@@ -476,6 +498,22 @@ $$
 \frac{\partial{v_{nc}^*}}{\partial v_{b}} =
 \frac{ R_{nc}^{-1}( R_{nb} (v_{bc} + \delta v_{b})- R_{nb}v_{bc})}{\delta v_{b}} \\
 = R^{-1}_{bc}
+$$
+
+ ### A-4. Proof of Local $\mathscr{L}$ (23)(24)
+ The $\mathscr{L}$ function:
+ $$
+r_{jj^*}=\mathscr{L}(s_j,s_j^*) =
+\begin{bmatrix}
+ \Delta{R} \\  
+ \Delta{p}  \\  
+ \Delta{v} \\   
+\end{bmatrix} =
+\begin{bmatrix}
+ R_j^{-1} R_j^* \\  
+ R_j^{-1} (p_j^* - p_j)  \\  
+ R_j^{-1} (v_j^* - v_j) \\   
+\end{bmatrix} 
 $$
 
 
