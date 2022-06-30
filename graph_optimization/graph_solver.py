@@ -88,6 +88,9 @@ class graphSolver:
                 g[s_j:e_j] += jacobian_j.T.dot(omega.dot(r))
                 g[s_k:e_k] += jacobian_k.T.dot(omega.dot(r))
                 score += r.dot(omega.dot(r))
+        #import matplotlib.pyplot as plt
+        #plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
+        #plt.show()
         #dx = np.linalg.solve(H, -g)
         #much faster than np.linalg.solve!
         dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)

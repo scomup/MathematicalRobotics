@@ -57,7 +57,7 @@ A &= \frac{\partial{\zeta_{k+1}}}{\partial \zeta_{k}}  \\
  \frac{\partial{v_{k+1}}}{\partial{R_{k}}}  & \frac{\partial{v_{k+1}}}{\partial{p_{k}}} &  \frac{\partial{v_{k+1}}}{\partial{v_{k}}}\\   
 \end{bmatrix} \\
 &=\begin{bmatrix}
- I_{3\times3}-\Delta{t}\widehat{\omega_{k}^{b}}  & 0_{3\times3} & 0_{3\times3}\\  
+ \exp{(-\omega^b_k\Delta{t})}  & 0_{3\times3} & 0_{3\times3}\\  
  -R_{k}\widehat{a_{k}^{b}}\frac{\Delta{t}}{2}^{2} & I_{3\times3} &  I_{3\times3} \Delta{t}\\  
  -R_{k}\widehat{a_{k}^{b}}\Delta{t}  &  0_{3\times3} &  I_{3\times3}\\   
 \end{bmatrix}
@@ -89,12 +89,15 @@ C = \frac{\partial{\zeta_{k+1}}}{\partial \omega^b_k} =
  \frac{\partial{v_{k+1}}}{\partial{\omega^b_k}}  \\   
 \end{bmatrix}  
 =\begin{bmatrix}
- I_{3\times3}\Delta{t} \\  
+ H(\omega^b_k)\Delta{t} \\  
  0_{3\times3}  \\  
  0_{3\times3}  \\   
 \end{bmatrix} 
 \tag{10}
 $$
+
+Where $H$ is the Jocabian for $\exp$: $\exp(a+\delta{x}) = \exp(a) + H(a)\delta{x}$
+
 ### Bias correct
 We want correct $\zeta$ by a given accelerometer and gyroscope bias.   
 $$
@@ -322,7 +325,8 @@ $$
    J_B = I 
    \tag{A1-2}
 $$
-#### Proof of (8):
+
+#### Proof of (8) $J_{\zeta_k}^{\zeta_{k+1}}$:
 According to A1-1:
 $$
 \frac{\partial{R_{k+1}}}{\partial{R_{k}}} 
@@ -364,7 +368,7 @@ $$
 = -R_{k}\widehat{a_{k}^{b}}\Delta{t} 
 $$
 
-#### Proof of (9):
+#### Proof of (9) $J_{a^b_k}^{\zeta_{k+1}}$:
 According to A1-4:
 $$
 \frac{\partial{p_{k+1}}}{\partial{a^b_k}} 
@@ -376,7 +380,7 @@ $$
 = R_{k}\Delta{t}
 $$
 
-#### Proof of (10):
+#### Proof of (10) $J_{\omega^b_k}^{\zeta_{k+1}}$:
 According to A1-2:
 $$
 \frac{\partial{R_{k+1}}}{\partial{\omega^b_k}} 
@@ -409,7 +413,7 @@ J_p
 \end{aligned}
 \tag{A2-2}
 $$
-#### Proof of  (20)
+#### Proof of (20) $J_{s_i}^{\mathscr{D}}$
 The $\mathscr{D}$ function:
 $$
 \mathscr{D}(\xi,s_i)=\begin{bmatrix}
@@ -455,7 +459,7 @@ J^F_x
 \tag{A3-1}
 $$
 
-#### Proof of $J^\mathscr{R}_{s_i}$(23):
+#### Proof of (23) $J^\mathscr{R}_{s_i}$:
 According to A1-1: 
 $$
 \frac{\partial{R^*_{nc}}}{\partial R_{nb}} = R_{bc}^{-1}
@@ -486,7 +490,7 @@ $$
 = R^{-1}_{bc}
 $$
 
- #### Proof of $J^\mathscr{R}_{d}$(24)
+ #### Proof of (24) $J^\mathscr{R}_{d}$
 
 According to A2-2 and A3-1: 
 $$

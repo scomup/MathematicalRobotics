@@ -117,31 +117,6 @@ def to2d(x):
     x2d[2] = theta
     return x2d
 
-def numericalDerivativeA(func, a, b, z):
-    delta = 1e-5
-    m = func(a, b, z).vec().shape[0]
-    n = a.vec().shape[0]
-    J = np.zeros([m,n])
-    for j in range(n):
-        dx = np.zeros(n)
-        dx[j] = delta
-        ds = navState()
-        ds.set(dx)
-        J[:,j] = func(a,b,z).local(func(a.retract(ds),b,z)).vec()/delta
-    return J
-
-def numericalDerivativeB(func, a, b, z):
-    delta = 1e-5
-    m = func(a, b, z).vec().shape[0]
-    n = a.vec().shape[0]
-    J = np.zeros([m,n])
-    for j in range(n):
-        dx = np.zeros(n)
-        dx[j] = delta
-        ds = navState()
-        ds.set(dx)
-        J[:,j] = func(a,b,z).local(func(a,b.retract(ds),z)).vec()/delta
-    return J
 
 if __name__ == '__main__':
     a = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
