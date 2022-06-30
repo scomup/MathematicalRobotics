@@ -260,7 +260,7 @@ class imuIntegration:
             J_delta_state[3:6,6:9] = np.eye(3) * dt
             J_delta_state[6:9,0:3] = dt * skew(R_bn.dot(self.gravity))
             J_delta_xi = np.eye(9)
-            return delta, J_delta_state, J_delta_xi
+            return delta, J_delta_xi, J_delta_state
 
 
     def predict(self, state, bias, calc_J = False):
@@ -277,7 +277,7 @@ class imuIntegration:
             return state_j
         else:
             xi, J_xi_bias = self.biasCorrect(bias, True)
-            delta, J_delta_state, J_delta_xi = self.calcDelta(xi, state, True)
+            delta, J_delta_xi, J_delta_state = self.calcDelta(xi, state, True)
             state_j, J_retract_state, J_retract_delta = state.retract(delta, True)
             J_predict_state = J_retract_state + J_retract_delta.dot(J_delta_state)
             J_predict_bias = J_retract_delta.dot(J_delta_xi.dot(J_xi_bias))
@@ -290,19 +290,19 @@ def find_nearest(data, stamp):
 
 if __name__ == '__main__':
     def numericalDerivative(func, param, idx, TYPE = navDelta):
-        delta = 1e-8
+        delta = 1e-5
         m = func(*param).vec().shape[0]
         n = (param[idx]).vec().shape[0]
         J = np.zeros([m,n])
+        h = func(*param)
         for j in range(n):
             dx = np.zeros(n)
             dx[j] = delta
             dd = TYPE.set(dx)
             param_delta = param.copy()
             param_delta[idx] = param[idx].retract(dd)
-            h = func(*param)
             h_plus = func(*param_delta)
-            J[:,j] = func(*param).local(func(*param_delta)).vec()/delta
+            J[:,j] = h.local(h_plus).vec()/delta
         return J
     
     state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
@@ -383,7 +383,7 @@ if __name__ == '__main__':
         print('OK')
     else:
         print('NG')
-
+    
     print('test delta')
     xi = navDelta(expSO3(np.array([0.5,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
     state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
