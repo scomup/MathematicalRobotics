@@ -72,7 +72,7 @@ class posvelEdge:
         return r, Ji, Jj
 
 
-class navitransformEdge:
+class navitransEdge:
     def __init__(self, i, j, z, omega = np.eye(9)):
         self.i = i #state i
         self.j = j #state j

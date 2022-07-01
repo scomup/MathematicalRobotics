@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
         state1_idx = graph.addNode(naviNode(state1))
         delta = state0.local(state1,False)
-        graph.addEdge(navitransformEdge(state0_idx, state1_idx, delta, omegaOdom))
+        graph.addEdge(navitransEdge(state0_idx, state1_idx, delta, omegaOdom))
         state0_idx = state1_idx
         state0 = state1
 

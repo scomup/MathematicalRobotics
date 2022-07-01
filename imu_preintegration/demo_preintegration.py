@@ -99,12 +99,13 @@ if __name__ == '__main__':
     navitransformOmega = np.linalg.inv(np.diag(np.ones(9)*1e-1))
     navitransformOmega[6:9,6:9] = 0
     makeromega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
+    makeromega[0:3,0:3] = 0
     makeromega[6:9,6:9] = 0
     biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e-2))
     biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
-    imupreintOmega = np.linalg.inv(np.diag(np.ones(9)*1e-6))
+    imupreintOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
     omegaNdtPose = np.linalg.inv(np.diag(np.array([1,1,1,1,1,1,100,100,100])))
-    posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1))
+    posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1e1))
 
 
     pose_data = np.load(pose_file) 
@@ -137,7 +138,7 @@ if __name__ == '__main__':
             imuIntegrator = getPIM(imu_data, graph.nodes[pre_state_idx].stamp, cur_stamp)
 
             delta = graph.nodes[pre_state_idx].state.local(state,False)
-            graph.addEdge(navitransformEdge(pre_state_idx, cur_state_idx, delta, navitransformOmega))
+            graph.addEdge(navitransEdge(pre_state_idx, cur_state_idx, delta, navitransformOmega))
             graph.addEdge(imupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,imupreintOmega)) # add imu preintegration to graph
             graph.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
             graph.addEdge(biaschangeEdge(pre_bias_idx, cur_bias_idx, biaschangeOmega)) # add the bias change error to graph
@@ -155,6 +156,7 @@ if __name__ == '__main__':
             #marker.p += np.random.normal(0, 0.01, 3)
             graph.addEdge(naviEdge(idx, marker, makeromega))
             marker_list.append(marker.p)
+            #break
     
       
     marker_list = np.array(marker_list)
