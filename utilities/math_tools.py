@@ -256,6 +256,24 @@ def dLogSO3(omega):
         WW = W.dot(W)
         return np.eye(3) + 0.5 * W +  (1 / (theta * theta) - (1 + np.cos(theta)) / (2 * theta * np.sin(theta))) * WW
 
+def quaternion_matrix(quaternion):
+    q = np.array(quaternion[:4], dtype=np.float64, copy=True)
+    n = np.linalg.norm(q)
+    if np.any(n == 0.0):
+        raise ZeroDivisionError("bad quaternion input")
+    else:
+        m = np.empty((3, 3))
+        m[0, 0] = 1.0 - 2*(q[2]**2 + q[3]**2)/n
+        m[0, 1] = 2*(q[1]*q[2] - q[3]*q[0])/n
+        m[0, 2] = 2*(q[1]*q[3] + q[2]*q[0])/n
+        m[1, 0] = 2*(q[1]*q[2] + q[3]*q[0])/n
+        m[1, 1] = 1.0 - 2*(q[1]**2 + q[3]**2)/n
+        m[1, 2] = 2*(q[2]*q[3] - q[1]*q[0])/n
+        m[2, 0] = 2*(q[1]*q[3] - q[2]*q[0])/n
+        m[2, 1] = 2*(q[2]*q[3] + q[1]*q[0])/n
+        m[2, 2] = 1.0 - 2*(q[1]**2 + q[2]**2)/n
+        return m
+
 if __name__ == '__main__':
     print('test HSO3')
     x = np.array([0.5,0.6,0.7])

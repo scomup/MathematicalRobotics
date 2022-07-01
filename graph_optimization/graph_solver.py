@@ -25,11 +25,15 @@ class graphSolver:
         self.edges.append(edge)
 
     def getScore(self):
-        score = 0
+        score = {}
         for edge in self.edges:
             r = edge.residual(self.nodes)[0]
             omega = edge.omega
-            score += r.dot(omega.dot(r))
+            s = r.dot(omega.dot(r))
+            if(str(type(edge)) in score):
+                score[str(type(edge))] += s
+            else:
+                score.setdefault(str(type(edge)), s)
         return score
 
 

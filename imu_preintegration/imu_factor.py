@@ -27,7 +27,7 @@ class biasEdge:
         r = bias_i - self.z 
         return r, np.eye(6)
 
-class biasbetweenEdge:
+class biaschangeEdge:
     def __init__(self, i, j, omega = np.eye(6)):
         self.i = i #bias i
         self.j = j #bias j
@@ -51,7 +51,7 @@ class naviEdge:
         r = r.vec()
         return r, j
 
-class velocityEdge:
+class posvelEdge:
     def __init__(self, i, j, z, omega = np.eye(3)):
         self.i = i #state i
         self.j = j #state j
@@ -71,7 +71,7 @@ class velocityEdge:
         return r, Ji, Jj
 
 
-class navibetweenEdge:
+class navitransformEdge:
     def __init__(self, i, j, z, omega = np.eye(9)):
         self.i = i #state i
         self.j = j #state j
@@ -88,7 +88,7 @@ class navibetweenEdge:
         Jj = J_f_d.dot(J_d_j)
         return r, Ji, Jj
 
-class imuEdge:
+class imupreintEdge:
     def __init__(self, i, j, k, z, omega = np.eye(9)):
         self.i = i #state i
         self.j = j #state j

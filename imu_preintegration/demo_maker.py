@@ -28,6 +28,19 @@ def find_nearest(data, stamp):
     idx = (np.abs(data[:,0] - stamp)).argmin()
     return data[idx,:]
 
+def print_error(truth_trj):
+    aft_trj = []
+    for n in gs.nodes:
+        if(not isinstance(n, naviNode)):
+            continue
+        aft_trj.append(n.state.p)
+    aft_trj = np.array(aft_trj)
+    truth_trj = np.array(truth_trj)
+    err = np.linalg.norm((truth_trj - aft_trj),axis=1)
+    avg_err = np.average(err)
+    worst_err = np.max(err)
+    print("avg err:%f"%avg_err)
+    print("worst err:%f"%worst_err)
 
 if __name__ == '__main__':
     
@@ -43,7 +56,7 @@ if __name__ == '__main__':
 
     omegaOdom = np.linalg.inv(np.diag(np.ones(9)*4e-4))
     omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-2)) 
-    mark_dist = 5
+    mark_dist = 1
     truth_trj = []
 
     for p in pose_data:
@@ -57,7 +70,7 @@ if __name__ == '__main__':
 
         state1_idx = gs.addNode(naviNode(state1))
         delta = state0.local(state1,False)
-        gs.addEdge(navibetweenEdge(state0_idx, state1_idx, delta, omegaOdom))
+        gs.addEdge(navitransformEdge(state0_idx, state1_idx, delta, omegaOdom))
         state0_idx = state1_idx
         state0 = state1
 
@@ -65,8 +78,13 @@ if __name__ == '__main__':
             last_marker = state1
             marker = find_nearest(truth_data, p[0])
             marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
-            #marker_T[0:3,3] += np.random.normal(0, 0.01, 3)
+            marker.p += np.random.normal(0, 0.01, 3)
             gs.addEdge(naviEdge(state1_idx, marker, omegaMaker)) # add prior pose to graph
+
+    score = gs.getScore()
+    print(score)
+
+    print_error(truth_trj)
     draw(1,gs,'red','ndt pose before')
     gs.solve()
     draw(1,gs,'blue','ndt pose after')
@@ -74,5 +92,8 @@ if __name__ == '__main__':
     plt.grid()
     plt.legend()
     plt.show()
+    print_error(truth_trj)
+    score = gs.getScore()
+    print(score)
 
 
