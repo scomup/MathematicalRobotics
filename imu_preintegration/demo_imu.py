@@ -96,75 +96,78 @@ if __name__ == '__main__':
     truth_file = FILE_PATH+'/data/truth_pose.npy'
     imu_file = FILE_PATH+'/data/imu_data.npy'
 
-    omegaOdom = np.linalg.inv(np.diag(np.ones(9)*1e-1))
-    omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-4))
-    omegaMaker[6:9,6:9] = 0
-    omegaBias = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
-    omegaPIM = np.linalg.inv(np.diag(np.ones(9)*1e-2))
+    navitransformOmega = np.linalg.inv(np.diag(np.ones(9)*1e-1))
+    navitransformOmega[6:9,6:9] = 0
+    makeromega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
+    makeromega[6:9,6:9] = 0
+    biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e-2))
+    biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
+    imupreintOmega = np.linalg.inv(np.diag(np.ones(9)*1e-6))
     omegaNdtPose = np.linalg.inv(np.diag(np.array([1,1,1,1,1,1,100,100,100])))
-    omegavelocity = np.linalg.inv(np.diag(np.ones(3)*0.01))
+    posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1))
 
 
     pose_data = np.load(pose_file) 
     imu_data = np.load(imu_file)
     truth_data = np.load(truth_file)
     graph = graphSolver()
-    n= pose_data.shape[0]
-    pre_state_idx = 0
-    pre_stamp = 0
-    mark_dist = 5
-    last_marker = None
-    marker_list = []
-    for i in range(n):
-        p = pose_data[i]
+    
+    mark_dist = 10
+    
+    for i, p in enumerate(pose_data):
         cur_stamp = p[0]
         if(i == 0):
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],np.array([0,0,0]))
             pre_state_idx = graph.addNode(naviNode(state, cur_stamp))
             pre_bias_idx = graph.addNode(biasNode(np.zeros(6)))
-            graph.addEdge(naviEdge(pre_state_idx, state)) 
-            graph.addEdge(biasEdge(pre_bias_idx, np.zeros(6), omegaBias))
-            last_marker = state
-            pre_stamp = cur_stamp
+            graph.addEdge(biasEdge(pre_bias_idx, np.zeros(6), biasOmega))
+            pre_state_idx = 0
         else:
             pre_p = graph.nodes[pre_state_idx].state.p
-            dt =cur_stamp - pre_stamp
+            dt = cur_stamp - graph.nodes[pre_state_idx].stamp
             dist = np.linalg.norm(p[1:4] - pre_p)
-            if(dist < 0.1):
-                continue
+            #if(dist < 0.1):
+            #    continue
             vel = (p[1:4] - pre_p)/dt
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],vel)
             cur_state_idx = graph.addNode(naviNode(state, cur_stamp)) # add first naviState to graph
             cur_bias_idx = graph.addNode(biasNode(np.zeros(6)))
-            imuIntegrator = getPIM(imu_data, pre_stamp, cur_stamp)
 
-            #graph.addEdge(naviEdge(cur_state_idx, state,omegaNdtPose))
+
+            imuIntegrator = getPIM(imu_data, graph.nodes[pre_state_idx].stamp, cur_stamp)
+
             delta = graph.nodes[pre_state_idx].state.local(state,False)
-            graph.addEdge(navitransformEdge(pre_state_idx, cur_state_idx, delta, omegaOdom))
-            graph.addEdge(imupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,omegaPIM)) # add imu preintegration to graph
-            #graph.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, omegavelocity)) # add the relationship between velocity and position to graph
-            graph.addEdge(biaschangeEdge(pre_bias_idx, cur_bias_idx, omegaBias)) # add the bias change error to graph
+            graph.addEdge(navitransformEdge(pre_state_idx, cur_state_idx, delta, navitransformOmega))
+            graph.addEdge(imupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,imupreintOmega)) # add imu preintegration to graph
+            graph.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
+            graph.addEdge(biaschangeEdge(pre_bias_idx, cur_bias_idx, biaschangeOmega)) # add the bias change error to graph
             pre_state_idx = cur_state_idx
-
-            pre_stamp = cur_stamp
-            if( np.linalg.norm(last_marker.local(state).p)>mark_dist):
-                last_marker = state
-                marker = find_nearest(truth_data, p[0])
-                marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
-                marker.p += np.random.normal(0, 0.01, 3)
-                graph.addEdge(naviEdge(cur_state_idx, marker, omegaMaker)) # add Marker to graph
-                marker_list.append(marker.p)
-                marker 
+    
+    marker_list = []
+    last_pose = np.array([0,0,0])
+    for idx, n in enumerate(graph.nodes):
+        if not isinstance(n, naviNode):
+            continue
+        if(np.linalg.norm(last_pose - n.state.p)>mark_dist or idx == 0 or idx >= len(graph.nodes)-2):
+            last_pose = n.state.p
+            marker = find_nearest(truth_data, n.stamp)
+            marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
+            #marker.p += np.random.normal(0, 0.01, 3)
+            graph.addEdge(naviEdge(idx, marker, makeromega))
+            marker_list.append(marker.p)
+    
+      
     marker_list = np.array(marker_list)
     fig = plt.figure('imu pose')
     axes = fig.gca()
+    #err = print_error(graph, truth_data)
     draw(axes, graph,'red','before')
     graph.report()
     graph.solve()
     graph.report()
     draw(axes, graph,'green','after')
     axes.plot(truth_data[:,1],truth_data[:,2],label='truth', color='blue')
-    axes.scatter(marker_list[:,0],marker_list[:,1],label='marker',s=50,color='m')
+    axes.scatter(marker_list[:,0],marker_list[:,1],label='marker',s=50,color='black')
     axes.grid()
     axes.legend()
     err = print_error(graph, truth_data)

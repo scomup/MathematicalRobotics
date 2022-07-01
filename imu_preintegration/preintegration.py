@@ -285,7 +285,7 @@ class imuIntegration:
 
 def find_nearest(data, stamp):
     idx = (np.abs(data[:,0] - stamp)).argmin()
-    return data[idx,:]
+    return data[idx,:].copy()
 
 
 if __name__ == '__main__':
