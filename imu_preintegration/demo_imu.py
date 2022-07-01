@@ -19,36 +19,34 @@ def getPIM(imu_data, start, end):
     return imuIntegrator
 
 
-def draw(figname, gs, color, label):
-    fig = plt.figure(figname)
-    axes = fig.gca()
+def draw(axes, graph, color, label):
     pose_trj = []
-    for n in gs.nodes:
+    for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
         pose_trj.append(n.state.p)
     pose_trj = np.array(pose_trj)
     axes.scatter(pose_trj[:,0],pose_trj[:,1], c=color, s=10, label=label+' pose')
     imu_trj = []
-    for e in gs.edges:
+    for e in graph.edges:
         if(not isinstance(e, imupreintEdge)):
             continue
         imuIntegrator = imuIntegration(9.80)
-        statei = gs.nodes[e.i].state
-        biasi = gs.nodes[e.k].bias
+        statei = graph.nodes[e.i].state
+        biasi = graph.nodes[e.k].bias
         for acc, gyo, dt in zip(e.z.acc_buf, e.z.gyo_buf, e.z.dt_buf):
             imuIntegrator.update(acc, gyo, dt)
             state_new = imuIntegrator.predict(statei,biasi)
             imu_trj.append(state_new.p)
     imu_trj = np.array(imu_trj)
     axes.scatter(imu_trj[:,0],imu_trj[:,1], c=color, s=2,label=label+' imu predict')
-    axes.legend()
+    #axes.legend()
 
-def draw_bias(figname, gs):
+def draw_bias(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
     bias = []
-    for n in gs.nodes:
+    for n in graph.nodes:
         if(not isinstance(n, biasNode)):
             continue
         bias.append(n.bias)
@@ -60,11 +58,11 @@ def draw_bias(figname, gs):
     axes.plot(bias[:,4], label='bias gyo y')
     axes.plot(bias[:,5], label='bias gyo z')
     axes.legend()
-def draw_vel(figname, gs):
+def draw_vel(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
     vel = []
-    for n in gs.nodes:
+    for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
         vel.append(n.state.v)
@@ -73,19 +71,24 @@ def draw_vel(figname, gs):
     axes.plot(vel[:,1], label='vel y')
     axes.plot(vel[:,2], label='vel z')
     axes.legend()
-def print_error(truth_trj):
+
+def print_error(graph, truth_data):
     aft_trj = []
-    for n in gs.nodes:
+    truth_trj = []
+    for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
         aft_trj.append(n.state.p)
+        truth_p = find_nearest(truth_data, n.stamp)
+        truth_trj.append(truth_p[1:4])
     aft_trj = np.array(aft_trj)
-    truth_trj = np.array(truth_trj)
+    truth_trj  = np.array(truth_trj)
     err = np.linalg.norm((truth_trj - aft_trj),axis=1)
     avg_err = np.average(err)
     worst_err = np.max(err)
     print("avg err:%f"%avg_err)
     print("worst err:%f"%worst_err)
+    return err
 
 if __name__ == '__main__':
     imuIntegrator = imuIntegration(9.80)
@@ -105,62 +108,73 @@ if __name__ == '__main__':
     pose_data = np.load(pose_file) 
     imu_data = np.load(imu_file)
     truth_data = np.load(truth_file)
-    gs = graphSolver()
+    graph = graphSolver()
     n= pose_data.shape[0]
     pre_state_idx = 0
     pre_stamp = 0
     mark_dist = 5
     last_marker = None
+    marker_list = []
     for i in range(n):
         p = pose_data[i]
         cur_stamp = p[0]
         if(i == 0):
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],np.array([0,0,0]))
-            pre_state_idx = gs.addNode(naviNode(state))
-            pre_bias_idx = gs.addNode(biasNode(np.zeros(6)))
-            gs.addEdge(naviEdge(pre_state_idx, state)) 
-            gs.addEdge(biasEdge(pre_bias_idx, np.zeros(6), omegaBias))
+            pre_state_idx = graph.addNode(naviNode(state, cur_stamp))
+            pre_bias_idx = graph.addNode(biasNode(np.zeros(6)))
+            graph.addEdge(naviEdge(pre_state_idx, state)) 
+            graph.addEdge(biasEdge(pre_bias_idx, np.zeros(6), omegaBias))
             last_marker = state
             pre_stamp = cur_stamp
         else:
-            pre_p = gs.nodes[pre_state_idx].state.p
+            pre_p = graph.nodes[pre_state_idx].state.p
             dt =cur_stamp - pre_stamp
             dist = np.linalg.norm(p[1:4] - pre_p)
             if(dist < 0.1):
                 continue
             vel = (p[1:4] - pre_p)/dt
             state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],vel)
-            cur_state_idx = gs.addNode(naviNode(state)) # add first naviState to graph
-            cur_bias_idx = gs.addNode(biasNode(np.zeros(6)))
+            cur_state_idx = graph.addNode(naviNode(state, cur_stamp)) # add first naviState to graph
+            cur_bias_idx = graph.addNode(biasNode(np.zeros(6)))
             imuIntegrator = getPIM(imu_data, pre_stamp, cur_stamp)
 
-            #gs.addEdge(naviEdge(cur_state_idx, state,omegaNdtPose))
-            delta = gs.nodes[pre_state_idx].state.local(state,False)
-            gs.addEdge(navitransformEdge(pre_state_idx, cur_state_idx, delta, omegaOdom))
-            gs.addEdge(imupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,omegaPIM)) # add imu preintegration to graph
-            gs.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, omegavelocity)) # add the relationship between velocity and position to graph
-            gs.addEdge(biaschangeEdge(pre_bias_idx, cur_bias_idx, omegaBias)) # add the bias change error to graph
+            #graph.addEdge(naviEdge(cur_state_idx, state,omegaNdtPose))
+            delta = graph.nodes[pre_state_idx].state.local(state,False)
+            graph.addEdge(navitransformEdge(pre_state_idx, cur_state_idx, delta, omegaOdom))
+            graph.addEdge(imupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,omegaPIM)) # add imu preintegration to graph
+            #graph.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, omegavelocity)) # add the relationship between velocity and position to graph
+            graph.addEdge(biaschangeEdge(pre_bias_idx, cur_bias_idx, omegaBias)) # add the bias change error to graph
             pre_state_idx = cur_state_idx
-            pre_stamp = cur_stamp
 
+            pre_stamp = cur_stamp
             if( np.linalg.norm(last_marker.local(state).p)>mark_dist):
                 last_marker = state
                 marker = find_nearest(truth_data, p[0])
                 marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
-                #marker_T[0:3,3] += np.random.normal(0, 0.01, 3)
-                gs.addEdge(naviEdge(cur_state_idx, marker, omegaMaker)) # add Marker to graph
-
-
-    draw('imu pose', gs,'red','before')
-    score = gs.getScore()
-    print(score)
-    gs.solve()
-    score = gs.getScore()
-    print(score)
-    draw('imu pose', gs,'green','after')
-    plt.grid()
-    draw_bias('bias', gs)
-    draw_vel('vel', gs)
+                marker.p += np.random.normal(0, 0.01, 3)
+                graph.addEdge(naviEdge(cur_state_idx, marker, omegaMaker)) # add Marker to graph
+                marker_list.append(marker.p)
+                marker 
+    marker_list = np.array(marker_list)
+    fig = plt.figure('imu pose')
+    axes = fig.gca()
+    draw(axes, graph,'red','before')
+    graph.report()
+    graph.solve()
+    graph.report()
+    draw(axes, graph,'green','after')
+    axes.plot(truth_data[:,1],truth_data[:,2],label='truth', color='blue')
+    axes.scatter(marker_list[:,0],marker_list[:,1],label='marker',s=50,color='m')
+    axes.grid()
+    axes.legend()
+    err = print_error(graph, truth_data)
+    fig = plt.figure('error ')
+    axes = fig.gca()
+    axes.plot(err)
+    axes.axhline(0.012, color='red', lw=1, alpha=0.7) #
+    axes.axhline(0.036, color='red', lw=1, alpha=0.7) #
+    draw_bias('bias', graph)
+    draw_vel('vel', graph)
     plt.grid()
     plt.show()
 

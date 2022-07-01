@@ -13,11 +13,11 @@ import quaternion
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
 
-def draw(figname, gs, color, label):
+def draw(figname, graph, color, label):
     fig = plt.figure(figname)
     axes = fig.gca()
     pose_trj = []
-    for n in gs.nodes:
+    for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
         pose_trj.append(n.state.p)
@@ -30,7 +30,7 @@ def find_nearest(data, stamp):
 
 def print_error(truth_trj):
     aft_trj = []
-    for n in gs.nodes:
+    for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
         aft_trj.append(n.state.p)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     truth_file = FILE_PATH+'/data/truth_pose.npy'
     pose_data = np.load(pose_file) 
     truth_data = np.load(truth_file)
-    gs = graphSolver()
+    graph = graphSolver()
     
     state0 = None
     state0_idx = 0
@@ -65,12 +65,12 @@ if __name__ == '__main__':
         if(state0 is None):
             state0 = state1
             last_marker = state1
-            state0_idx = gs.addNode(naviNode(state1)) # add node to graph
+            state0_idx = graph.addNode(naviNode(state1)) # add node to graph
             continue
 
-        state1_idx = gs.addNode(naviNode(state1))
+        state1_idx = graph.addNode(naviNode(state1))
         delta = state0.local(state1,False)
-        gs.addEdge(navitransformEdge(state0_idx, state1_idx, delta, omegaOdom))
+        graph.addEdge(navitransformEdge(state0_idx, state1_idx, delta, omegaOdom))
         state0_idx = state1_idx
         state0 = state1
 
@@ -79,21 +79,19 @@ if __name__ == '__main__':
             marker = find_nearest(truth_data, p[0])
             marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
             marker.p += np.random.normal(0, 0.01, 3)
-            gs.addEdge(naviEdge(state1_idx, marker, omegaMaker)) # add prior pose to graph
+            graph.addEdge(naviEdge(state1_idx, marker, omegaMaker)) # add prior pose to graph
 
-    score = gs.getScore()
-    print(score)
-
+    graph.report()
     print_error(truth_trj)
-    draw(1,gs,'red','ndt pose before')
-    gs.solve()
-    draw(1,gs,'blue','ndt pose after')
+    draw(1,graph,'red','ndt pose before')
+    graph.solve()
+    draw(1,graph,'blue','ndt pose after')
     plt.plot(truth_data[:,1],truth_data[:,2],label='truth', color='green')
+    plt.legend()
     plt.grid()
     plt.legend()
     plt.show()
     print_error(truth_trj)
-    score = gs.getScore()
-    print(score)
+    graph.report()
 
 

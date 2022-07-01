@@ -58,18 +58,18 @@ class pose3Node:
     def update(self, dx):
         self.x = logSE3(expSE3(self.x).dot(expSE3(dx)))
 
-def draw(figname, gs):
-    for n in gs.nodes:
+def draw(figname, graph):
+    for n in graph.nodes:
         plot_pose3(figname, expSE3(n.x), 0.05)
     fig = plt.figure(figname)
     axes = fig.gca()
-    for e in gs.edges:
+    for e in graph.edges:
         if(e.type=='one'):
             continue
         i = e.i
         j = e.j
-        _, ti = makeRt(expSE3(gs.nodes[i].x))
-        _, tj = makeRt(expSE3(gs.nodes[j].x))
+        _, ti = makeRt(expSE3(graph.nodes[i].x))
+        _, tj = makeRt(expSE3(graph.nodes[j].x))
         x = [ti[0],tj[0]]
         y = [ti[1],tj[1]]
         z = [ti[2],tj[2]]
@@ -81,26 +81,26 @@ def draw(figname, gs):
 
 if __name__ == '__main__':
     
-    gs = graphSolver()
+    graph = graphSolver()
 
     n = 12
     cur_pose = np.array([0,0,0,0,0,0])
     odom = np.array([0.2, 0, 0.00, 0.05, 0, 0.5])
     for i in range(n):
-        gs.addNode(pose3Node(cur_pose)) # add node to graph
+        graph.addNode(pose3Node(cur_pose)) # add node to graph
         cur_pose = logSE3(expSE3(cur_pose).dot(expSE3(odom)))
 
-    gs.addEdge(pose3dEdge(0,np.array([0,0,0,0,0,0]))) # add prior pose to graph
+    graph.addEdge(pose3dEdge(0,np.array([0,0,0,0,0,0]))) # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)
-        gs.addEdge(pose3dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
+        graph.addEdge(pose3dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
         
-    gs.addEdge(pose3dbetweenEdge(n-1, 0, odom, color='red'))
+    graph.addEdge(pose3dbetweenEdge(n-1, 0, odom, color='red'))
 
 
-    draw('before loop-closing', gs)
-    gs.solve()
-    draw('after loop-closing', gs)
+    draw('before loop-closing', graph)
+    graph.solve()
+    draw('after loop-closing', graph)
 
     plt.show()

@@ -2,9 +2,10 @@ from preintegration import *
 
 
 class naviNode:
-    def __init__(self, state):
+    def __init__(self, state, stamp = 0):
         self.state = state
         self.size = 9
+        self.stamp = stamp
     def update(self, dx):
         d_state = navDelta(expSO3(dx[0:3]), dx[3:6], dx[6:9])
         self.state = self.state.retract(d_state)

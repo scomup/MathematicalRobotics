@@ -24,17 +24,30 @@ class graphSolver:
     def addEdge(self, edge):
         self.edges.append(edge)
 
-    def getScore(self):
-        score = {}
+    def report(self):
+        error = 0
+        type_score = {}
         for edge in self.edges:
             r = edge.residual(self.nodes)[0]
             omega = edge.omega
             s = r.dot(omega.dot(r))
-            if(str(type(edge)) in score):
-                score[str(type(edge))] += s
+            error += s
+            edge_type_name = type(edge).__name__
+            if(edge_type_name in type_score):
+                type_score[edge_type_name] += s
             else:
-                score.setdefault(str(type(edge)), s)
-        return score
+                type_score.setdefault(edge_type_name, s)
+                
+        print("---------------------")
+        print("The number of parameters: %d."%self.psize)
+        print("The number of nodes: %d."%len(self.nodes))
+        print("The number of edges: %d."%len(self.edges))
+        print("Overall error: %f."%error)
+        type_list = list(type_score)
+        for t in type_list:
+            #print("  -> %20s: %5f."%(t, type_score[t]))
+            print(' -> {:<20}: {:<.4f}'.format(t, type_score[t]))
+        print("---------------------")
 
 
     def solve_once(self):

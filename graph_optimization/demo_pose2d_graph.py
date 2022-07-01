@@ -53,18 +53,18 @@ class pose2Node:
     def update(self, dx):
         self.x = m2v(v2m(self.x).dot(v2m(dx)))
 
-def draw(figname, gs):
+def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
-    for n in gs.nodes:
+    for n in graph.nodes:
         plot_pose2(figname, v2m(n.x), 0.05)
-    for e in gs.edges:
+    for e in graph.edges:
         if(e.type=='one'):
             continue
         i = e.i
         j = e.j
-        _, ti = makeRt(v2m(gs.nodes[i].x))
-        _, tj = makeRt(v2m(gs.nodes[j].x))
+        _, ti = makeRt(v2m(graph.nodes[i].x))
+        _, tj = makeRt(v2m(graph.nodes[j].x))
         x = [ti[0],tj[0]]
         y = [ti[1],tj[1]]
         axes.plot(x,y,c=e.color,linestyle=':')
@@ -72,26 +72,26 @@ def draw(figname, gs):
 
 if __name__ == '__main__':
     
-    gs = graphSolver()
+    graph = graphSolver()
 
     n = 12
     cur_pose = np.array([0,0,0])
     odom = np.array([0.2, 0, 0.45])
     for i in range(n):
-        gs.addNode(pose2Node(cur_pose)) # add node to graph
+        graph.addNode(pose2Node(cur_pose)) # add node to graph
         cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
 
-    gs.addEdge(pose2dEdge(0,np.array([0,0,0]))) # add prior pose to graph
+    graph.addEdge(pose2dEdge(0,np.array([0,0,0]))) # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)
-        gs.addEdge(pose2dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
+        graph.addEdge(pose2dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
         
-    gs.addEdge(pose2dbetweenEdge(n-1, 0, odom, color='red'))
+    graph.addEdge(pose2dbetweenEdge(n-1, 0, odom, color='red'))
 
 
-    draw('before loop-closing', gs)
-    gs.solve()
-    draw('after loop-closing', gs)
+    draw('before loop-closing', graph)
+    graph.solve()
+    draw('after loop-closing', graph)
 
     plt.show()
