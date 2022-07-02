@@ -2,8 +2,6 @@ import numpy as np
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
-#from __future__ import annotations
-from typing import get_type_hints
 
 class imuBias(np.ndarray):
     def __new__(cls, obj):
@@ -193,15 +191,15 @@ class navDelta:
 
 
 class imuIntegration:
-    def __init__(self,G):
+    def __init__(self,G, bias = np.zeros(6)):
         self.pim = navDelta()
         self.d_tij = 0
         self.gravity = np.array([0,0,-G])
         self.J_zeta_bacc = np.zeros([9,3])
         self.J_zeta_bgyo = np.zeros([9,3])
 
-        self.bacc = np.array([0,0,0])
-        self.bgyo = np.array([0,0,0])
+        self.bacc = bias[0:3]
+        self.bgyo = bias[3:6]
         self.acc_buf = []
         self.gyo_buf = []
         self.dt_buf = []
@@ -289,7 +287,9 @@ def find_nearest(data, stamp):
 
 
 if __name__ == '__main__':
-    def numericalDerivative(func, param, idx, TYPE = navDelta):
+    def numericalDerivative(func, param, idx, TYPE = None):
+        if TYPE is None:
+            TYPE = type(param[idx])
         delta = 1e-5
         m = func(*param).vec().shape[0]
         n = (param[idx]).vec().shape[0]
@@ -304,12 +304,12 @@ if __name__ == '__main__':
             h_plus = func(*param_delta)
             J[:,j] = h.local(h_plus).vec()/delta
         return J
-    
+ 
     state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
     delta = navDelta(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.5,0.6,0.7]))
     print('test state retract')
     r, Ja, Jb = state_i.retract(delta,True)
-    Jam =  numericalDerivative(navState.retract, [state_i, delta], 0)
+    Jam =  numericalDerivative(navState.retract, [state_i, delta], 0, navDelta)
     Jbm =  numericalDerivative(navState.retract, [state_i, delta], 1)
     if(np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
@@ -324,8 +324,8 @@ if __name__ == '__main__':
     state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
     state_j = navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.5,0.6,0.7]))
     r, Ja, Jb = state_i.local(state_j,True)
-    Jam =  numericalDerivative(navState.local, [state_i, state_j], 0)
-    Jbm =  numericalDerivative(navState.local, [state_i, state_j], 1)
+    Jam =  numericalDerivative(navState.local, [state_i, state_j], 0, navDelta)
+    Jbm =  numericalDerivative(navState.local, [state_i, state_j], 1, navDelta)
     if(np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -369,8 +369,8 @@ if __name__ == '__main__':
     dt = 1.
     r, Jold, Jacc, Jgyo = delta_i.update(acc,gyo,dt,True)
     Joldm =  numericalDerivative(navDelta.update, [delta_i, acc, gyo, dt],0)
-    Jaccm =  numericalDerivative(navDelta.update, [delta_i, acc, gyo, dt],1, imuBias)
-    Jgyom =  numericalDerivative(navDelta.update, [delta_i, acc, gyo, dt],2, imuBias)
+    Jaccm =  numericalDerivative(navDelta.update, [delta_i, acc, gyo, dt],1)
+    Jgyom =  numericalDerivative(navDelta.update, [delta_i, acc, gyo, dt],2)
     if(np.linalg.norm(Joldm - Jold) < 0.0001):
         print('OK')
     else:
@@ -392,7 +392,7 @@ if __name__ == '__main__':
     r, Ja, Jb =  imu.calcDelta(xi, state_i, True)
 
     Jam =  numericalDerivative(imu.calcDelta, [xi, state_i],0)
-    Jbm =  numericalDerivative(imu.calcDelta, [xi, state_i],1)
+    Jbm =  numericalDerivative(imu.calcDelta, [xi, state_i],1, navDelta)
     if(np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -401,4 +401,40 @@ if __name__ == '__main__':
         print('OK')
     else:
         print('NG')
+
+    print('test biasCorrect')
+    bias = imuBias([0.11,0.12,0.01,0.2,0.15,0.16])
+    imu = imuIntegration(9.8, bias)
+    imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
+    imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
+    imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
+    state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
+
+    xi, Ja = imu.biasCorrect(bias, True)
+    Jam =  numericalDerivative(imu.biasCorrect, [bias], 0)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    print('test predict')
+    bias = imuBias([0.11,0.12,0.01,0.2,0.15,0.16])
+    imu = imuIntegration(9.8, bias)
+    imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
+    imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
+    imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
+    state_i = navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
+
+    state_j, Ja, Jb = imu.predict(state_i, bias, True)
+    Jam =  numericalDerivative(imu.predict, [state_i, bias], 0, navDelta)
+    Jbm =  numericalDerivative(imu.predict, [state_i, bias], 1)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
     

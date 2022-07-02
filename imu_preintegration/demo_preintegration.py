@@ -24,7 +24,7 @@ def draw(axes, graph, color, label):
     for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
-        pose_trj.append(n.state.p)
+        pose_trj.append(n.x.p)
     pose_trj = np.array(pose_trj)
     axes.scatter(pose_trj[:,0],pose_trj[:,1], c=color, s=10, label=label+' pose')
     imu_trj = []
@@ -32,8 +32,8 @@ def draw(axes, graph, color, label):
         if(not isinstance(e, imupreintEdge)):
             continue
         imuIntegrator = imuIntegration(9.80)
-        statei = graph.nodes[e.i].state
-        biasi = graph.nodes[e.k].bias
+        statei = graph.nodes[e.i].x
+        biasi = graph.nodes[e.k].x
         for acc, gyo, dt in zip(e.z.acc_buf, e.z.gyo_buf, e.z.dt_buf):
             imuIntegrator.update(acc, gyo, dt)
             state_new = imuIntegrator.predict(statei,biasi)
@@ -49,7 +49,7 @@ def draw_bias(figname, graph):
     for n in graph.nodes:
         if(not isinstance(n, biasNode)):
             continue
-        bias.append(n.bias)
+        bias.append(n.x)
     bias = np.array(bias)
     axes.plot(bias[:,0], label='bias acc x')
     axes.plot(bias[:,1], label='bias acc y')
@@ -65,7 +65,7 @@ def draw_vel(figname, graph):
     for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
-        vel.append(n.state.v)
+        vel.append(n.x.v)
     vel = np.array(vel)
     axes.plot(vel[:,0], label='vel x')
     axes.plot(vel[:,1], label='vel y')
@@ -78,7 +78,7 @@ def print_error(graph, truth_data):
     for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
-        aft_trj.append(n.state.p)
+        aft_trj.append(n.x.p)
         truth_p = find_nearest(truth_data, n.stamp)
         truth_trj.append(truth_p[1:4])
     aft_trj = np.array(aft_trj)
@@ -104,7 +104,6 @@ if __name__ == '__main__':
     biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e-2))
     biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
     imupreintOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
-    omegaNdtPose = np.linalg.inv(np.diag(np.array([1,1,1,1,1,1,100,100,100])))
     posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1e1))
 
 
@@ -124,7 +123,7 @@ if __name__ == '__main__':
             graph.addEdge(biasEdge(pre_bias_idx, np.zeros(6), biasOmega))
             pre_state_idx = 0
         else:
-            pre_p = graph.nodes[pre_state_idx].state.p
+            pre_p = graph.nodes[pre_state_idx].x.p
             dt = cur_stamp - graph.nodes[pre_state_idx].stamp
             dist = np.linalg.norm(p[1:4] - pre_p)
             #if(dist < 0.1):
@@ -137,7 +136,7 @@ if __name__ == '__main__':
 
             imuIntegrator = getPIM(imu_data, graph.nodes[pre_state_idx].stamp, cur_stamp)
 
-            delta = graph.nodes[pre_state_idx].state.local(state,False)
+            delta = graph.nodes[pre_state_idx].x.local(state,False)
             graph.addEdge(navitransEdge(pre_state_idx, cur_state_idx, delta, navitransformOmega))
             graph.addEdge(imupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator,imupreintOmega)) # add imu preintegration to graph
             graph.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
@@ -149,8 +148,8 @@ if __name__ == '__main__':
     for idx, n in enumerate(graph.nodes):
         if not isinstance(n, naviNode):
             continue
-        if(np.linalg.norm(last_pose - n.state.p)>mark_dist or idx == 0 or idx >= len(graph.nodes)-2):
-            last_pose = n.state.p
+        if(np.linalg.norm(last_pose - n.x.p)>mark_dist or idx == 0 or idx >= len(graph.nodes)-2):
+            last_pose = n.x.p
             marker = find_nearest(truth_data, n.stamp)
             marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
             #marker.p += np.random.normal(0, 0.01, 3)
@@ -163,12 +162,12 @@ if __name__ == '__main__':
     fig = plt.figure('imu pose')
     axes = fig.gca()
     #err = print_error(graph, truth_data)
-    draw(axes, graph,'red','before')
+    draw(axes, graph,'blue','before')
     graph.report()
     graph.solve()
     graph.report()
     draw(axes, graph,'green','after')
-    axes.plot(truth_data[:,1],truth_data[:,2],label='truth', color='blue')
+    axes.plot(truth_data[:,1],truth_data[:,2],label='truth', color='red')
     axes.scatter(marker_list[:,0],marker_list[:,1],label='marker',s=50,color='black')
     axes.grid()
     axes.legend()

@@ -20,7 +20,7 @@ def draw(figname, graph, color, label):
     for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
-        pose_trj.append(n.state.p)
+        pose_trj.append(n.x.p)
     pose_trj = np.array(pose_trj)
     axes.scatter(pose_trj[:,0],pose_trj[:,1], c=color, s=10, label=label)
 
@@ -33,7 +33,7 @@ def print_error(truth_trj):
     for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
-        aft_trj.append(n.state.p)
+        aft_trj.append(n.x.p)
     aft_trj = np.array(aft_trj)
     truth_trj = np.array(truth_trj)
     err = np.linalg.norm((truth_trj - aft_trj),axis=1)
