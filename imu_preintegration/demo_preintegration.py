@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from graph_optimization.plot_pose import *
 import quaternion
 from imu_factor import *
+from scipy.spatial import KDTree
+
 
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
@@ -75,15 +77,17 @@ def draw_vel(figname, graph):
 def print_error(graph, truth_data):
     aft_trj = []
     truth_trj = []
+    err = []
+    kdtree = FindNearest3D(truth_data)
     for n in graph.nodes:
         if(not isinstance(n, naviNode)):
             continue
         aft_trj.append(n.x.p)
-        truth_p = find_nearest(truth_data, n.stamp)
-        truth_trj.append(truth_p[1:4])
+        dist, idx = kdtree.query(n.x.p)
+        truth_trj.append(truth_data[idx, 1:4])
+        err.append(dist)
     aft_trj = np.array(aft_trj)
     truth_trj  = np.array(truth_trj)
-    err = np.linalg.norm((truth_trj - aft_trj),axis=1)
     avg_err = np.average(err)
     worst_err = np.max(err)
     print("avg err:%f"%avg_err)

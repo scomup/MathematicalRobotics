@@ -63,12 +63,12 @@ class posvelEdge:
         state_i = nodes[self.i].x
         state_j = nodes[self.j].x
         t_inv = 1./self.z
-        r = state_j.v - (state_j.p - state_i.p)*t_inv
+        r = state_i.v - (state_j.p - state_i.p)*t_inv
         Ji = np.zeros([3,9])
         Jj = np.zeros([3,9])
         Ji[:,3:6] = state_i.R*t_inv
+        Ji[:,6:9] = state_i.R
         Jj[:,3:6] = -state_j.R*t_inv
-        Jj[:,6:9] = state_j.R
         return r, Ji, Jj
 
 
@@ -120,6 +120,7 @@ def to2d(x):
 
 
 if __name__ == '__main__':
+    import copy
     def numericalDerivative(func, param, idx, TYPE_INPUT = None, TYPE_RETURN = None):
         if TYPE_INPUT is None:
             TYPE_INPUT = type(param[idx].x)
@@ -132,14 +133,14 @@ if __name__ == '__main__':
             dx = np.zeros(n)
             dx[j] = delta
             dd = TYPE_INPUT.set(dx)
-            param_delta = param.copy()
+            param_delta = copy.deepcopy(param)
             param_delta[idx].x = param[idx].x.retract(dd)
             h_plus = TYPE_RETURN.set(func(param_delta)[0])
             J[:,j] = h.local(h_plus).vec()/delta
         return J
 
     print('test imupreintEdge')
-    bias = imuBias([0.11,0.12,0.01,0.2,0.15,0.16])
+    bias = Vector([0.11,0.12,0.01,0.2,0.15,0.16])
     imu = imuIntegration(9.8, bias)
     imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
     imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
@@ -147,14 +148,14 @@ if __name__ == '__main__':
     nodes = []
     nodes.append(naviNode(navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))))
     nodes.append(naviNode(navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.1,0.2,0.3]))))
-    nodes.append(biasNode(imuBias([0.11,0.12,0.01,0.2,0.15,0.16])))
+    nodes.append(biasNode(Vector([0.11,0.12,0.01,0.2,0.15,0.16])))
     edge = imupreintEdge(0,1,2,imu)
     r,Ja,Jb,Jc = edge.residual(nodes)
 
 
     Jam =  numericalDerivative(edge.residual, nodes, 0, navDelta, navDelta)
     Jbm =  numericalDerivative(edge.residual, nodes, 1, navDelta, navDelta)
-    Jcm =  numericalDerivative(edge.residual, nodes, 2, imuBias, navDelta)
+    Jcm =  numericalDerivative(edge.residual, nodes, 2, Vector, navDelta)
     if(np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -163,5 +164,72 @@ if __name__ == '__main__':
         print('OK')
     else:
         print('NG')
+    if(np.linalg.norm(Jcm - Jc) < 0.0001):
+            print('OK')
+    else:
+        print('NG')
     
+    print('test navitransEdge')
+    nodes.append(naviNode(navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))))
+    nodes.append(naviNode(navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.1,0.2,0.3]))))
+    z = navDelta(expSO3(np.array([0.5,0.6,0.7])),np.array([0.1,0.2,0.3]),np.array([-0.1,-0.2,-0.3]))
     
+    edge = navitransEdge(0,1,z)
+    r,Ja,Jb = edge.residual(nodes)
+    Jam =  numericalDerivative(edge.residual, nodes, 0, navDelta, navDelta)
+    Jbm =  numericalDerivative(edge.residual, nodes, 1, navDelta, navDelta)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    print('test navitransEdge')
+    nodes = []
+    nodes.append(naviNode(navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))))
+    nodes.append(naviNode(navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.1,0.2,0.3]))))
+    z = navDelta(expSO3(np.array([0.5,0.6,0.7])),np.array([0.1,0.2,0.3]),np.array([-0.1,-0.2,-0.3]))
+    
+    edge = navitransEdge(0,1,z)
+    r,Ja,Jb = edge.residual(nodes)
+    Jam =  numericalDerivative(edge.residual, nodes, 0, navDelta, navDelta)
+    Jbm =  numericalDerivative(edge.residual, nodes, 1, navDelta, navDelta)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    print('test posvelEdge')
+    edge = posvelEdge(0,1,1)
+    r,Ja,Jb = edge.residual(nodes)
+    Jam =  numericalDerivative(edge.residual, nodes, 0, navDelta, Vector)
+    Jbm =  numericalDerivative(edge.residual, nodes, 1, navDelta, Vector)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(Jbm - Jb) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    print('test naviEdge')
+    nodes = []
+    nodes.append(naviNode(navState(expSO3(np.array([0.1,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))))
+    z = navState(expSO3(np.array([0.2,0.3,0.4])),np.array([0.4,0.5,0.6]),np.array([0.1,0.2,0.3]))
+    edge = naviEdge(0,z)
+    r,Ja = edge.residual(nodes)
+    Jam =  numericalDerivative(edge.residual, nodes, 0, navDelta, navDelta)
+    if(np.linalg.norm(Jam - Ja) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+

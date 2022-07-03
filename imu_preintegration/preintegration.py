@@ -2,8 +2,10 @@ import numpy as np
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
+from scipy.spatial import KDTree
 
-class imuBias(np.ndarray):
+
+class Vector(np.ndarray):
     def __new__(cls, obj):
         self = np.asarray(obj).view(cls)
         return self
@@ -14,7 +16,7 @@ class imuBias(np.ndarray):
     def local(self, b):
         return b - self
     def set(x):
-        self = x
+        self = Vector(x)
         return self
 
 class navState:
@@ -285,6 +287,17 @@ def find_nearest(data, stamp):
     idx = (np.abs(data[:,0] - stamp)).argmin()
     return data[idx,:].copy()
 
+class FindNearest3D:
+    def __init__(self, data) -> None:
+        self.data = data
+        self.data3d = data[:,1:4]
+        self.kdtree=KDTree(self.data3d)
+
+    def query(self, sample):
+        dist,point = self.kdtree.query(sample, 1)
+        return dist,point
+        
+
 
 if __name__ == '__main__':
     def numericalDerivative(func, param, idx, TYPE = None):
@@ -364,8 +377,8 @@ if __name__ == '__main__':
     
     print('test pim update')
     delta_i = navDelta(expSO3(np.array([0.5,0.2,0.3])),np.array([0.2,0.3,0.4]),np.array([0.4,0.5,0.6]))
-    acc = imuBias([0.01,0.02,0.03])
-    gyo = imuBias([1.01,0.5,0.23])
+    acc = Vector([0.01,0.02,0.03])
+    gyo = Vector([1.01,0.5,0.23])
     dt = 1.
     r, Jold, Jacc, Jgyo = delta_i.update(acc,gyo,dt,True)
     Joldm =  numericalDerivative(navDelta.update, [delta_i, acc, gyo, dt],0)
@@ -403,7 +416,7 @@ if __name__ == '__main__':
         print('NG')
 
     print('test biasCorrect')
-    bias = imuBias([0.11,0.12,0.01,0.2,0.15,0.16])
+    bias = Vector([0.11,0.12,0.01,0.2,0.15,0.16])
     imu = imuIntegration(9.8, bias)
     imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
     imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
@@ -418,7 +431,7 @@ if __name__ == '__main__':
         print('NG')
 
     print('test predict')
-    bias = imuBias([0.11,0.12,0.01,0.2,0.15,0.16])
+    bias = Vector([0.11,0.12,0.01,0.2,0.15,0.16])
     imu = imuIntegration(9.8, bias)
     imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
     imu.update(np.array([0.1,0.2,0.3]),np.array([0.1,0.2,0.3]),0.1)
