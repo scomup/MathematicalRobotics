@@ -97,6 +97,7 @@ def print_error(graph, truth_data):
 if __name__ == '__main__':
     imuIntegrator = imuIntegration(9.80)
     pose_file = FILE_PATH+'/data/ndt_pose.npy'
+    #pose_file = FILE_PATH+'/data/vins_pose.npy'
     truth_file = FILE_PATH+'/data/truth_pose.npy'
     imu_file = FILE_PATH+'/data/imu_data.npy'
 
