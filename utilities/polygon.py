@@ -66,7 +66,7 @@ def polygonRes(x, poly, TH=1.):
             min_dist = dist
             min_res = res
     if inpoly:
-        return  np.array([0.,0.])
+        return  -min_res * (TH)/np.linalg.norm(min_res)
     else:
         if min_dist > TH:
             return np.array([0.,0.])
@@ -78,13 +78,13 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     #test
     ploy = np.array([[0,0],[1,1.],[0,2.],[-1.,1]])
-    vec=polygonRes(ploy, np.array([-1,2.]))
+    vec=polygonRes(np.array([-1,2.]),ploy)
     fig = plt.figure('after loop-closing')
     axes = fig.gca()
     axes.add_patch(Polygon(ploy,alpha=0.5))
     for i in np.arange(-2,2,0.15):
         for j in np.arange(-1,3,0.15):
-            vec = polygonRes(ploy, np.array([i,j]))
+            vec = polygonRes(np.array([i,j]),ploy)
             if( np.linalg.norm(vec)):
                 vec *= 0.2
                 axes.arrow(i, j, vec[0], vec[1], head_width=0.05, head_length=0.1, fc='k', ec='k')

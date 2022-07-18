@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     ploygons.append(np.array([[-5,3],[5,3],[5,1],[-5.,1]]))
     ploygons.append(np.array([[-5,-1],[5,-1],[5,-3],[-5.,-3]]))
-    ploygons.append(np.array([[7,-3],[10,-3],[10,5]]))
+    ploygons.append(np.array([[7,-3],[10,-3],[10,5],[8,5]]))
     
     graph = graphSolver()
     n = 20
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     for i in range(n):
         graph.addNode(pose2Node(cur_pose)) # add node to graph
         if(i == 0):
-            graph.addEdge(pose2dEdge(i,cur_pose))    
+            graph.addEdge(pose2dEdge(i,cur_pose,np.eye(3)*1000.))    
         cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
 
     for i in range(n-1):
