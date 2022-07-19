@@ -25,4 +25,7 @@ We want to select some widely used and practical algorithms. for each algorithm,
 ![demo_pose2d_graph](./imgs/demo_pose2d_graph.gif)
 #### 3d loop closing
 ![demo_pose3d_graph](./imgs/demo_pose3d_graph.gif)
+#### polygon
+Generate a trajectory that avoids polygons(obstacles) as much as possible.  
+![demo_polygon](./imgs/demo_polygon.gif)
 

@@ -56,6 +56,7 @@ def draw(figname, graph):
 def draw_polygon(figname, ploygons):    
     fig = plt.figure(figname)
     axes = fig.gca()
+    axes.cla()
     for poly in ploygons:
         polygon = Polygon(poly)
         axes.add_patch(polygon)
@@ -63,37 +64,61 @@ def draw_polygon(figname, ploygons):
 if __name__ == '__main__':
     ploygons = []
 
-    ploygons.append(np.array([[-5,3],[5,3],[5,1],[-5.,1]]))
-    ploygons.append(np.array([[-5,-1],[5,-1],[5,-3],[-5.,-3]]))
-    ploygons.append(np.array([[7,-3],[10,-3],[10,5],[8,5]]))
+    ploygons.append(np.array([[-5,3],[5,3],[5,1],[0.5,1],[0,0],[-0.5,1],[-5.,1]]))
+    ploygons.append(np.array([[-5,-1],[3.5,-1],[4,0],[4.5,-1],[5,-1],[5,-3],[-5.,-3]]))
+    #ploygons.append(np.array([[7,-3],[10,-3],[10,5],[8,5]]))
     
     graph = graphSolver()
-    n = 20
+    n = 27
     
     cur_pose = np.array([-6,-0.5,0])
-    odom = np.array([0.8, 0, 0.025])
+    odom = np.array([0.5, 0, 0.01])
+    odomOmega = np.diag([10,10,1.])
+    polyOmega = np.diag([2,2,0.])
+    poseOmega = np.diag([1000,1000,0.])
     for i in range(n):
         graph.addNode(pose2Node(cur_pose)) # add node to graph
         if(i == 0):
-            graph.addEdge(pose2dEdge(i,cur_pose,np.eye(3)*1000.))    
+            graph.addEdge(pose2dEdge(i,cur_pose,poseOmega))    
         cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
+    graph.addEdge(pose2dEdge(n -1,cur_pose,poseOmega))    
 
     for i in range(n-1):
         j = (i + 1)
-        graph.addEdge(pose2dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
+        graph.addEdge(pose2dbetweenEdge(i,j,odom,odomOmega)) # add edge(i,j) to graph
 
     for i in range(n):
         for poly in ploygons:
-            graph.addEdge(pose2polygonEdge(i,poly)) #
+            graph.addEdge(pose2polygonEdge(i,poly,polyOmega)) #
 
 
 
-    draw('before loop-closing', graph)
     draw_polygon('before loop-closing', ploygons)
+    draw('before loop-closing', graph)
 
     graph.report()
-    graph.solve()
-    draw('after loop-closing', graph)
-    draw_polygon('after loop-closing', ploygons)
-
+    #graph.solve()     
+    step = 1.
+    iter = 0   
+    last_score = None
+    while(True):   
+        dx, score = graph.solve_once()
+        iter +=1
+        print('iter %d: %f'%(iter, score))
+        #if(np.linalg.norm(dx)>step):
+        #    dx = dx/np.linalg.norm(dx) * step
+        graph.update(dx)
+        if(last_score is None):
+            last_score = score
+            continue        
+        if(last_score < score):
+            break
+        if(last_score - score < 0.0001):
+            break
+        last_score = score
+        
+        draw_polygon('after loop-closing', ploygons)
+        draw('after loop-closing', graph)
+        plt.pause(0.1)
+    graph.report()
     plt.show()
