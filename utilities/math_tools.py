@@ -190,16 +190,20 @@ def transform3d(x,p, x2T = expSE3):
     tp = np.dot(R,p).reshape(3, -1) + np.array([t,]*(element)).transpose()
     return tp
 
-def numericalDerivative(func, x, a, plus=lambda a, b: a + b, minus=lambda a, b: a - b):
+def numericalDerivative(func, param, idx, plus=lambda a, b: a + b, minus=lambda a, b: a - b):
     delta = 1e-5
-    m = func(x, a).shape[0]
-    n = x.shape[0]
+    r = func(*param)
+    m = r.shape[0]
+    n = param[idx].shape[0]
     J = np.zeros([m,n])
     for j in range(n):
         dx = np.zeros(n)
         dx[j] = delta
-        J[:,j] = minus(func(plus(x,dx),a),func(x,a))/delta
+        param_delta = param.copy()
+        param_delta[idx] = plus(param[idx],dx)
+        J[:,j] = minus(func(*param_delta),r)/delta
     return J
+
 
 def HSO3(omega):
     theta2 = omega.dot(omega)
@@ -342,7 +346,7 @@ if __name__ == '__main__':
     guass_newton_method.md (9)
     """
     J = -R.dot(skew(a))
-    J_numerical = numericalDerivative(residual, x, a, plus)
+    J_numerical = numericalDerivative(residual, [x, a],0, plus)
     if(np.linalg.norm(J - J_numerical) < 0.0001):
         print('OK')
     else:
