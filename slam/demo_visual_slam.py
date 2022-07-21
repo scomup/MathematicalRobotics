@@ -6,6 +6,7 @@ import yaml
 from reprojection import *
 from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
+from graph_optimization.plot_pose import *
 
 
 class camposeNode:
@@ -46,12 +47,13 @@ class priorposeEdge:
 
 
 class reporjEdge:
-    def __init__(self, i, j, z, omega = None):
+    def __init__(self, i, j, z, omega = None, kernel=None):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
         self.omega = omega
+        self.kernel = kernel
         if(self.omega is None):
             self.omega = np.eye(2)
 
@@ -78,6 +80,14 @@ class pointEdge:
         r, _, J = reporj(x, p, pim, K, True)
         return r, J
 
+def draw(figname, frames_pose, points):
+    for x in frames_pose:
+        T = makeT(expSO3(x[0:3]),x[3:6])
+        plot_pose3(figname, T, 0.05)
+    fig = plt.figure(figname)
+    axes = fig.gca()
+    axes.scatter(points[:,0],points[:,1],points[:,2])
+    set_axes_equal(figname)
 
 class camposeEdge:
     def __init__(self, i, z, omega = None):
@@ -156,24 +166,35 @@ if __name__ == '__main__':
             frames.append({'stamp':node['stamp'],'points': dict(zip(pts[:,0].astype(np.int), pts[:,1:])),'imu':imus})
     frame_pose, points = init(frames, K)
 
+    points_idx = {}
     graph = graphSolver()
     for j in points:
-        if(len(points[j]['view'])<=2):
+        if(len(points[j]['view'])<=5):
             continue
         idx = graph.addNode(featureNode(points[j]['p3d'])) # add feature to graph
+        points_idx.update({j: idx})
         for i in points[j]['view']:
             x = inv(frame_pose[i])
             pim = frames[i]['points'][j][0:2].astype(float)
-            graph.addEdge(pointEdge(idx, [x, pim, K], kernel=gaussianKernel(2)))
+            graph.addEdge(pointEdge(idx, [x, pim, K], kernel=CauchyKernel(0.1)))
             r, J = pointEdge(idx, [x, pim, K]).residual(graph.nodes)
-            #print(r)
-        if j >= 100:
-            break
     
     graph.report()
     graph.solve()
     graph.report()
+
+    pts = []
+    for n in graph.nodes:
+        pts.append(n.x)
+    pts = np.array(pts)
+
+
+    draw('view',frame_pose, pts)
+    plt.show()
+
+
     exit(0)
+    
 
     """
     graph = graphSolver()
@@ -182,7 +203,7 @@ if __name__ == '__main__':
     for i, frame in enumerate(frames):
         x_cw = inv(frame_pose[i])
         idx = graph.addNode(camposeNode(x_cw)) # add node to graph
-        graph.addEdge(priorposeEdge(idx, x_cw, np.eye(6)*10000.))
+        #graph.addEdge(priorposeEdge(idx, x_cw, np.eye(6)*10000.))
         frames_idx.update({i: idx})
     for i in points:
         view = points[i]['view']
@@ -191,8 +212,9 @@ if __name__ == '__main__':
         for f in view:
             f_idx =  frames_idx[f]
             pim = frames[f]['points'][i][0:2].astype(float)
-            graph.addEdge(reporjEdge(f_idx, p_idx, [pim, K]))
+            graph.addEdge(reporjEdge(f_idx, p_idx, [pim, K], kernel=CauchyKernel(0.1)))
     graph.report()
     graph.solve()
     graph.report()
     """
+    

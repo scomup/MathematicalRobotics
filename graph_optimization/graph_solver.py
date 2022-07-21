@@ -34,13 +34,20 @@ class graphSolver:
         for edge in self.edges:
             r = edge.residual(self.nodes)[0]
             omega = edge.omega
-            s = r.dot(omega.dot(r))
-            error += s
+            try:
+                kernel = edge.kernel
+                if(kernel is None):
+                    kernel = L2Kernel()
+            except:
+                kernel = L2Kernel()
+            e2 = r.dot(omega.dot(r))
+            rho = kernel.apply(e2)
+            error += rho[0]
             edge_type_name = type(edge).__name__
             if(edge_type_name in type_score):
-                type_score[edge_type_name] += s
+                type_score[edge_type_name] += rho[0]
             else:
-                type_score.setdefault(edge_type_name, s)
+                type_score.setdefault(edge_type_name, rho[0])
                 
         print("---------------------")
         print("The number of parameters: %d."%self.psize)
