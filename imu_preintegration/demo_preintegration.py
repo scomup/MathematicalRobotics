@@ -115,7 +115,7 @@ if __name__ == '__main__':
     pose_data = np.load(pose_file) 
     imu_data = np.load(imu_file)
     truth_data = np.load(truth_file)
-    graph = graphSolver()
+    graph = graphSolver(True)
     
     mark_dist = 10
     

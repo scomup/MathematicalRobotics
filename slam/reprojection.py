@@ -1,45 +1,49 @@
 import numpy as np
-import sympy
-from sympy import diff, Matrix, Array,symbols
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 
-"""
-fx,fy,cx,cy = symbols('fx,fy,cx,cy')
-x,y,z = symbols('x,y,z')
 
-def H(p):
-    u = (p[0] * fx + cx * p[2])/p[2]
-    v = (p[1] * fy + cy * p[2])/p[2]
-    return Matrix([[u],[v]])
-
-p = Matrix([x,y,z])
-J = Matrix([[diff(H(p),x)],[diff(H(p),y)],[diff(H(p),z)]]).reshape(3,2).T
-"""
-fx = 400.
-fy = 400.
-cx = 200.
-cy = 100.
-def reporj(x,pw, calcJ = False):
+def transform(x, p, calcJ = False):
     R = expSO3(x[0:3])
     t = x[3:6]
-    pc = R.dot(pw) + t
-    u = (pc[0] * fx + cx * pc[2])/pc[2]
-    v = (pc[1] * fy + cy * pc[2])/pc[2]
-    r = np.array([u,v])
+    r = R.dot(p) + t
     if(calcJ == True):
-        dHdT = np.array([[fx/pc[2],    0, cx/pc[2] - (cx*pc[2] + fx*pc[0])/pc[2]**2],
-                         [   0, fy/pc[2], cy/pc[2] - (cy*pc[2] + fy*pc[1])/pc[2]**2]])
-        M = R.dot(skew(-pw))
+        M = R.dot(skew(-p))
         dTdx = np.hstack([M, R])
         dTdp = R
-        return  r, dHdT.dot(dTdx), dHdT.dot(dTdp)
+        return  r, dTdx, dTdp
     else:
         return r
 
+def projection(pc, K, calcJ = False):
+    fx = K[0,0]
+    fy = K[1,1]
+    cx = K[0,2]
+    cy = K[1,2]
+    r = np.array([(pc[0]/pc[2] * fx + cx),
+                  (pc[1]/pc[2] * fy + cy)])
+    if(calcJ == True):
+        J = np.array([[fx/pc[2],    0, -fx*pc[0]/pc[2]**2],
+                      [   0, fy/pc[2], -fy*pc[1]/pc[2]**2]])
+        return  r, J
+    else:
+        return r
 
-def plus(x1,x2):
+def reporj(x, pw, pim, K, calcJ = False):
+    if(calcJ == True):
+        pc, dTdx, dTdp = transform(x, pw, True)
+        r ,dKdT = projection(pc, K, True)
+        dKdx = dKdT.dot(dTdx)
+        dKdp = dKdT.dot(dTdp)
+        return r-pim, dKdx, dKdp
+    else:
+        pc = transform(x, pw)
+        r = projection(pc, K)
+        return r-pim
+
+
+def pose_plus(x1,x2):
     R1 = expSO3(x1[0:3])
     t1 = x1[3:6]
     R2 = expSO3(x2[0:3])
@@ -49,19 +53,45 @@ def plus(x1,x2):
     return np.hstack([logSO3(R),t])
 
 if __name__ == '__main__':
+    fx = 400.
+    fy = 400.
+    cx = 200.
+    cy = 100.
+    K = np.array([[fx,0,cx],[0,fy,cy],[0,0,1.]])
+
     x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
-    plus(x,x)
-    p = np.array([0.1,0.2,0.3])
-    r,J1,J2 = reporj(x,p, True)
-    J1m = numericalDerivative(reporj,[x,p],0,plus)
-    J2m = numericalDerivative(reporj,[x,p],1)
+    p = np.array([5.,6.,10.])
+    pim = np.array([50.,60.])
+    r,J1,J2 = transform(x, p, True)
+    J1m = numericalDerivative(transform, [x, p], 0, pose_plus)
+    J2m = numericalDerivative(transform, [x, p], 1)
+    print('test transform error')
+    if(np.linalg.norm(J1m - J1) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(J2m - J2) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    r, J = projection(p,K, True)
+    Jm = numericalDerivative(projection,[p, K], 0)
+    print('test projection error')
+    if(np.linalg.norm(Jm - J) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    r,J1,J2 = reporj(x, p, pim, K, True)
+    J1m = numericalDerivative(reporj, [x, p, pim, K], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reporj, [x, p, pim, K], 1)
     print('test reprojection error')
-    if(np.linalg.norm(J1m - J1) < 0.01):
+    if(np.linalg.norm(J1m - J1) < 0.0001):
         print('OK')
     else:
         print('NG')
-    if(np.linalg.norm(J2m - J2) < 0.01):
+    if(np.linalg.norm(J2m - J2) < 0.0001):
         print('OK')
     else:
         print('NG')
-    

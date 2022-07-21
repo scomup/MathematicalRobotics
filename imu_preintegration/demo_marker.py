@@ -48,7 +48,7 @@ if __name__ == '__main__':
     truth_file = FILE_PATH+'/data/truth_pose.npy'
     pose_data = np.load(pose_file) 
     truth_data = np.load(truth_file)
-    graph = graphSolver()
+    graph = graphSolver(True)
     
     state0 = None
     state0_idx = 0

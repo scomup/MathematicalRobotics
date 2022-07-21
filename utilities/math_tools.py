@@ -190,8 +190,7 @@ def transform3d(x,p, x2T = expSE3):
     tp = np.dot(R,p).reshape(3, -1) + np.array([t,]*(element)).transpose()
     return tp
 
-def numericalDerivative(func, param, idx, plus=lambda a, b: a + b, minus=lambda a, b: a - b):
-    delta = 1e-5
+def numericalDerivative(func, param, idx, plus=lambda a, b: a + b, minus=lambda a, b: a - b, delta = 1e-5):
     r = func(*param)
     m = r.shape[0]
     n = param[idx].shape[0]

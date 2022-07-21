@@ -23,7 +23,7 @@ class pose2polygonEdge:
         r = polygonRes(x,self.z)
         res = np.zeros(3)
         J = np.zeros([3,3])
-        J[0:2,0:2] = numericalDerivative(polygonRes, x, self.z)
+        J[0:2,0:2] = numericalDerivative(polygonRes, [x, self.z], 0)
         res[0:2] = r
         return res, J
 

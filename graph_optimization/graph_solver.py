@@ -1,19 +1,23 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import csc_matrix
-#import time
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utilities.robust_kernel import *
+
 
 class graphSolver:
     """
     A graph optimization solver.
     more information is written in graph_optimization.md
     """
-    def __init__(self):
+    def __init__(self, use_sparse = False):
         self.nodes = []
         self.edges = []
         self.ops = []
         self.loc = []
         self.psize = 0
+        self.use_sparse = use_sparse
 
     def addNode(self, node):
         self.loc.append(self.psize)
@@ -55,36 +59,43 @@ class graphSolver:
         g = np.zeros([self.psize])
         score = 0
         for edge in self.edges:
+            #self.nodes[edge.i]
+            omega = edge.omega
+            try:
+                kernel = edge.kernel
+                if(kernel is None):
+                    kernel = L2Kernel()
+            except:
+                kernel = L2Kernel()
             if(edge.type == 'one'):
                 node_i = self.nodes[edge.i]
                 r, jacobian_i = edge.residual(self.nodes)
-                omega = edge.omega
+                e2 = r.dot(omega.dot(r))
+                rho = kernel.apply(e2)
                 s_i = self.loc[edge.i]
                 e_i = s_i + node_i.size
-                H[s_i:e_i,s_i:e_i] += jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                g[s_i:e_i] += jacobian_i.T.dot(omega.dot(r))
-                score += r.dot(omega.dot(r))
+                H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
             elif(edge.type == 'two'):
                 r, jacobian_i, jacobian_j = edge.residual(self.nodes)
+                e2 = r.dot(omega.dot(r))
+                rho = kernel.apply(e2)
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
-                omega = edge.omega
                 s_i = self.loc[edge.i]
                 s_j = self.loc[edge.j]
                 e_i = s_i + node_i.size
                 e_j = s_j + node_j.size
-                H[s_i:e_i,s_i:e_i] += jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                H[s_j:e_j,s_j:e_j] += jacobian_j.T.dot(omega.dot(jacobian_j)) 
-                H[s_i:e_i,s_j:e_j] += jacobian_i.T.dot(omega.dot(jacobian_j))  
-                H[s_j:e_j,s_i:e_i] += jacobian_j.T.dot(omega.dot(jacobian_i))  
-                g[s_i:e_i] += jacobian_i.T.dot(omega.dot(r))
-                g[s_j:e_j] += jacobian_j.T.dot(omega.dot(r))
-                score += r.dot(omega.dot(r))
+                H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                H[s_j:e_j,s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j)) 
+                H[s_i:e_i,s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))  
+                H[s_j:e_j,s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))  
+                g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
             elif(edge.type == 'three'):
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
                 node_k = self.nodes[edge.k]
-                omega = edge.omega
                 s_i = self.loc[edge.i]
                 s_j = self.loc[edge.j]
                 s_k = self.loc[edge.k]
@@ -92,40 +103,47 @@ class graphSolver:
                 e_j = s_j + node_j.size
                 e_k = s_k + node_k.size
                 r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.nodes)
-                H[s_i:e_i,s_i:e_i] += jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                H[s_j:e_j,s_j:e_j] += jacobian_j.T.dot(omega.dot(jacobian_j)) 
-                H[s_k:e_k,s_k:e_k] += jacobian_k.T.dot(omega.dot(jacobian_k)) 
-                H[s_i:e_i,s_j:e_j] += jacobian_i.T.dot(omega.dot(jacobian_j))  
-                H[s_j:e_j,s_i:e_i] += jacobian_j.T.dot(omega.dot(jacobian_i))  
-                H[s_i:e_i,s_k:e_k] += jacobian_i.T.dot(omega.dot(jacobian_k))  
-                H[s_k:e_k,s_i:e_i] += jacobian_k.T.dot(omega.dot(jacobian_i))  
-                H[s_j:e_j,s_k:e_k] += jacobian_j.T.dot(omega.dot(jacobian_k))  
-                H[s_k:e_k,s_j:e_j] += jacobian_k.T.dot(omega.dot(jacobian_j))  
-                g[s_i:e_i] += jacobian_i.T.dot(omega.dot(r))
-                g[s_j:e_j] += jacobian_j.T.dot(omega.dot(r))
-                g[s_k:e_k] += jacobian_k.T.dot(omega.dot(r))
-                score += r.dot(omega.dot(r))
+                e2 = r.dot(omega.dot(r))
+                rho = kernel.apply(e2)
+                H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                H[s_j:e_j,s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j)) 
+                H[s_k:e_k,s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_k)) 
+                H[s_i:e_i,s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))  
+                H[s_j:e_j,s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))  
+                H[s_i:e_i,s_k:e_k] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_k))  
+                H[s_k:e_k,s_i:e_i] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_i))  
+                H[s_j:e_j,s_k:e_k] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_k))  
+                H[s_k:e_k,s_j:e_j] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_j))  
+                g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
+                g[s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(r))
+            score += rho[0]
         #import matplotlib.pyplot as plt
         #plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
         #plt.show()
         #dx = np.linalg.solve(H, -g)
         #much faster than np.linalg.solve!
-        dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
+        if(self.use_sparse):
+            dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
+        else:
+            dx = np.linalg.solve(H, -g)
         return dx, score
 
-    def solve(self):
+    def solve(self, show_info=True):
         last_score = None
         iter = 0
         while(True):   
             dx, score = self.solve_once()
             iter +=1
-            print('iter %d: %f'%(iter, score))
-            self.update(dx)
+            if(show_info):
+                print('iter %d: %f'%(iter, score))
             if(last_score is None):
+                self.update(dx)
                 last_score = score
-                continue        
+                continue   
             if(last_score < score):
                 break
+            self.update(dx)
             if(last_score - score < 0.0001):
                 break
             last_score = score
