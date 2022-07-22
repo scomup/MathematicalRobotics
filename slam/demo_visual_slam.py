@@ -64,6 +64,7 @@ class reporjEdge:
         r, J1, J2 = reporj(x, p, pim, K, True)
         return r, J1, J2
     
+
 class pointEdge:
     def __init__(self, i, z, omega = None, kernel=None):
         self.i = i
@@ -79,6 +80,25 @@ class pointEdge:
         x, pim, K = self.z
         r, _, J = reporj(x, p, pim, K, True)
         return r, J
+
+class stereoPointEdge:
+    def __init__(self, i, z, omega = None, kernel=None):
+        self.i = i
+        self.z = z
+        self.type = 'one'
+        self.omega = omega
+        self.kernel = kernel
+        if(self.omega is None):
+            self.omega = np.eye(4)
+    def residual(self, nodes):
+        p = nodes[self.i].x
+        x, xc2c1, u0, u1, K = self.z
+        r0, _, J0 = reporj(x, p, u0, K, True)
+        r1, _, J1 = reporj(pose_plus(xc2c1,x), p, u1, K, True)
+        r = np.hstack([r0,r1])
+        J = np.vstack([J0,J1])
+        return r, J
+
 
 def draw(figname, frames_pose, points):
     for x in frames_pose:
@@ -122,6 +142,15 @@ def inv(x):
     Rinv = np.linalg.inv(R)
     return np.hstack([logSO3(Rinv),Rinv.dot(-t)])
 
+def tom(x):    
+    R = expSO3(x[0:3])
+    t = x[3:6]
+    return makeT(R,t)
+
+def tox(m):    
+    R,t = makeRt(m)
+    return np.hstack([logSO3(R),t])
+
 def init(frames, K):
     baseline = 0.075
     focal = K[0,0]
@@ -133,7 +162,6 @@ def init(frames, K):
             x_cw = calc_camera_pose(frame, points)
             x_wc = inv(x_cw)
             frames_pose.append(x_wc)
-        #pp = frame['points']
         for j in frame['points']:
             if j in points:
                 points[j]['view'].append(i)
@@ -145,7 +173,6 @@ def init(frames, K):
             p3dw = transform(frames_pose[i], p3d)
             points.update({j: {'view':[i],'p3d':p3dw}})
     return frames_pose, points
-        
 
 
 if __name__ == '__main__':
@@ -155,6 +182,7 @@ if __name__ == '__main__':
     fy = 403.4488830566406
     cx = 323.534423828125
     cy = 203.87405395507812
+    x_c2c1 = np.array([0,0,0,-0.075,0,0])
     K = np.array([[fx,0,cx],[0,fy,cy],[0,0,1.]])
 
     n = 10
@@ -175,9 +203,12 @@ if __name__ == '__main__':
         points_idx.update({j: idx})
         for i in points[j]['view']:
             x = inv(frame_pose[i])
-            pim = frames[i]['points'][j][0:2].astype(float)
-            graph.addEdge(pointEdge(idx, [x, pim, K], kernel=CauchyKernel(0.1)))
-            r, J = pointEdge(idx, [x, pim, K]).residual(graph.nodes)
+            u0 = frames[i]['points'][j][0:2].astype(float)
+            u1 = frames[i]['points'][j][0:2].astype(float)
+            u1[0] -= frames[i]['points'][j][2].astype(float)
+            #graph.addEdge(pointEdge(idx, [x, pim, K], kernel=CauchyKernel(0.1)))
+            graph.addEdge(stereoPointEdge(idx, [x, x_c2c1, u0, u1, K],kernel=CauchyKernel(0.5)))
+            r, J = stereoPointEdge(idx, [x, x_c2c1, u0, u1, K]).residual(graph.nodes)
     
     graph.report()
     graph.solve()

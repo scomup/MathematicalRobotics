@@ -13,17 +13,28 @@ class graphSolver:
     """
     def __init__(self, use_sparse = False):
         self.nodes = []
+        self.is_no_constant = []
         self.edges = []
-        self.ops = []
         self.loc = []
         self.psize = 0
         self.use_sparse = use_sparse
 
-    def addNode(self, node):
-        self.loc.append(self.psize)
+    def addNode(self, node, is_constant = False):
         self.nodes.append(node)
-        self.psize += node.size
+        if(not is_constant):
+            self.loc.append(self.psize)
+            self.psize += node.size
+        else:
+            self.loc.append(np.nan)
+        self.is_no_constant.append(not is_constant)
         return len(self.nodes) - 1
+    
+    def setConstant(self, idx):
+        self.psize -= self.nodes[idx].size
+        self.loc[idx] = np.nan
+        self.is_no_constant[idx] = False
+        for i in range(idx, len(self.loc)):
+            self.loc[i] -= self.nodes[idx].size
 
     def addEdge(self, edge):
         self.edges.append(edge)
@@ -81,8 +92,9 @@ class graphSolver:
                 rho = kernel.apply(e2)
                 s_i = self.loc[edge.i]
                 e_i = s_i + node_i.size
-                H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.i]):
+                    H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
             elif(edge.type == 'two'):
                 r, jacobian_i, jacobian_j = edge.residual(self.nodes)
                 e2 = r.dot(omega.dot(r))
@@ -93,12 +105,15 @@ class graphSolver:
                 s_j = self.loc[edge.j]
                 e_i = s_i + node_i.size
                 e_j = s_j + node_j.size
-                H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                H[s_j:e_j,s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j)) 
-                H[s_i:e_i,s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))  
-                H[s_j:e_j,s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))  
-                g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
-                g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.i]):
+                    H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i))
+                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.j]): 
+                    H[s_j:e_j,s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j)) 
+                    g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.j] and self.is_no_constant[edge.i]): 
+                    H[s_i:e_i,s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))  
+                    H[s_j:e_j,s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))  
             elif(edge.type == 'three'):
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
@@ -112,18 +127,24 @@ class graphSolver:
                 r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.nodes)
                 e2 = r.dot(omega.dot(r))
                 rho = kernel.apply(e2)
-                H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                H[s_j:e_j,s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j)) 
-                H[s_k:e_k,s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_k)) 
-                H[s_i:e_i,s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))  
-                H[s_j:e_j,s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))  
-                H[s_i:e_i,s_k:e_k] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_k))  
-                H[s_k:e_k,s_i:e_i] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_i))  
-                H[s_j:e_j,s_k:e_k] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_k))  
-                H[s_k:e_k,s_j:e_j] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_j))  
-                g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
-                g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
-                g[s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.i]):
+                    H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
+                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.j]):
+                    H[s_j:e_j,s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j)) 
+                    g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.k]):
+                    H[s_k:e_k,s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_k)) 
+                    g[s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(r))
+                if(self.is_no_constant[edge.i] and self.is_no_constant[edge.j]):
+                    H[s_i:e_i,s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))  
+                    H[s_j:e_j,s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))  
+                if(self.is_no_constant[edge.i] and self.is_no_constant[edge.k]):
+                    H[s_i:e_i,s_k:e_k] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_k))  
+                    H[s_k:e_k,s_i:e_i] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_i))  
+                if(self.is_no_constant[edge.j] and self.is_no_constant[edge.k]):
+                    H[s_j:e_j,s_k:e_k] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_k))  
+                    H[s_k:e_k,s_j:e_j] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_j))  
             score += rho[0]
         #import matplotlib.pyplot as plt
         #plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
@@ -158,9 +179,10 @@ class graphSolver:
 
     def update(self, dx):
         for i, node in enumerate(self.nodes):
-            s_i = self.loc[i]
-            e_i = s_i + node.size
-            node.update(dx[s_i:e_i])
+            if self.is_no_constant[i]:
+                s_i = self.loc[i]
+                e_i = s_i + node.size
+                node.update(dx[s_i:e_i])
 
     
 
