@@ -25,30 +25,6 @@ class featureNode:
     def update(self, dx):
         self.x = self.x + dx
 
-"""
-class priorposeEdge:
-    def __init__(self, i, z, omega = None):
-        self.i = i
-        self.z = z
-        self.type = 'one'
-        self.omega = omega
-        if(self.omega is None):
-            self.omega = np.eye(6)
-    def residual(self, nodes):
-        x = nodes[self.i].x
-        R = expSO3(x[0:3])
-        t = x[3:6]
-        Rz = expSO3(self.z[0:3])
-        tz = self.z[3:6]
-        dR = R.T.dot(R)
-        dt = R.T.dot(tz - t)
-        r = np.hstack([logSO3(dR),dt])
-        J = -np.eye(6)
-        J[0:3,0:3] = -dR.T
-        J[3:6,0:3] = skew(dt)
-        return r, J
-"""
-
 class reporjEdge:
     def __init__(self, i, j, z, omega = None, kernel=None):
         self.i = i
@@ -65,9 +41,9 @@ class reporjEdge:
         xc2c1, u1, u2, K = self.z
         rl, Jl1, Jl2 = reporj(x, p, u1, K, True)
         rr, Jr1, Jr2 = reporj(pose_plus(xc2c1,x), p, u2, K, True)
-        r = np.hstack([rl,rr])
-        J1 = np.vstack([Jl1,Jr1])
-        J2 = np.vstack([Jl2,Jr2])
+        r = np.hstack([rl, rr])
+        J1 = np.vstack([Jl1, Jr1])
+        J2 = np.vstack([Jl2, Jr2])
         return r, J1, J2
     
 def draw3d(figname, frames, points):
@@ -86,15 +62,15 @@ def draw3d(figname, frames, points):
     set_axes_equal(figname)
 
 
-def calc_camera_pose(frame, points, x_cw):
+def calc_camera_pose(frame, points, x_cw, x_c2c1):
     graph = graphSolver()
     idx = graph.addNode(camposeNode(x_cw)) 
     for p in frame['points']:
         if not p in points:
             continue
-        u0 = frame['points'][p][0:2].astype(float)
-        u1 = frame['points'][p][0:2].astype(float)
-        u1[0] -= frame['points'][p][2].astype(float)
+        u0 = frame['points'][p][0:2]
+        u1 = u0.copy()
+        u1[0] -= frame['points'][p][2]
         p3d = points[p]['p3d']
         idx_p = graph.addNode(featureNode(p3d),True) 
         graph.addEdge(reporjEdge(idx, idx_p, [x_c2c1, u0, u1, K],kernel=CauchyKernel(0.5)))
@@ -102,31 +78,16 @@ def calc_camera_pose(frame, points, x_cw):
     graph.solve(False)
     return graph.nodes[idx].x
 
-def inv(x):
-    R = expSO3(x[0:3])
-    t = x[3:6]
-    Rinv = np.linalg.inv(R)
-    return np.hstack([logSO3(Rinv),Rinv.dot(-t)])
-
-def tom(x):    
-    R = expSO3(x[0:3])
-    t = x[3:6]
-    return makeT(R,t)
-
-def tox(m):    
-    R,t = makeRt(m)
-    return np.hstack([logSO3(R),t])
-
-def init(frames, K):
-    baseline = 0.075
+def initmap(frames, K, x_c2c1):
+    baseline = -x_c2c1[3]
     focal = K[0,0]
     Kinv = np.linalg.inv(K)
     points = {}
     for i, frame in enumerate(frames):
         print("initial frame %d..."%i)
         if(i != 0):
-            x_cw = calc_camera_pose(frame, points, inv(frames[i-1]['pose']))
-            x_wc = inv(x_cw)
+            x_cw = calc_camera_pose(frame, points, pose_inv(frames[i-1]['pose']),x_c2c1)
+            x_wc = pose_inv(x_cw)
             frames[i]['pose'] = x_wc
         for j in frame['points']:
             if j in points:
@@ -142,9 +103,35 @@ def init(frames, K):
             points.update({j: {'view':[i],'p3d':p3dw}})
     return points
 
-def draw_frame(frames, points):
+def remove_outlier(frames, points, K, xc2c1):
+    for i, frame in enumerate(frames):
+        x = pose_inv(frame['pose'])
+        for j in list(frame['points']):
+            if j in points:
+                pw = points[j]['p3d']
+                u0 = frame['points'][j][0:2]
+                u1 = u0.copy()
+                u1[0] -= frame['points'][j][2]
+                u0_reproj = reporj(x, pw, np.zeros(2), K)
+                u1_reproj = reporj(pose_plus(xc2c1,x), pw, np.zeros(2), K)
+                d0 = np.linalg.norm(u0_reproj - u0)
+                d1 = np.linalg.norm(u1_reproj - u1)
+                d = d0 + d1
+                if(d > 2):
+                    del frame['points'][j]
+                    idx = points[j]['view'].index(i)
+                    points[j]['view'].pop(idx)
+                    if(len(points[j]['view']) == 0):
+                        del points[j]
+                        break
+
+
+
+
+
+def draw_frame(frames, points, K):
     for frame in frames:
-        x = inv(frame['pose'])
+        x = pose_inv(frame['pose'])
         u0s = []
         u1s = []
         for j in frame['points']:
@@ -159,14 +146,48 @@ def draw_frame(frames, points):
         plt.xlim(0,640)
         plt.ylim(0,400)
         plt.gca().invert_yaxis()
-
-
         plt.scatter(u0s[:,0],u0s[:,1])
         plt.scatter(u1s[:,0],u1s[:,1])
         plt.grid()
         plt.show()
 
+def readframes(n,folder):
+    for idx in range(n):
+        fn = folder+'/F%04d.yaml'%idx
+        print('read %s...'%fn)
+        with open(fn) as file:
+            node = yaml.safe_load(file)
+            pts = np.array(node['points']['data']).reshape(node['points']['num'],-1)
+            pts = dict(zip(pts[:,0].astype(np.int), pts[:,1:].astype(np.float)))
+            imus = np.array(node['imu']['data']).reshape(node['imu']['num'],-1)
+            frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'points': pts,'imu':imus})
+    return frames
 
+def solve(frames, points):
+    graph = graphSolver()
+    frames_idx = {}
+    points_idx = {}
+    for i, frame in enumerate(frames):
+        x_cw = pose_inv(frame['pose'])
+        idx = graph.addNode(camposeNode(x_cw, i)) # add node to graph
+        frames_idx.update({i: idx})
+    for j in points:
+        idx = graph.addNode(featureNode(points[j]['p3d'], j)) # add feature to graph
+        points_idx.update({j: idx})
+        for i in points[j]['view']:
+            f_idx = frames_idx[i]
+            u0 = frames[i]['points'][j][0:2]
+            u1 = u0.copy()
+            u1[0] -= frames[i]['points'][j][2]
+            graph.addEdge(reporjEdge(f_idx, idx, [x_c2c1, u0, u1, K],kernel=CauchyKernel(0.1)))      
+    graph.report()
+    graph.solve()
+    graph.report()
+    for n in graph.nodes:
+        if( type(n).__name__ == 'featureNode'):
+            points[n.i]['p3d'] = n.x
+        if( type(n).__name__ == 'camposeNode'):
+            frames[n.i]['pose'] = pose_inv(n.x)
 
 if __name__ == '__main__':
     frames = []
@@ -177,50 +198,13 @@ if __name__ == '__main__':
     cy = 203.87405395507812
     x_c2c1 = np.array([0,0,0,-0.075,0,0])
     K = np.array([[fx,0,cx],[0,fy,cy],[0,0,1.]])
-    s = 0
-    n = 10
-    for idx in range(s,s+n):
-        fn = 'data/slam/F%04d.yaml'%idx
-        print('read %s...'%fn)
-        with open(fn) as file:
-            node = yaml.safe_load(file)
-            pts = np.array(node['points']['data']).reshape(node['points']['num'],-1)
-            imus = np.array(node['imu']['data']).reshape(node['imu']['num'],-1)
-            frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'points': dict(zip(pts[:,0].astype(np.int), pts[:,1:])),'imu':imus})
-    points = init(frames, K)
 
-    
-    graph = graphSolver()
-    frames_idx = {}
-    points_idx = {}
-    for i, frame in enumerate(frames):
-        x_cw = inv(frame['pose'])
-        idx = graph.addNode(camposeNode(x_cw, i)) # add node to graph
-        frames_idx.update({i: idx})
-    for j in points:
-        idx = graph.addNode(featureNode(points[j]['p3d'], j)) # add feature to graph
-        points_idx.update({j: idx})
-        for i in points[j]['view']:
-            f_idx = frames_idx[i]
-            u0 = frames[i]['points'][j][0:2].astype(float)
-            u1 = frames[i]['points'][j][0:2].astype(float)
-            u1[0] -= frames[i]['points'][j][2].astype(float)
-            graph.addEdge(reporjEdge(f_idx, idx, [x_c2c1, u0, u1, K],kernel=CauchyKernel(0.1)))
-            
-    graph.report()
-    graph.solve()
-    graph.report()
-    
-    for n in graph.nodes:
-        if( type(n).__name__ == 'featureNode'):
-            points[n.i]['p3d'] = n.x
-        if( type(n).__name__ == 'camposeNode'):
-            frames[n.i]['pose'] = inv(n.x)
+    frames = readframes(10, 'data/slam')
+    points = initmap(frames, K, x_c2c1)
+    solve(frames, points)
+    remove_outlier(frames, points, K, x_c2c1)
+    solve(frames, points)
 
-
-
-
-
-    draw_frame(frames, points)
-    #draw3d('view', frames, points)
+    #draw_frame(frames, points, K)
+    draw3d('view', frames, points)
     plt.show()

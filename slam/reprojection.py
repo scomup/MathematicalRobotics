@@ -52,6 +52,21 @@ def pose_plus(x1,x2):
     t = R1.dot(t2) + t1
     return np.hstack([logSO3(R),t])
 
+def pose_inv(x):
+    R = expSO3(x[0:3])
+    t = x[3:6]
+    Rinv = np.linalg.inv(R)
+    return np.hstack([logSO3(Rinv),Rinv.dot(-t)])
+
+def tom(x):    
+    R = expSO3(x[0:3])
+    t = x[3:6]
+    return makeT(R,t)
+
+def tox(m):    
+    R,t = makeRt(m)
+    return np.hstack([logSO3(R),t])
+
 if __name__ == '__main__':
     fx = 400.
     fy = 400.
