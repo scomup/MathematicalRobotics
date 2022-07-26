@@ -8,7 +8,7 @@ class naviNode:
         self.x = state
         self.size = 9
         self.stamp = stamp
-        self.id = 0
+        self.id = id
     def update(self, dx):
         d_state = navDelta(expSO3(dx[0:3]), dx[3:6], dx[6:9])
         self.x = self.x.retract(d_state)

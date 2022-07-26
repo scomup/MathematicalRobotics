@@ -16,6 +16,20 @@ def transform(x, p, calcJ = False):
     else:
         return r
 
+def transformInv(x, p, calcJ = False):
+    Rinv = expSO3(-x[0:3])
+    t = x[3:6]
+    r = Rinv.dot(p-t)
+    if(calcJ == True):
+        M0 = skew(Rinv.dot(p-t))
+        M1 = -np.eye(3)
+        dTdx = np.hstack([M0, M1])
+        dTdp = Rinv
+        return  r, dTdx, dTdp
+    else:
+        return r
+
+
 def projection(pc, K, calcJ = False):
     fx = K[0,0]
     fy = K[1,1]
@@ -30,15 +44,27 @@ def projection(pc, K, calcJ = False):
     else:
         return r
 
-def reporj(x, pw, pim, K, calcJ = False):
+def reporj_bk(x_cw, pw, pim, K, calcJ = False):
     if(calcJ == True):
-        pc, dTdx, dTdp = transform(x, pw, True)
+        pc, dTdx, dTdp = transform(x_cw, pw, True)
         r ,dKdT = projection(pc, K, True)
         dKdx = dKdT.dot(dTdx)
         dKdp = dKdT.dot(dTdp)
         return r-pim, dKdx, dKdp
     else:
-        pc = transform(x, pw)
+        pc = transform(x_cw, pw)
+        r = projection(pc, K)
+        return r-pim
+
+def reporj(x_wc, pw, pim, K, calcJ = False):
+    if(calcJ == True):
+        pc, dTdx, dTdp = transformInv(x_wc, pw, True)
+        r ,dKdT = projection(pc, K, True)
+        dKdx = dKdT.dot(dTdx)
+        dKdp = dKdT.dot(dTdp)
+        return r-pim, dKdx, dKdp
+    else:
+        pc = transformInv(x_wc, pw)
         r = projection(pc, K)
         return r-pim
 
@@ -81,6 +107,19 @@ if __name__ == '__main__':
     J1m = numericalDerivative(transform, [x, p], 0, pose_plus)
     J2m = numericalDerivative(transform, [x, p], 1)
     print('test transform error')
+    if(np.linalg.norm(J1m - J1) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+    if(np.linalg.norm(J2m - J2) < 0.0001):
+        print('OK')
+    else:
+        print('NG')
+
+    r,J1,J2 = transformInv(x, p, True)
+    J1m = numericalDerivative(transformInv, [x, p], 0, pose_plus)
+    J2m = numericalDerivative(transformInv, [x, p], 1)
+    print('test transformInv error')
     if(np.linalg.norm(J1m - J1) < 0.0001):
         print('OK')
     else:

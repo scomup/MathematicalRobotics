@@ -37,7 +37,7 @@ class reporj2Edge:
 def getPIM(frame, xbi):
     imuIntegrator = imuIntegration(9.81, Tbi = xbi)
     for imu_data in frame['imu']:
-        imuIntegrator.update(imu_data[1:4], imu_data[4:7], 1/400.)
+        imuIntegrator.update(imu_data[1:4], imu_data[4:7], 0.0022)
     return imuIntegrator
 
 
@@ -47,22 +47,23 @@ def solve2(frames, points, xbi):
     points_idx = {}
     bias_idx = {}
     for i, frame in enumerate(frames):
-        x_cw = pose_inv(frame['pose'])
-        state = navState.set(np.hstack([x_cw,np.zeros(3)]))
+        x_wc = frame['pose']
+        state = navState.set(np.hstack([x_wc,np.zeros(3)]))
         idx = graph.addNode(naviNode(state, frame['stamp'],i)) # add node to graph
         frames_idx.update({i: idx})
-        """
+        
         idxb = graph.addNode(biasNode(np.zeros(6)))
         bias_idx.update({i: idxb})
         if(i != 0):
             imuIntegrator = getPIM(frame, xbi)
             graph.addEdge(imupreintEdge(frames_idx[i-1], frames_idx[i], bias_idx[i-1], imuIntegrator, imupreintOmega)) # add imu preintegration to graph
-            #graph.addEdge(posvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
+            graph.addEdge(posvelEdge(frames_idx[i-1], frames_idx[i], imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
             graph.addEdge(biaschangeEdge(bias_idx[i-1], bias_idx[i], biaschangeOmega)) # add the bias change error to graph
         else:
             graph.addEdge(biasEdge(bias_idx[0], np.zeros(6), biasOmega))
-        """
-
+            graph.addEdge(naviEdge(frames_idx[0], state, prirOmega))
+        
+    """
     for j in points:
         idx = graph.addNode(featureNode(points[j]['p3d'], j),True) # add feature to graph
         points_idx.update({j: idx})
@@ -71,7 +72,8 @@ def solve2(frames, points, xbi):
             u0 = frames[i]['points'][j][0:2]
             u1 = u0.copy()
             u1[0] -= frames[i]['points'][j][2]
-            graph.addEdge(reporj2Edge(f_idx, idx, [x_c2c1, u0, u1, K],kernel=CauchyKernel(0.1)))      
+            graph.addEdge(reporj2Edge(f_idx, idx, [x_c1c2, u0, u1, K],reporjOmega, kernel=CauchyKernel(0.1)))    
+    """
     graph.report()
     graph.solve()
     graph.report()
@@ -87,19 +89,24 @@ if __name__ == '__main__':
     cx = 323.534423828125
     cy = 203.87405395507812
     imupreintOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
-    biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-4)) 
-    biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e-2))
-    x_c2c1 = np.array([0,0,0,-0.075,0,0])
+    biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-6)) 
+    biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e-8))
+    posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1e-3))
+    reporjOmega = np.linalg.inv(np.diag(np.ones(4)*30))
+    prirOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
+    #makeromega[6:9,6:9] = 0
+    x_c1c2 = np.array([0,0,0,0.075,0,0])
     K = np.array([[fx,0,cx],[0,fy,cy],[0,0,1.]])
 
-    frames = readframes(3, 'data/slam')
-    points = initmap(frames, K, x_c2c1)
+    frames = readframes(2, 'data/slam')
+    points = initmap(frames, K, x_c1c2)
     
     xbi = np.array([ 0.,  0., -1.57079633, -0.014,  0.053, 0.])
-    #xbi = np.array([ 0, 0, 0, 0, 0, 0.])
+    #xbi = np.array([  0.,  0., 0, 0,  0, 0.])
 
     solve2(frames, points, xbi)
-    #remove_outlier(frames, points, K, x_c2c1)
+    #remove_outlier(frames, points, K, x_c1c2)
     #solve2(frames, points, xbi)
     draw3d('view', frames, points)
+    #draw_frame(frames, points, K)
     plt.show()
