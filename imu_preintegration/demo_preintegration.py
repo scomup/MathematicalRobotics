@@ -10,11 +10,11 @@ import quaternion
 from imu_factor import *
 from scipy.spatial import KDTree
 
-
+G = 9.8
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
 def getPIM(imu_data, start, end):
-    imuIntegrator = imuIntegration(9.81)
+    imuIntegrator = imuIntegration(G)
     idx = np.where(np.logical_and(imu_data[:,0]>=start, imu_data[:,0]<end))[0]
     for i in idx:
         imuIntegrator.update(imu_data[i,1:4], imu_data[i,4:7], 0.01)
@@ -33,7 +33,7 @@ def draw(axes, graph, color, label):
     for e in graph.edges:
         if(not isinstance(e, imupreintEdge)):
             continue
-        imuIntegrator = imuIntegration(9.80)
+        imuIntegrator = imuIntegration(G)
         statei = graph.nodes[e.i].x
         biasi = graph.nodes[e.k].x
         for acc, gyo, dt in zip(e.z.acc_buf, e.z.gyo_buf, e.z.dt_buf):
@@ -95,7 +95,7 @@ def print_error(graph, truth_data):
     return err
 
 if __name__ == '__main__':
-    imuIntegrator = imuIntegration(9.80)
+    imuIntegrator = imuIntegration(G)
     pose_file = FILE_PATH+'/data/ndt_pose.npy'
     #pose_file = FILE_PATH+'/data/vins_pose.npy'
     truth_file = FILE_PATH+'/data/truth_pose.npy'

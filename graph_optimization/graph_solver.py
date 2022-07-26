@@ -154,7 +154,8 @@ class graphSolver:
         if(self.use_sparse):
             dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
         else:
-            dx = np.linalg.solve(H, -g)
+            #dx = np.linalg.solve(H, -g)
+            dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 
     def solve(self, show_info=True):

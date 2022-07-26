@@ -1,11 +1,14 @@
-from preintegration import *
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from imu_preintegration.preintegration import *
 
 
 class naviNode:
-    def __init__(self, state, stamp = 0):
+    def __init__(self, state, stamp = 0, id = 0):
         self.x = state
         self.size = 9
         self.stamp = stamp
+        self.id = 0
     def update(self, dx):
         d_state = navDelta(expSO3(dx[0:3]), dx[3:6], dx[6:9])
         self.x = self.x.retract(d_state)

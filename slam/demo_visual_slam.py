@@ -10,18 +10,19 @@ from graph_optimization.plot_pose import *
 
 
 class camposeNode:
-    def __init__(self, x, i=0):
+    def __init__(self, x, id=0):
         self.x = x
         self.size = x.size
-        self.i = i
+        self.id = id
     def update(self, dx):
         self.x = pose_plus(self.x, dx)
 
+
 class featureNode:
-    def __init__(self, x, i=0):
+    def __init__(self, x, id=0):
         self.x = x
         self.size = x.size
-        self.i = i
+        self.id = id
     def update(self, dx):
         self.x = self.x + dx
 
@@ -62,7 +63,7 @@ def draw3d(figname, frames, points):
     set_axes_equal(figname)
 
 
-def calc_camera_pose(frame, points, x_cw, x_c2c1):
+def calc_camera_pose(frame, points, x_cw, x_c2c1, K):
     graph = graphSolver()
     idx = graph.addNode(camposeNode(x_cw)) 
     for p in frame['points']:
@@ -73,6 +74,7 @@ def calc_camera_pose(frame, points, x_cw, x_c2c1):
         u1[0] -= frame['points'][p][2]
         p3d = points[p]['p3d']
         idx_p = graph.addNode(featureNode(p3d),True) 
+        #graph.addEdge(reporjEdge(idx, idx_p, [x_c2c1, u0, u1, K]))
         graph.addEdge(reporjEdge(idx, idx_p, [x_c2c1, u0, u1, K],kernel=CauchyKernel(0.5)))
         #r,_,_ = reporjEdge(idx, idx_p, [x_c2c1, u0, u1, K]).residual(graph.nodes)
     graph.solve(False)
@@ -86,15 +88,16 @@ def initmap(frames, K, x_c2c1):
     for i, frame in enumerate(frames):
         print("initial frame %d..."%i)
         if(i != 0):
-            x_cw = calc_camera_pose(frame, points, pose_inv(frames[i-1]['pose']),x_c2c1)
+            x_cw = calc_camera_pose(frame, points, pose_inv(frames[i-1]['pose']),x_c2c1,K)
             x_wc = pose_inv(x_cw)
             frames[i]['pose'] = x_wc
-        for j in frame['points']:
+        for j in list(frame['points']):
             if j in points:
                 points[j]['view'].append(i)
                 continue
             u,v,disp = frame['points'][j]
             if(disp < 20):
+                frame['points'].pop(j)
                 continue
             p3d = Kinv.dot(np.array([u,v,1.]))
             depth = (baseline * focal) / (disp)
@@ -152,7 +155,8 @@ def draw_frame(frames, points, K):
         plt.show()
 
 def readframes(n,folder):
-    for idx in range(n):
+    frames = []
+    for idx in range(0,n):
         fn = folder+'/F%04d.yaml'%idx
         print('read %s...'%fn)
         with open(fn) as file:
@@ -185,13 +189,11 @@ def solve(frames, points):
     graph.report()
     for n in graph.nodes:
         if( type(n).__name__ == 'featureNode'):
-            points[n.i]['p3d'] = n.x
+            points[n.id]['p3d'] = n.x
         if( type(n).__name__ == 'camposeNode'):
-            frames[n.i]['pose'] = pose_inv(n.x)
+            frames[n.id]['pose'] = pose_inv(n.x)
 
 if __name__ == '__main__':
-    frames = []
-    points = {}
     fx = 403.5362854003906
     fy = 403.4488830566406
     cx = 323.534423828125

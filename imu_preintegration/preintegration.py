@@ -193,24 +193,29 @@ class navDelta:
 
 
 class imuIntegration:
-    def __init__(self,G, bias = np.zeros(6)):
+    def __init__(self, G, bias = np.zeros(6), Tbi=np.zeros(6)):
         self.pim = navDelta()
         self.d_tij = 0
         self.gravity = np.array([0,0,-G])
         self.J_zeta_bacc = np.zeros([9,3])
         self.J_zeta_bgyo = np.zeros([9,3])
-
+        self.Rbi = expSO3(Tbi[0:3])
+        self.tbi = Tbi[3:6]
         self.bacc = bias[0:3]
         self.bgyo = bias[3:6]
         self.acc_buf = []
         self.gyo_buf = []
         self.dt_buf = []
+
         
-    def update(self, acc, gyo, dt):
+    def update(self, acc_i, gyo_i, dt):
         """
         Check preintegration.md (7)
         Integrates all the IMU measurements without considering IMU bias and the gravity.
         """
+        acc = self.Rbi.dot(acc_i)
+        gyo = self.Rbi.dot(gyo_i)
+        acc -= skew(gyo).dot(skew(gyo).dot(self.tbi))
         self.acc_buf.append(acc)
         self.gyo_buf.append(gyo)
         self.dt_buf.append(dt)
