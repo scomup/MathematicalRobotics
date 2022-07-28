@@ -193,14 +193,14 @@ class navDelta:
 
 
 class imuIntegration:
-    def __init__(self, G, bias = np.zeros(6), Tbi=np.zeros(6)):
+    def __init__(self, G, bias = np.zeros(6), Rbi = np.eye(3), tbi = np.zeros(3)):
         self.pim = navDelta()
         self.d_tij = 0
         self.gravity = np.array([0,0,-G])
         self.J_zeta_bacc = np.zeros([9,3])
         self.J_zeta_bgyo = np.zeros([9,3])
-        self.Rbi = expSO3(Tbi[0:3])
-        self.tbi = Tbi[3:6]
+        self.Rbi = Rbi
+        self.tbi = tbi
         self.bacc = bias[0:3]
         self.bgyo = bias[3:6]
         self.acc_buf = []

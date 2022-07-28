@@ -49,11 +49,15 @@ class HuberKernel:
     def apply(self,e2):
         rho = [None,None,None]
         dsqr = self.delta * self.delta
-        sqrte = np.sqrt(e2)
-        mark = (e2 <= dsqr)
-        rho[0] = mark*e2 + np.logical_not(mark)*(2 * sqrte * self.delta - dsqr)
-        rho[1] = mark*1 + np.logical_not(mark)*(self.delta / sqrte)
-        rho[2] = mark*0 + np.logical_not(mark)*(-0.5 * rho[1]/e2)
+        if(e2 <= dsqr):
+            rho[0] = e2
+            rho[1] = 1.
+            rho[2] = 0.
+        else:
+            sqrte = np.sqrt(e2)
+            rho[0] = 2 * sqrte * self.delta - dsqr
+            rho[1] = self.delta / sqrte
+            rho[2] = -0.5 * rho[1] / e2
         return rho
 
 class PseudoHuberKernel:

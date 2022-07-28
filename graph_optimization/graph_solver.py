@@ -154,15 +154,24 @@ class graphSolver:
         if(self.use_sparse):
             dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
         else:
-            #dx = np.linalg.solve(H, -g)
-            dx = np.linalg.pinv(H).dot(-g)
+            dx = np.linalg.solve(H, -g)
+            #dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 
     def solve(self, show_info=True, min_step = 0.0001):
         last_score = None
         iter = 0
-        while(True):   
+        while(True):  
+            if(show_info):
+                if(iter <= 10):
+                    dx, score = self.solve_once() 
+                    dd = np.linalg.norm(dx)
+                    #print(dd)
             dx, score = self.solve_once()
+            step = 1.
+            if(np.linalg.norm(dx) > step):
+                dx = dx/np.linalg.norm(dx)*step
+
             iter +=1
             if(show_info):
                 print('iter %d: %f'%(iter, score))
@@ -173,6 +182,8 @@ class graphSolver:
             if(last_score < score):
                 break
             self.update(dx)
+            #if(show_info):
+            #    self.report()
             if(np.linalg.norm(dx) < min_step):
                 break
             last_score = score
