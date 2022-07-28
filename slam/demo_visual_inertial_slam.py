@@ -11,45 +11,6 @@ from imu_preintegration.imu_factor import *
 from slam.demo_visual_slam import *
 from graph_optimization.plot_pose import *
 
-def draw_frame(frames, points, K, x_c1c2, x_bc):
-    for frame in frames:
-        x_wb = frame['pose']
-        u0s = []
-        u1s = []
-        for j in frame['points']:
-            if j in points:
-                pw = points[j]['p3d']
-                u0 = frame['points'][j][0:2]
-                u1 = reporj(x_wb, pw, np.zeros(2), K, x_bc)
-                u0s.append(u0)
-                u1s.append(u1)
-        u0s = np.array(u0s)
-        u1s = np.array(u1s)
-        plt.xlim(0,640)
-        plt.ylim(0,400)
-        plt.gca().invert_yaxis()
-        plt.scatter(u0s[:,0],u0s[:,1])
-        plt.scatter(u1s[:,0],u1s[:,1])
-        plt.grid()
-        plt.show()
-
-
-def draw3d(figname, frames, points, x_bc):
-    pts = []
-    for i in points:
-        x = points[i]['p3d']
-        #x = transform(x_bc, x)
-        pts.append(x)
-    pts = np.array(pts)
-    for frame in frames:
-        x_wb = frame['pose']
-        x_wc = pose_plus(x_wb, x_bc)
-        T = tom(x_wb)
-        plot_pose3(figname, T, 0.05)
-    fig = plt.figure(figname)
-    axes = fig.gca()
-    axes.scatter(pts[:,0],pts[:,1],pts[:,2])
-    set_axes_equal(figname)
 
 class reporj2Edge:
     def __init__(self, i, j, z, omega = None, kernel=None):
@@ -112,10 +73,10 @@ def solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi):
             u0 = frames[i]['points'][j][0:2]
             u1 = u0.copy()
             u1[0] -= frames[i]['points'][j][2]
-            graph.addEdge(reporj2Edge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], reporjOmega, kernel=HuberKernel(0.5)))    
+            graph.addEdge(reporj2Edge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], reporjOmega, kernel=CauchyKernel(0.5)))    
 
     graph.report()
-    graph.solve()
+    graph.solve(step=1)
     graph.report()
     graph.edges[2].z.predict(graph.nodes[0].x,graph.nodes[1].x)
     for n in graph.nodes:
@@ -139,11 +100,11 @@ if __name__ == '__main__':
     biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-6)) 
     biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e-8))
     posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1e-3))
-    reporjOmega = np.linalg.inv(np.diag(np.ones(4)*10000))
+    reporjOmega = np.linalg.inv(np.diag(np.ones(4)*1e-2))
     prirOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
     prirOmega[0:3,0:3] = 0
 
-    frames = readframes(3, 'data/slam')
+    frames = readframes(5, 'data/slam', W, H)
     points = initmap(frames, K, x_c1c2, x_bc)
     
     R_bi = np.zeros([3,3])
@@ -154,6 +115,6 @@ if __name__ == '__main__':
     solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi)
     #remove_outlier(frames, points, K, x_c1c2)
     #solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi)
-    #draw3d('view', frames, points, x_bc)
-    draw_frame(frames, points, K, x_c1c2, x_bc)
+    draw3d('view', frames, points, x_bc)
+    #draw_frame(frames, points, K, x_c1c2, x_bc)
     plt.show()

@@ -6,7 +6,7 @@ import yaml
 from reprojection import *
 from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
-
+from graph_optimization.plot_pose import *
 
 class camposeNode:
     def __init__(self, x, id=0):
@@ -180,11 +180,11 @@ def solve(frames, points, K, x_c1c2, x_bc):
     points_idx = {}
     for i, frame in enumerate(frames):
         x_wc = frame['pose']
-        idx = graph.addNode(camposeNode(x_wc, i),True) # add node to graph
+        idx = graph.addNode(camposeNode(x_wc, i)) # add node to graph
         frames_idx.update({i: idx})
     for j in points:
-        #idx = graph.addNode(featureNode(points[j]['p3d'], j)) # add feature to graph
-        idx = graph.addNode(featureNode(np.array([1.,0.,0.]), j)) # add feature to graph
+        idx = graph.addNode(featureNode(points[j]['p3d'], j)) # add feature to graph
+        #idx = graph.addNode(featureNode(np.array([1.,0.,0.]), j)) # add feature to graph
         points_idx.update({j: idx})
         for i in points[j]['view']:
             f_idx = frames_idx[i]
@@ -193,7 +193,7 @@ def solve(frames, points, K, x_c1c2, x_bc):
             u1[0] -= frames[i]['points'][j][2]
             graph.addEdge(reporjEdge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K],kernel=HuberKernel(0.1)))      
     graph.report()
-    graph.solve()
+    graph.solve(step=1)
     graph.report()
     for n in graph.nodes:
         if( type(n).__name__ == 'featureNode'):
@@ -202,7 +202,6 @@ def solve(frames, points, K, x_c1c2, x_bc):
             frames[n.id]['pose'] = n.x
 
 if __name__ == '__main__':
-    from graph_optimization.plot_pose import *
     W = 640.
     H = 400.
     fx = 403.5362854003906/W

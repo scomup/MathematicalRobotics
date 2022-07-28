@@ -158,32 +158,19 @@ class graphSolver:
             #dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 
-    def solve(self, show_info=True, min_step = 0.0001):
-        last_score = None
+    def solve(self, show_info=True, min_step = 0.0001, step = 0):
+        last_score = np.inf
         iter = 0
         while(True):  
-            if(show_info):
-                if(iter <= 10):
-                    dx, score = self.solve_once() 
-                    dd = np.linalg.norm(dx)
-                    #print(dd)
             dx, score = self.solve_once()
-            step = 1.
-            if(np.linalg.norm(dx) > step):
+            if(step > 0 and np.linalg.norm(dx) > step):
                 dx = dx/np.linalg.norm(dx)*step
-
             iter +=1
             if(show_info):
                 print('iter %d: %f'%(iter, score))
-            if(last_score is None):
-                self.update(dx)
-                last_score = score
-                continue   
             if(last_score < score):
                 break
             self.update(dx)
-            #if(show_info):
-            #    self.report()
             if(np.linalg.norm(dx) < min_step):
                 break
             last_score = score
