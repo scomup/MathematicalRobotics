@@ -158,7 +158,7 @@ class graphSolver:
             dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 
-    def solve(self, show_info=True):
+    def solve(self, show_info=True, min_step = 0.0001):
         last_score = None
         iter = 0
         while(True):   
@@ -173,7 +173,7 @@ class graphSolver:
             if(last_score < score):
                 break
             self.update(dx)
-            if(last_score - score < 0.0001):
+            if(np.linalg.norm(dx) < min_step):
                 break
             last_score = score
 

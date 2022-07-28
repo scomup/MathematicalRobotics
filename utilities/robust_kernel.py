@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 # Christopher Zach. “Robust bundle adjustment revisited” (11)(12)
 
 class gaussianKernel:
@@ -86,6 +85,7 @@ class CauchyKernel:
 
 
 def drawKernel():
+    import matplotlib.pyplot as plt
     e = np.arange(-5,5, 0.03)
     e2 = e**2
     ePHuber = PseudoHuberKernel(1).apply(e2)

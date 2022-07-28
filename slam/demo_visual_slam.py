@@ -6,7 +6,6 @@ import yaml
 from reprojection import *
 from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
-from graph_optimization.plot_pose import *
 
 
 class camposeNode:
@@ -197,20 +196,20 @@ def solve(frames, points, K, x_c1c2, x_bc):
             frames[n.id]['pose'] = n.x
 
 if __name__ == '__main__':
+    from graph_optimization.plot_pose import *
     fx = 403.5362854003906
     fy = 403.4488830566406
     cx = 323.534423828125
     cy = 203.87405395507812
     x_c1c2 = np.array([0,0,0,0.075,0,0])
-    x_bc = np.array([0,0,np.pi/2,0.0,0,0])
+    x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
     K = np.array([[fx,0, cx],[0, fy,cy],[0,0,1.]])
 
-    frames = readframes(2, 'data/slam')
+    frames = readframes(10, 'data/slam')
     points = initmap(frames, K, x_c1c2, x_bc)
     solve(frames, points, K, x_c1c2, x_bc)
     remove_outlier(frames, points, K, x_c1c2)
     solve(frames, points, K, x_c1c2, x_bc)
-
     draw3d('view',frames, points, x_bc)
     #draw_frame(frames, points, K, x_c1c2, x_bc)
     plt.show()
