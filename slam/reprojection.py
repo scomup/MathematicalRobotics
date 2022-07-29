@@ -3,23 +3,34 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 
-def getTcjci(x_wci, x_wcj, x_bc, calcJ = False):
 
-    T_wci = tom(x_wci)
-    T_wcj = tom(x_wcj)
-    T_bc = tom(x_bc)
-    Tcjci = T_bc.T.dot(T_wci.T.dot(T_wcj.dot(T_bc)))
-
-
-    r = tox(Tcjci)
+def BinvAB(x_a, x_b, calcJ = False):
+    A = tom(x_a)
+    B = tom(x_b)
+    Binv = np.linalg.inv(B)
+    r = tox(Binv.dot(A.dot(B)))
     if(calcJ == True):
-        
-        M = R.dot(skew(-p))
-        dTdx = np.hstack([M, R])
-        dTdp = R
-        return  r, dTdx, dTdp
+        Ja = np.zeros([6,6])
+        Rb = B[0:3,0:3]
+        Ja[0:3,0:3] = Rb.T
+        Ja[3:6,3:6] = Rb.T
+        Ja[3:6,0:3] = Rb.T.dot(skew(-x_b[3:6]))
+        return r, Ja
     else:
         return r
+    
+
+def getTcicj(x_wbi, x_wbj, x_bc, calcJ = False):
+
+    if(calcJ == True):
+        x_bibj, Jdxj, Jdxi = pose_minus(x_wbj, x_wbi, True)
+        x_cicj, Jh = BinvAB(x_bibj, x_bc, True)
+        numericalDerivative(getTcicj, [xi,xj,xbc], 0, pose_plus, pose_minus)
+        return r, Jh.dot(Jdxi), Jh.dot(Jdxj)
+    else:
+        x_bibj = pose_minus(x_wbj, x_wbi)
+        x_cicj = BinvAB(x_bibj, x_bc)
+        return x_cicj
 
 
 def transform(x, p, calcJ = False):
@@ -107,14 +118,24 @@ def pose_plus(x1,x2, calcJ = False):
     else:
         return x3
 
-def pose_minus(x1,x2):
+def pose_minus(x1,x2,calcJ = False):
     R1 = expSO3(x1[0:3])
     t1 = x1[3:6]
     R2 = expSO3(x2[0:3])
     t2 = x2[3:6]
     R = R2.T.dot(R1)
     t = R2.T.dot(t1-t2)
-    return np.hstack([logSO3(R),t])
+    r = pose_plus(pose_inv(x2),x1)
+    if(calcJ == True):
+        Jx1 = np.eye(6)
+        Jx2 = np.zeros([6,6])
+        Jx2[0:3,0:3] = -R.T
+        Jx2[3:6,3:6] = -R.T
+        Jx2[3:6,0:3] = R.T.dot(skew(t))
+        return r, Jx1, Jx2
+    else:
+        return r
+
 
 def pose_inv(x, calcJ = False):
     R = expSO3(x[0:3])
@@ -145,21 +166,7 @@ if __name__ == '__main__':
     r, J = pose_inv(x,True)
     Jm = numericalDerivative(pose_inv, [x], 0, pose_plus, pose_minus)
     ckeck(J,Jm)
-
-    xi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
-    xj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
-    xbc = np.array([0.1,-0.1,-0.3,0.1,-0.1,-0.2])
-
-    A = expSO3(xi[0:3])
-    B = expSO3(xj[0:3])
-    C = expSO3(xbc[0:3])
-    Ja= -C.T.dot(B.T.dot(A))
-    Jb= C.T
-    r = getTcjci(xi,xj,xbc)
-    J1 = numericalDerivative(pose_inv, [xi], 0, pose_plus, pose_minus)
-    Jxim = numericalDerivative(getTcjci, [xi,xj,xbc], 0, pose_plus, pose_minus)
-    Jxjm = numericalDerivative(getTcjci, [xi,xj,xbc], 1, pose_plus, pose_minus)
-    #exit(0)
+ 
 
     fx = 400.
     fy = 400.
@@ -173,10 +180,16 @@ if __name__ == '__main__':
     x3,J1,J2 = pose_plus(x1,x2,True)
     x2m = pose_minus(x3,x1)
     ckeck(x3m,x3)
-    print('test pose_plus error')
     ckeck(x2m,x2)
+    print('test pose_plus error')
     J1m = numericalDerivative(pose_plus, [x1, x2], 0, pose_plus, pose_minus)
     J2m = numericalDerivative(pose_plus, [x1, x2], 1, pose_plus, pose_minus)
+    ckeck(J1m,J1)
+    ckeck(J2m,J2)
+    print('test pose_minus error')
+    r, J1, J2 = pose_minus(x1, x2,True)
+    J1m = numericalDerivative(pose_minus, [x1, x2], 0, pose_plus, pose_minus)
+    J2m = numericalDerivative(pose_minus, [x1, x2], 1, pose_plus, pose_minus)
     ckeck(J1m,J1)
     ckeck(J2m,J2)
 
@@ -211,4 +224,23 @@ if __name__ == '__main__':
     print('test reprojection error')
     ckeck(J1m,J1)
     ckeck(J2m,J2)
+    xi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    xj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
+    xbc = np.array([0.1,-0.1,-0.3,0.1,-0.1,-0.2])
+
+    print('test getTcicj error')
+    r, Jxi, Jxj = getTcicj(xi,xj,xbc,True)
+    Jxim = numericalDerivative(getTcicj, [xi,xj,xbc], 0, pose_plus, pose_minus)
+    Jxjm = numericalDerivative(getTcicj, [xi,xj,xbc], 1, pose_plus, pose_minus)
+    ckeck(Jxi,Jxim)
+    ckeck(Jxj,Jxjm)
+
+    print('test BinvAB error')
+    xa = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    xb = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
+    r, Jxa = BinvAB(xa,xb,True)
+    Jxam = numericalDerivative(BinvAB, [xa,xb], 0, pose_plus, pose_minus)
+    Jxbm = numericalDerivative(BinvAB, [xa,xb], 1, pose_plus, pose_minus)
+    ckeck(Jxa,Jxam)
+
 
