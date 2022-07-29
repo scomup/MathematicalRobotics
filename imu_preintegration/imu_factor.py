@@ -14,9 +14,10 @@ class naviNode:
         self.x = self.x.retract(d_state)
 
 class biasNode:
-    def __init__(self, bias):
+    def __init__(self, bias, id=0):
         self.x = bias
         self.size = 6
+        self.id = id
     def update(self, dx):
         self.x = self.x + dx
 

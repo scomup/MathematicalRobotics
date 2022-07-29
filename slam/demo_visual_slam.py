@@ -108,7 +108,7 @@ def initmap(frames, K, x_c1c2, x_bc):
             #print(u1,u2)
     return points
 
-def remove_outlier(frames, points, K, xc2c1):
+def remove_outlier(frames, points, K, x_c1c2, x_bc):
     for i, frame in enumerate(frames):
         x = frame['pose']
         for j in list(frame['points']):
@@ -117,12 +117,12 @@ def remove_outlier(frames, points, K, xc2c1):
                 u0 = frame['points'][j][0:2]
                 u1 = u0.copy()
                 u1[0] -= frame['points'][j][2]
-                u0_reproj = reporj(x, pw, np.zeros(2), K)
-                u1_reproj = reporj(pose_plus(xc2c1,x), pw, np.zeros(2), K)
+                u0_reproj = reporj(x, pw, np.zeros(2), K, x_bc)#x, p, u1, K, xbc, True
+                u1_reproj = reporj(x, pw, np.zeros(2), K, pose_plus(x_bc, x_c1c2))
                 d0 = np.linalg.norm(u0_reproj - u0)
                 d1 = np.linalg.norm(u1_reproj - u1)
                 d = d0 + d1
-                if(d > 2):
+                if(d0 > 2/640.):
                     del frame['points'][j]
                     idx = points[j]['view'].index(i)
                     points[j]['view'].pop(idx)
@@ -171,7 +171,7 @@ def readframes(n,folder,W,H):
             pts_d[:,2] /= W
             pts = dict(zip(pts[:,0].astype(np.int), pts_d))
             imus = np.array(node['imu']['data']).reshape(node['imu']['num'],-1)
-            frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'points': pts,'imu':imus})
+            frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'vel':np.zeros(3),'bias':np.zeros(6),'points': pts,'imu':imus})
     return frames
 
 def solve(frames, points, K, x_c1c2, x_bc):
@@ -217,6 +217,6 @@ if __name__ == '__main__':
     solve(frames, points, K, x_c1c2, x_bc)
     #remove_outlier(frames, points, K, x_c1c2)
     #solve(frames, points, K, x_c1c2, x_bc)
-    #draw3d('view',frames, points, x_bc)
-    draw_frame(frames, points, K, x_c1c2, x_bc)
+    draw3d('view',frames, points, x_bc)
+    #draw_frame(frames, points, K, x_c1c2, x_bc)
     plt.show()
