@@ -3,6 +3,24 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 
+def getTcjci(x_wci, x_wcj, x_bc, calcJ = False):
+
+    T_wci = tom(x_wci)
+    T_wcj = tom(x_wcj)
+    T_bc = tom(x_bc)
+    Tcjci = T_bc.T.dot(T_wci.T.dot(T_wcj.dot(T_bc)))
+
+
+    r = tox(Tcjci)
+    if(calcJ == True):
+        
+        M = R.dot(skew(-p))
+        dTdx = np.hstack([M, R])
+        dTdp = R
+        return  r, dTdx, dTdp
+    else:
+        return r
+
 
 def transform(x, p, calcJ = False):
     R = expSO3(x[0:3])
@@ -98,11 +116,19 @@ def pose_minus(x1,x2):
     t = R2.T.dot(t1-t2)
     return np.hstack([logSO3(R),t])
 
-def pose_inv(x):
+def pose_inv(x, calcJ = False):
     R = expSO3(x[0:3])
     t = x[3:6]
     Rinv = np.linalg.inv(R)
-    return np.hstack([logSO3(Rinv),Rinv.dot(-t)])
+    xinv = np.hstack([logSO3(Rinv),Rinv.dot(-t)])
+    if(calcJ == True):
+        J1 = np.eye(6)
+        J1[0:3,0:3] = -R
+        J1[3:6,3:6] = -R
+        J1[3:6,0:3] = R.dot(skew(R.T.dot(-t)))
+        return xinv, J1
+    else:
+        return xinv
 
 def tom(x):    
     R = expSO3(x[0:3])
@@ -114,6 +140,27 @@ def tox(m):
     return np.hstack([logSO3(R),t])
 
 if __name__ == '__main__':
+    print('test pose_inv')
+    x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    r, J = pose_inv(x,True)
+    Jm = numericalDerivative(pose_inv, [x], 0, pose_plus, pose_minus)
+    ckeck(J,Jm)
+
+    xi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    xj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
+    xbc = np.array([0.1,-0.1,-0.3,0.1,-0.1,-0.2])
+
+    A = expSO3(xi[0:3])
+    B = expSO3(xj[0:3])
+    C = expSO3(xbc[0:3])
+    Ja= -C.T.dot(B.T.dot(A))
+    Jb= C.T
+    r = getTcjci(xi,xj,xbc)
+    J1 = numericalDerivative(pose_inv, [xi], 0, pose_plus, pose_minus)
+    Jxim = numericalDerivative(getTcjci, [xi,xj,xbc], 0, pose_plus, pose_minus)
+    Jxjm = numericalDerivative(getTcjci, [xi,xj,xbc], 1, pose_plus, pose_minus)
+    #exit(0)
+
     fx = 400.
     fy = 400.
     cx = 200.
@@ -125,26 +172,13 @@ if __name__ == '__main__':
     x3m = tox(tom(x1).dot(tom(x2)))
     x3,J1,J2 = pose_plus(x1,x2,True)
     x2m = pose_minus(x3,x1)
+    ckeck(x3m,x3)
     print('test pose_plus error')
-    if(np.linalg.norm(x3m - x3) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    if(np.linalg.norm(x2m - x2) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
+    ckeck(x2m,x2)
     J1m = numericalDerivative(pose_plus, [x1, x2], 0, pose_plus, pose_minus)
     J2m = numericalDerivative(pose_plus, [x1, x2], 1, pose_plus, pose_minus)
-    if(np.linalg.norm(J1m - J1) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    if(np.linalg.norm(J2m - J2) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-
+    ckeck(J1m,J1)
+    ckeck(J2m,J2)
 
     x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     p = np.array([5.,6.,10.])
@@ -153,46 +187,28 @@ if __name__ == '__main__':
     J1m = numericalDerivative(transform, [x, p], 0, pose_plus)
     J2m = numericalDerivative(transform, [x, p], 1)
     print('test transform error')
-    if(np.linalg.norm(J1m - J1) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    if(np.linalg.norm(J2m - J2) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
+    ckeck(J1m,J1)
+    ckeck(J2m,J2)
 
     r,J1,J2 = transformInv(x, p, True)
     J1m = numericalDerivative(transformInv, [x, p], 0, pose_plus)
     J2m = numericalDerivative(transformInv, [x, p], 1)
     print('test transformInv error')
-    if(np.linalg.norm(J1m - J1) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    if(np.linalg.norm(J2m - J2) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
+    ckeck(J1m,J1)
+    ckeck(J2m,J2)
+
 
     r, J = projection(p,K, True)
     Jm = numericalDerivative(projection,[p, K], 0)
     print('test projection error')
-    if(np.linalg.norm(Jm - J) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
+    ckeck(Jm,J)
+
 
     xbc = np.array([-0.1,0.3,-0.5,0.1,-0.2,0.3])
     r,J1,J2 = reporj(x, p, pim, K, xbc, True)
     J1m = numericalDerivative(reporj, [x, p, pim, K], 0, pose_plus, delta=1e-8)
     J2m = numericalDerivative(reporj, [x, p, pim, K], 1)
     print('test reprojection error')
-    if(np.linalg.norm(J1m - J1) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
-    if(np.linalg.norm(J2m - J2) < 0.0001):
-        print('OK')
-    else:
-        print('NG')
+    ckeck(J1m,J1)
+    ckeck(J2m,J2)
+
