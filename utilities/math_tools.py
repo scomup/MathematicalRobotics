@@ -277,7 +277,7 @@ def quaternion_matrix(quaternion):
         m[2, 2] = 1.0 - 2*(q[1]**2 + q[2]**2)/n
         return m
 
-def ckeck(a,b):
+def check(a,b):
     if(np.linalg.norm(a - b) < 0.0001):
         print('OK')
     else:
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     dx = np.array([0.02,0.03,0.03])
     R1 = (expSO3(x+dx))
     R2 = (expSO3(x).dot(expSO3(HSO3(x).dot(dx))))
-    ckeck(R1,R2)
+    check(R1,R2)
 
     # exit(0)
     print('test SO3')
@@ -297,8 +297,8 @@ if __name__ == '__main__':
     R = expSO3(v)
     R2 = expSO3(logSO3(R))
     R3 = expSO3test(logSO3(R))
-    ckeck(R,R2)
-    ckeck(R2,R3)
+    check(R,R2)
+    check(R2,R3)
 
 
     print('test SE3')
@@ -306,8 +306,8 @@ if __name__ == '__main__':
     R = expSE3(v)
     R2 = expSE3(logSE3(R))
     R3 = expSE3test(logSE3(R))
-    ckeck(R,R2)
-    ckeck(R2,R3)
+    check(R,R2)
+    check(R2,R3)
 
     x = np.array([0.5,0.2,0.2])
     R = expSO3(x)
@@ -336,4 +336,4 @@ if __name__ == '__main__':
     """
     J = -R.dot(skew(a))
     J_numerical = numericalDerivative(residual, [x, a],0, plus)
-    ckeck(J,J_numerical)
+    check(J,J_numerical)

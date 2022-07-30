@@ -25,8 +25,7 @@ def getTcicj(x_wbi, x_wbj, x_bc, calcJ = False):
     if(calcJ == True):
         x_bibj, Jdxj, Jdxi = pose_minus(x_wbj, x_wbi, True)
         x_cicj, Jh = BinvAB(x_bibj, x_bc, True)
-        numericalDerivative(getTcicj, [xi,xj,xbc], 0, pose_plus, pose_minus)
-        return r, Jh.dot(Jdxi), Jh.dot(Jdxj)
+        return x_cicj, Jh.dot(Jdxi), Jh.dot(Jdxj)
     else:
         x_bibj = pose_minus(x_wbj, x_wbi)
         x_cicj = BinvAB(x_bibj, x_bc)
@@ -73,19 +72,10 @@ def projection(pc, K, calcJ = False):
     else:
         return r
 
-def reporj_bk(x_cw, pw, pim, K, calcJ = False):
-    if(calcJ == True):
-        pc, dTdx, dTdp = transform(x_cw, pw, True)
-        r ,dKdT = projection(pc, K, True)
-        dKdx = dKdT.dot(dTdx)
-        dKdp = dKdT.dot(dTdp)
-        return r-pim, dKdx, dKdp
-    else:
-        pc = transform(x_cw, pw)
-        r = projection(pc, K)
-        return r-pim
-
-def reporj(x_wb, pw, u, K, x_bc = np.zeros(6), calcJ = False):
+def reporj_world(x_wb, pw, u, K, x_bc = np.zeros(6), calcJ = False):
+    """
+    reporject a wolrd point to camera frame.
+    """
     if(calcJ == True):
         x_wc, dTwcdTwb, _ = pose_plus(x_wb, x_bc, True)
         pc, dpcdTwc, dpcdpw = transformInv(x_wc, pw, True)
@@ -97,6 +87,25 @@ def reporj(x_wb, pw, u, K, x_bc = np.zeros(6), calcJ = False):
         x_wc = pose_plus(x_wb, x_bc)
         pc = transformInv(x_wc, pw)
         u_reproj = projection(pc, K)
+        return u_reproj-u
+
+def reporj_local(x_wbi, x_wbj, depth, p_ci, u, K, x_bc = np.zeros(6), calcJ = False):
+    """
+    reporject a local point in camera i to camera j.
+    """
+    if(calcJ == True):
+        x_cicj, dxcicj_dxwbi, dxcicj_dxwbj = getTcicj(x_wbi, x_wbj, x_bc, True)
+        p_cj, dpcj_dxcicj, dpcj_dpcidepth = transform(x_cicj, p_ci * depth, True)
+        u_reproj, du_dpcj = projection(p_cj, K, True)
+        dpcidepth_ddepth = p_ci.reshape([-1,1])
+        du_ddepth = du_dpcj.dot(dpcj_dpcidepth.dot(dpcidepth_ddepth))
+        du_dxbi = du_dpcj.dot(dpcj_dxcicj.dot(dxcicj_dxwbi))
+        du_dxbj = du_dpcj.dot(dpcj_dxcicj.dot(dxcicj_dxwbj))
+        return u_reproj-u, du_dxbi, du_dxbj, du_ddepth
+    else:
+        x_cicj = getTcicj(x_wbi, x_wbj, x_bc)
+        p_cj = transform(x_cicj, p_ci * depth)
+        u_reproj = projection(p_cj, K)
         return u_reproj-u
 
 
@@ -161,79 +170,68 @@ def tox(m):
     return np.hstack([logSO3(R),t])
 
 if __name__ == '__main__':
-    print('test pose_inv')
-    x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
-    r, J = pose_inv(x,True)
-    Jm = numericalDerivative(pose_inv, [x], 0, pose_plus, pose_minus)
-    ckeck(J,Jm)
- 
-
     fx = 400.
     fy = 400.
     cx = 200.
     cy = 100.
-    K = np.array([[0,fy,cy],[fx,0,cx],[0,0,1.]])
+    K = np.array([[fx,0,cx],[0,fy,cy],[0,0,1.]])
+    
+    print('test pose_inv')
+    x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    r, J = pose_inv(x,True)
+    Jm = numericalDerivative(pose_inv, [x], 0, pose_plus, pose_minus)
+    check(J,Jm)
     print('test pose_plus and pose_minus')
     x1 = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     x2 = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
     x3m = tox(tom(x1).dot(tom(x2)))
     x3,J1,J2 = pose_plus(x1,x2,True)
     x2m = pose_minus(x3,x1)
-    ckeck(x3m,x3)
-    ckeck(x2m,x2)
+    check(x3m,x3)
+    check(x2m,x2)
     print('test pose_plus error')
     J1m = numericalDerivative(pose_plus, [x1, x2], 0, pose_plus, pose_minus)
     J2m = numericalDerivative(pose_plus, [x1, x2], 1, pose_plus, pose_minus)
-    ckeck(J1m,J1)
-    ckeck(J2m,J2)
+    check(J1m,J1)
+    check(J2m,J2)
     print('test pose_minus error')
     r, J1, J2 = pose_minus(x1, x2,True)
     J1m = numericalDerivative(pose_minus, [x1, x2], 0, pose_plus, pose_minus)
     J2m = numericalDerivative(pose_minus, [x1, x2], 1, pose_plus, pose_minus)
-    ckeck(J1m,J1)
-    ckeck(J2m,J2)
+    check(J1m,J1)
+    check(J2m,J2)
 
+    print('test transform error')
     x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     p = np.array([5.,6.,10.])
-    pim = np.array([50.,60.])
     r,J1,J2 = transform(x, p, True)
     J1m = numericalDerivative(transform, [x, p], 0, pose_plus)
     J2m = numericalDerivative(transform, [x, p], 1)
-    print('test transform error')
-    ckeck(J1m,J1)
-    ckeck(J2m,J2)
+    check(J1m,J1)
+    check(J2m,J2)
 
+    print('test transformInv error')
     r,J1,J2 = transformInv(x, p, True)
     J1m = numericalDerivative(transformInv, [x, p], 0, pose_plus)
     J2m = numericalDerivative(transformInv, [x, p], 1)
-    print('test transformInv error')
-    ckeck(J1m,J1)
-    ckeck(J2m,J2)
+    check(J1m,J1)
+    check(J2m,J2)
 
 
+    print('test projection error')
     r, J = projection(p,K, True)
     Jm = numericalDerivative(projection,[p, K], 0)
-    print('test projection error')
-    ckeck(Jm,J)
+    check(Jm,J)
 
-
-    xbc = np.array([-0.1,0.3,-0.5,0.1,-0.2,0.3])
-    r,J1,J2 = reporj(x, p, pim, K, xbc, True)
-    J1m = numericalDerivative(reporj, [x, p, pim, K], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(reporj, [x, p, pim, K], 1)
-    print('test reprojection error')
-    ckeck(J1m,J1)
-    ckeck(J2m,J2)
+    print('test getTcicj error')
     xi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     xj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
     xbc = np.array([0.1,-0.1,-0.3,0.1,-0.1,-0.2])
-
-    print('test getTcicj error')
     r, Jxi, Jxj = getTcicj(xi,xj,xbc,True)
     Jxim = numericalDerivative(getTcicj, [xi,xj,xbc], 0, pose_plus, pose_minus)
     Jxjm = numericalDerivative(getTcicj, [xi,xj,xbc], 1, pose_plus, pose_minus)
-    ckeck(Jxi,Jxim)
-    ckeck(Jxj,Jxjm)
+    check(Jxi,Jxim)
+    check(Jxj,Jxjm)
 
     print('test BinvAB error')
     xa = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
@@ -241,6 +239,32 @@ if __name__ == '__main__':
     r, Jxa = BinvAB(xa,xb,True)
     Jxam = numericalDerivative(BinvAB, [xa,xb], 0, pose_plus, pose_minus)
     Jxbm = numericalDerivative(BinvAB, [xa,xb], 1, pose_plus, pose_minus)
-    ckeck(Jxa,Jxam)
+    check(Jxa,Jxam)
+
+    print('test reporj_world error')
+    pim = np.array([50.,60.])
+    x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    xbc = np.array([-0.1,0.3,-0.5,0.1,-0.2,0.3])
+    p = np.array([5.,6.,10.])
+    r,J1,J2 = reporj_world(x, p, pim, K, xbc, True)
+    J1m = numericalDerivative(reporj_world, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reporj_world, [x, p, pim, K, xbc], 1)
+    check(J1m,J1)
+    check(J2m,J2)
+
+    print('test reproj_local error ')
+    x_wbi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    x_wbj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
+    x_bc = np.array([-0.1,-0.2,00.1,0.0,0.1,-0.3])
+    depth = np.array([1.5])
+    p_ci = np.array([1,1,1.])
+    r, J1, J2, J3 = reporj_local(x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc, True)
+    J1m = numericalDerivative(reporj_local, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reporj_local, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 1, pose_plus, delta=1e-8)
+    J3m = numericalDerivative(reporj_local, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 2, delta=1e-8)
+    check(J1,J1m)
+    check(J2,J2m)
+    check(J3,J3m)
+
 
 
