@@ -12,7 +12,7 @@ from slam.demo_visual_slam import *
 from graph_optimization.plot_pose import *
 
 
-class reporj2Edge:
+class reproj2Edge:
     def __init__(self, i, j, z, omega = None, kernel=None):
         self.i = i
         self.j = j
@@ -74,7 +74,7 @@ def solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi, fix_points=False, fix_st
             u0 = frames[i]['points'][j][0:2]
             u1 = u0.copy()
             u1[0] -= frames[i]['points'][j][2]
-            graph.addEdge(reporj2Edge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], reporjOmega,kernel=CauchyKernel(0.05)))   #kernel=CauchyKernel(0.5)
+            graph.addEdge(reproj2Edge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], reporjOmega,kernel=CauchyKernel(0.05)))   #kernel=CauchyKernel(0.5)
     graph.report()
     graph.solve(min_step= 0.01, step=1)
     graph.report()

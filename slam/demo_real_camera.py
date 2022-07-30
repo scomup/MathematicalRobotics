@@ -132,7 +132,7 @@ class testNode():
             u1 = right_pts[i][0]
             p3d = self.points[i]
             idx_p = graph.addNode(featureNode(p3d),True) 
-            graph.addEdge(reporjEdge(idx, idx_p, [self.x_c1c2, u0, u1, self.x_bc, self.K],kernel=CauchyKernel(0.5)))
+            graph.addEdge(reprojEdge(idx, idx_p, [self.x_c1c2, u0, u1, self.x_bc, self.K],kernel=CauchyKernel(0.5)))
         graph.solve(False, 0.1)
         return graph.nodes[idx].x
 

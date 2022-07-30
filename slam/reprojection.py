@@ -21,7 +21,7 @@ def BinvAB(x_a, x_b, calcJ = False):
     
 
 def getTcicj(x_wbi, x_wbj, x_bc, calcJ = False):
-
+    
     if(calcJ == True):
         x_bibj, Jdxj, Jdxi = pose_minus(x_wbj, x_wbi, True)
         x_cicj, Jh = BinvAB(x_bibj, x_bc, True)
@@ -72,7 +72,7 @@ def projection(pc, K, calcJ = False):
     else:
         return r
 
-def reporj_world(x_wb, pw, u, K, x_bc = np.zeros(6), calcJ = False):
+def reproj(x_wb, pw, u, K, x_bc = np.zeros(6), calcJ = False):
     """
     reporject a wolrd point to camera frame.
     """
@@ -89,24 +89,61 @@ def reporj_world(x_wb, pw, u, K, x_bc = np.zeros(6), calcJ = False):
         u_reproj = projection(pc, K)
         return u_reproj-u
 
-def reporj_local(x_wbi, x_wbj, depth, p_ci, u, K, x_bc = np.zeros(6), calcJ = False):
+def reproj2(x_wbi, x_wbj, depth, p_cj, u_i, K, x_bc = np.zeros(6), calcJ = False):
     """
-    reporject a local point in camera i to camera j.
+    reporject a local point in camera j to camera i.
+    """
+    depth = float(depth)
+    if(calcJ == True):
+        x_cicj, dxcicj_dxwbi, dxcicj_dxwbj = getTcicj(x_wbi, x_wbj, x_bc, True)
+        p_ci, dpci_dxcicj, dpci_dpcjdepth = transform(x_cicj, p_cj * depth, True)
+        u_reproi, du_dpci = projection(p_ci, K, True)
+        dpcjdepth_ddepth = p_cj.reshape([-1,1])
+        du_ddepth = du_dpci.dot(dpci_dpcjdepth.dot(dpcjdepth_ddepth))
+        du_dxbi = du_dpci.dot(dpci_dxcicj.dot(dxcicj_dxwbi))
+        du_dxbj = du_dpci.dot(dpci_dxcicj.dot(dxcicj_dxwbj))
+        return u_reproi-u_i, du_dxbi, du_dxbj, du_ddepth
+    else:
+        x_cicj = getTcicj(x_wbi, x_wbj, x_bc)
+        p_ci = transform(x_cicj, p_cj * depth)
+        u_reproi = projection(p_ci, K)
+        return u_reproi-u_i
+
+def reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, x_crcl, K, x_bc = np.zeros(6), calcJ = False):
+    """
+    reporject a local point in camera j to camera i.
     """
     if(calcJ == True):
         x_cicj, dxcicj_dxwbi, dxcicj_dxwbj = getTcicj(x_wbi, x_wbj, x_bc, True)
-        p_cj, dpcj_dxcicj, dpcj_dpcidepth = transform(x_cicj, p_ci * depth, True)
-        u_reproj, du_dpcj = projection(p_cj, K, True)
-        dpcidepth_ddepth = p_ci.reshape([-1,1])
-        du_ddepth = du_dpcj.dot(dpcj_dpcidepth.dot(dpcidepth_ddepth))
-        du_dxbi = du_dpcj.dot(dpcj_dxcicj.dot(dxcicj_dxwbi))
-        du_dxbj = du_dpcj.dot(dpcj_dxcicj.dot(dxcicj_dxwbj))
-        return u_reproj-u, du_dxbi, du_dxbj, du_ddepth
+        x_circj,_,dxcircj_xcicj = pose_plus(x_crcl, x_cicj, True)
+        p_ci, dpci_dxcicj, dpci_dpcjdepth = transform(x_cicj, p_cj * float(depth), True)
+        u_i_reproj, dui_dpci = projection(p_ci, K, True)
+        p_cir, dpcir_dxcircj, dpcir_dpcjdepth  = transform(x_circj, p_cj * float(depth), True)
+        u_ir_reproj, duir_dpcir = projection(p_cir, K, True)
+
+        dpcjdepth_ddepth = p_cj.reshape([-1,1])
+        dui_ddepth = dui_dpci.dot(dpci_dpcjdepth.dot(dpcjdepth_ddepth))
+        dui_dxbi = dui_dpci.dot(dpci_dxcicj.dot(dxcicj_dxwbi))
+        dui_dxbj = dui_dpci.dot(dpci_dxcicj.dot(dxcicj_dxwbj))
+
+        duir_ddepth = duir_dpcir.dot(dpcir_dpcjdepth.dot(dpcjdepth_ddepth))
+        duir_dxbi = duir_dpcir.dot(dpcir_dxcircj.dot(dxcircj_xcicj.dot(dxcicj_dxwbi)))
+        duir_dxbj = duir_dpcir.dot(dpcir_dxcircj.dot(dxcircj_xcicj.dot(dxcicj_dxwbj)))
+        r = np.hstack([u_i_reproj-u_il, u_ir_reproj-u_ir])
+        J1 = np.vstack([dui_dxbi, duir_dxbi])
+        J2 = np.vstack([dui_dxbj, duir_dxbj])
+        J3 = np.vstack([dui_ddepth, duir_ddepth])
+
+        return r, J1, J2, J3
     else:
         x_cicj = getTcicj(x_wbi, x_wbj, x_bc)
-        p_cj = transform(x_cicj, p_ci * depth)
-        u_reproj = projection(p_cj, K)
-        return u_reproj-u
+        x_circj = pose_plus(x_crcl, x_cicj)
+        p_ci = transform(x_cicj,  p_cj * depth)
+        u_i_reproj = projection(p_ci, K)
+        p_cir = transform(x_circj, p_cj * depth)
+        u_ir_reproj = projection(p_cir, K)
+        r = np.hstack([u_i_reproj-u_il, u_ir_reproj-u_ir])
+        return r
 
 
 def pose_plus(x1,x2, calcJ = False):
@@ -241,27 +278,43 @@ if __name__ == '__main__':
     Jxbm = numericalDerivative(BinvAB, [xa,xb], 1, pose_plus, pose_minus)
     check(Jxa,Jxam)
 
-    print('test reporj_world error')
+    print('test reproj error')
     pim = np.array([50.,60.])
     x = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     xbc = np.array([-0.1,0.3,-0.5,0.1,-0.2,0.3])
     p = np.array([5.,6.,10.])
-    r,J1,J2 = reporj_world(x, p, pim, K, xbc, True)
-    J1m = numericalDerivative(reporj_world, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(reporj_world, [x, p, pim, K, xbc], 1)
+    r,J1,J2 = reproj(x, p, pim, K, xbc, True)
+    J1m = numericalDerivative(reproj, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reproj, [x, p, pim, K, xbc], 1)
     check(J1m,J1)
     check(J2m,J2)
 
-    print('test reproj_local error ')
+    print('test reproj2 error ')
     x_wbi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     x_wbj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
     x_bc = np.array([-0.1,-0.2,00.1,0.0,0.1,-0.3])
     depth = np.array([1.5])
     p_ci = np.array([1,1,1.])
-    r, J1, J2, J3 = reporj_local(x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc, True)
-    J1m = numericalDerivative(reporj_local, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(reporj_local, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 1, pose_plus, delta=1e-8)
-    J3m = numericalDerivative(reporj_local, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 2, delta=1e-8)
+    r, J1, J2, J3 = reproj2(x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc, True)
+    J1m = numericalDerivative(reproj2, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reproj2, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 1, pose_plus, delta=1e-8)
+    J3m = numericalDerivative(reproj2, [x_wbi, x_wbj, depth, p_ci, np.zeros(2), K, x_bc], 2, delta=1e-8)
+    check(J1,J1m)
+    check(J2,J2m)
+    check(J3,J3m)
+
+    print('test reproj2_stereo error ')
+    x_wbi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
+    x_wbj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
+    x_bc = np.array([-0.1,-0.2,00.1,0.0,0.1,-0.3])
+    x_crcl = np.array([0,0,0, -0.075,0,0])
+    depth = np.array([1.5])
+    p_ci = np.array([1,1,1.])
+    reproj2_stereo(x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc)
+    r, J1, J2, J3 = reproj2_stereo(x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc, True)
+    J1m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc], 1, pose_plus, delta=1e-8)
+    J3m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc], 2, delta=1e-8)
     check(J1,J1m)
     check(J2,J2m)
     check(J3,J3m)
