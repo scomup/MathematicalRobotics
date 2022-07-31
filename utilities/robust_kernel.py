@@ -93,11 +93,11 @@ def drawKernel():
     e = np.arange(-5,5, 0.03)
     e2 = e**2
     ePHuber = PseudoHuberKernel(1).apply(e2)
-    eHuber = HuberKernel(1).apply(e2)
+    #eHuber = HuberKernel(1).apply(e2)
     eCauchy = CauchyKernel(1).apply(e2)
     #eL1 = L1Kernel().apply(e2)
     eGaussian = gaussianKernel(1).apply(e2)
-    plt.plot(e, eHuber[0], label='Huber')
+    #plt.plot(e, eHuber[0], label='Huber')
     plt.plot(e, ePHuber[0], label='PseudoHuber')
     plt.plot(e, eCauchy[0], label='Cauchy')
     plt.plot(e, e2, label='L2')

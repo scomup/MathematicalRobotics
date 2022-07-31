@@ -154,11 +154,14 @@ class graphSolver:
         if(self.use_sparse):
             dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
         else:
-            #dx = np.linalg.solve(H, -g)
-            dx = np.linalg.pinv(H).dot(-g)
+            try:
+                dx = np.linalg.solve(H, -g)
+            except:
+                print('Bad Hassian matrix!')
+                dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 
-    def solve(self, show_info=True, min_step = 0.0001, step = 0):
+    def solve(self, show_info=True, min_score_change = 0.01, step = 0):
         last_score = np.inf
         iter = 0
         while(True):  
@@ -168,11 +171,9 @@ class graphSolver:
             iter +=1
             if(show_info):
                 print('iter %d: %f'%(iter, score))
-            if(last_score - score < 0.01):
+            if(last_score - score < min_score_change):
                 break
             self.update(dx)
-            if(np.linalg.norm(dx) < min_step):
-                break
             last_score = score
 
 

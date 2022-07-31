@@ -7,7 +7,7 @@ from reprojection import *
 from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
 from graph_optimization.plot_pose import *
-
+USE_SCALE = False
 class camposeNode:
     def __init__(self, x, id=0):
         self.x = x
@@ -33,11 +33,11 @@ class depthEdge:
         self.omega = omega
         self.kernel = kernel
         if(self.omega is None):
-            self.omega = np.ones([1,1])
+            self.omega = np.eye(1)
     def residual(self, nodes):
         depth = nodes[self.i].x
         init_depth = self.z
-        return depth - init_depth, np.ones([1,1])
+        return depth - init_depth, np.eye(1)
 
 class reproj2StereoEdge:
     def __init__(self, i, j, k, z, omega = None, kernel=None):
@@ -81,7 +81,7 @@ class reproj2Edge:
 def draw3d(figname, frames, points, x_bc):
     pts = []
     for i in points:
-        pc = points[i]['pc']
+        pc = points[i]['pc'] * points[i]['depth']
         x_wb = frames[points[i]['view'][0]]['pose']
         x_wc = pose_plus(x_wb, x_bc)
         pw = transform(x_wc, pc)
@@ -98,6 +98,7 @@ def draw3d(figname, frames, points, x_bc):
 
 
 def initmap(frames, K, x_c1c2, x_bc):
+    print('The map is initialing...')
     baseline = 0.075
     focal = K[0,0]
     Kinv = np.linalg.inv(K)
@@ -108,12 +109,15 @@ def initmap(frames, K, x_c1c2, x_bc):
                 points[j]['view'].append(i)
                 continue
             u,v,disp = frame['points'][j]
-            if(disp < 20/640.):
+            th = 20
+            if(USE_SCALE):
+                th = 20/640.
+            if(disp < th):
                 frame['points'].pop(j)
                 continue
             p3d_c = Kinv.dot(np.array([u,v,1.]))
             depth = (baseline * focal) / (disp)
-            points.update({j: {'view':[i],'pc':p3d_c, 'depth': depth}})
+            points.update({j: {'view':[i],'pc':p3d_c, 'depth': depth,'dd': 0}})
     return points
 
 
@@ -123,6 +127,8 @@ def draw_frame(frames, points, K, x_c1c2, x_bc):
         x_wbi = frame['pose']
         u0s = []
         u1s = []
+        bad0 = []
+        bad1 = []
         for n in frame['points']:
             if n in points:
                 p_cj = points[n]['pc']
@@ -134,16 +140,27 @@ def draw_frame(frames, points, K, x_c1c2, x_bc):
                 uj = frame['points'][n][0:2]
                 u0s.append(uj_reporj)
                 u1s.append(uj)
+                #if(points[n]['dd'] > 0.5):
+                if(n in [161, 238, 273, 353, 374, 388, 353, 417, 528]):
+                    bad0.append(uj_reporj)#161 238 273 353 374 388 353 417 528
+                    bad1.append(uj)
         u0s = np.array(u0s)
         u1s = np.array(u1s)
-        plt.xlim(-0.5,0.5)
-        plt.ylim(-0.5,0.5)
-        #plt.xlim(0,640)
-        #plt.ylim(0,400)
+        bad0 = np.array(bad0)
+        bad1 = np.array(bad1)
+        if(USE_SCALE):
+            plt.xlim(-0.5,0.5)
+            plt.ylim(-0.5,0.5)
+        else:
+            plt.xlim(0,640)
+            plt.ylim(0,400)
 
         plt.gca().invert_yaxis()
         plt.scatter(u0s[:,0],u0s[:,1])
         plt.scatter(u1s[:,0],u1s[:,1])
+        if(bad0.shape[0] > 0):
+            plt.scatter(bad0[:,0],bad0[:,1], c = 'red')
+            plt.scatter(bad1[:,0],bad1[:,1], c = 'black')
         plt.grid()
         plt.show()
 
@@ -156,10 +173,11 @@ def readframes(n,folder,W,H):
             node = yaml.safe_load(file)
             pts = np.array(node['points']['data']).reshape(node['points']['num'],-1)
             pts_d = pts[:,1:].astype(np.float)
-            pts_d[:,0] /= W
-            pts_d[:,1] /= H
-            pts_d[:,0:2] -= 0.5
-            pts_d[:,2] /= W
+            if(USE_SCALE):
+                pts_d[:,0] /= W
+                pts_d[:,1] /= H
+                pts_d[:,0:2] -= 0.5
+                pts_d[:,2] /= W
             pts = dict(zip(pts[:,0].astype(np.int), pts_d))
             imus = np.array(node['imu']['data']).reshape(node['imu']['num'],-1)
             frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'vel':np.zeros(3),'bias':np.zeros(6),'points': pts,'imu':imus})
@@ -177,8 +195,8 @@ def solve(frames, points, K, x_c1c2, x_bc):
     for n in points:
         if(len(points[n]['view'])<2):
             continue
-        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n)) # add feature to graph
-        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']])))      
+        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n),False) # add feature to graph
+        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']]),omega=np.eye(1)))      
 
         points_idx.update({n: depth_idx})
         bj_idx = frames_idx[points[n]['view'][0]]
@@ -189,16 +207,27 @@ def solve(frames, points, K, x_c1c2, x_bc):
             u_ir = u_il.copy()
             u_ir[0] -= frames[i]['points'][n][2]
             p_cj = points[n]['pc']
-            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, x_crcl, K, x_bc],kernel=HuberKernel(0.1)))
+            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, x_crcl, K, x_bc],kernel=HuberKernel(0.5),omega=np.eye(4)*0.01))
             #graph.addEdge(reproj2Edge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, x_crcl, K, x_bc],kernel=HuberKernel(0.1)))
     graph.report()
-    graph.solve(step=1)
+    graph.solve(min_score_change =0.01, step=0)
     graph.report()
+    #depths = []
     for n in graph.nodes:
         if( type(n).__name__ == 'depthNode'):
+            #depths.append([np.abs(points[n.id]['depth']-float(n.x)), n.id])
+            points[n.id]['dd'] = np.abs(points[n.id]['depth']-float(n.x))
             points[n.id]['depth'] = n.x
         if( type(n).__name__ == 'camposeNode'):
             frames[n.id]['pose'] = n.x
+    #depths = np.array(depths)
+    #dict(zip(pts[:,0].astype(np.int), pts_d))
+    #depths = depths[depths[:, 0].argsort()]
+    #plt.plot(depths[:,0], label = 'old')
+    #plt.plot(depths[:,1], label = 'new')
+    #plt.legend()
+    #plt.show()
+    #return depths
 
 if __name__ == '__main__':
     W = 640.
@@ -207,15 +236,16 @@ if __name__ == '__main__':
     fy = 403.4488830566406/H
     cx = 323.534423828125/W - 0.5
     cy = 203.87405395507812/H - 0.5
-    #fx = 403.5362854003906
-    #fy = 403.4488830566406
-    #cx = 323.534423828125
-    #cy = 203.87405395507812
+    if(not USE_SCALE):
+        fx = 403.5362854003906
+        fy = 403.4488830566406
+        cx = 323.534423828125
+        cy = 203.87405395507812
     x_c1c2 = np.array([0,0,0,0.075,0,0])
     x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
     K = np.array([[fx,0, cx],[0, fy,cy],[0,0,1.]])
 
-    frames = readframes(10, 'data/slam',W,H)
+    frames = readframes(20, 'data/slam',W,H)
     points = initmap(frames, K, x_c1c2, x_bc)
     solve(frames, points, K, x_c1c2, x_bc)
     #remove_outlier(frames, points, K, x_c1c2)
