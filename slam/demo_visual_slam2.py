@@ -127,8 +127,9 @@ def draw_frame(frames, points, K, x_c1c2, x_bc):
         x_wbi = frame['pose']
         u0s = []
         u1s = []
-        bad0 = []
-        bad1 = []
+        #bad0 = []
+        #bad1 = []
+
         for n in frame['points']:
             if n in points:
                 p_cj = points[n]['pc']
@@ -141,13 +142,19 @@ def draw_frame(frames, points, K, x_c1c2, x_bc):
                 u0s.append(uj_reporj)
                 u1s.append(uj)
                 #if(points[n]['dd'] > 0.5):
-                if(n in [161, 238, 273, 353, 374, 388, 353, 417, 528]):
-                    bad0.append(uj_reporj)#161 238 273 353 374 388 353 417 528
-                    bad1.append(uj)
+                #if(n in [161, 238, 273, 353, 374, 388, 353, 417, 528]):
+                #    bad0.append(uj_reporj)#161 238 273 353 374 388 353 417 528
+                #    bad1.append(uj)
         u0s = np.array(u0s)
         u1s = np.array(u1s)
-        bad0 = np.array(bad0)
-        bad1 = np.array(bad1)
+        ab_pairs = np.c_[u0s, u1s]
+        ab_args = ab_pairs.reshape(-1, 2, 2).swapaxes(1, 2).reshape(-1, 2)
+
+        # segments
+        plt.plot(*ab_args, c='k')
+
+        #bad0 = np.array(bad0)
+        #bad1 = np.array(bad1)
         if(USE_SCALE):
             plt.xlim(-0.5,0.5)
             plt.ylim(-0.5,0.5)
@@ -158,9 +165,9 @@ def draw_frame(frames, points, K, x_c1c2, x_bc):
         plt.gca().invert_yaxis()
         plt.scatter(u0s[:,0],u0s[:,1])
         plt.scatter(u1s[:,0],u1s[:,1])
-        if(bad0.shape[0] > 0):
-            plt.scatter(bad0[:,0],bad0[:,1], c = 'red')
-            plt.scatter(bad1[:,0],bad1[:,1], c = 'black')
+        #if(bad0.shape[0] > 0):
+        #    plt.scatter(bad0[:,0],bad0[:,1], c = 'red')
+        #    plt.scatter(bad1[:,0],bad1[:,1], c = 'black')
         plt.grid()
         plt.show()
 
@@ -182,6 +189,7 @@ def readframes(n,folder,W,H):
             imus = np.array(node['imu']['data']).reshape(node['imu']['num'],-1)
             frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'vel':np.zeros(3),'bias':np.zeros(6),'points': pts,'imu':imus})
     return frames
+
 
 def solve(frames, points, K, x_c1c2, x_bc):
     graph = graphSolver()
@@ -229,6 +237,24 @@ def solve(frames, points, K, x_c1c2, x_bc):
     #plt.show()
     #return depths
 
+def remove_outlier(frames, points, K, x_c1c2, x_bc):
+    x_crcl = pose_inv(x_c1c2)
+    for n in points:
+        p_cj = points[n]['pc']
+        depth = points[n]['depth']
+        j = points[n]['view'][0]
+        for i in list(points[n]['view'][1:]):
+            u_il = frames[i]['points'][n][0:2] 
+            u_ir = u_il.copy()
+            u_ir[0] -= frames[i]['points'][n][2]
+            r = reproj2_stereo(frames[i]['pose'], frames[j]['pose'], depth, p_cj, u_il, u_ir, x_crcl, K, x_bc, False)
+            d = np.linalg.norm(r)
+            if d > 1:
+                idx = points[n]['view'].index(i)
+                points[n]['view'].pop(idx)
+
+
+
 if __name__ == '__main__':
     W = 640.
     H = 400.
@@ -245,10 +271,10 @@ if __name__ == '__main__':
     x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
     K = np.array([[fx,0, cx],[0, fy,cy],[0,0,1.]])
 
-    frames = readframes(20, 'data/slam',W,H)
+    frames = readframes(10, 'data/slam',W,H)
     points = initmap(frames, K, x_c1c2, x_bc)
     solve(frames, points, K, x_c1c2, x_bc)
-    #remove_outlier(frames, points, K, x_c1c2)
+    remove_outlier(frames, points, K, x_c1c2, x_bc)
     #draw3d('view',frames, points, x_bc)
     draw_frame(frames, points, K, x_c1c2, x_bc)
     plt.show()
