@@ -109,39 +109,39 @@ def reproj2(x_wbi, x_wbj, depth, p_cj, u_i, K, x_bc = np.zeros(6), calcJ = False
         u_reproi = projection(p_ci, K)
         return u_reproi-u_i
 
-def reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, x_crcl, K, x_bc = np.zeros(6), calcJ = False):
+def reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, baseline, K, x_bc = np.zeros(6), calcJ = False):
     """
     reporject a local point in camera j to camera i.
     """
     if(calcJ == True):
         x_cicj, dxcicj_dxwbi, dxcicj_dxwbj = getTcicj(x_wbi, x_wbj, x_bc, True)
-        x_circj,_,dxcircj_xcicj = pose_plus(x_crcl, x_cicj, True)
         p_ci, dpci_dxcicj, dpci_dpcjdepth = transform(x_cicj, p_cj * float(depth), True)
         u_i_reproj, dui_dpci = projection(p_ci, K, True)
-        p_cir, dpcir_dxcircj, dpcir_dpcjdepth  = transform(x_circj, p_cj * float(depth), True)
-        u_ir_reproj, duir_dpcir = projection(p_cir, K, True)
+        u_ir_reproj, duir_dpcir = projection(p_ci - np.array([baseline,0,0]), K, True)
 
         dpcjdepth_ddepth = p_cj.reshape([-1,1])
-        dui_ddepth = dui_dpci.dot(dpci_dpcjdepth.dot(dpcjdepth_ddepth))
-        dui_dxbi = dui_dpci.dot(dpci_dxcicj.dot(dxcicj_dxwbi))
-        dui_dxbj = dui_dpci.dot(dpci_dxcicj.dot(dxcicj_dxwbj))
+        dpci_depth =  dpci_dpcjdepth.dot(dpcjdepth_ddepth)
+        dpci_dxbi = dpci_dxcicj.dot(dxcicj_dxwbi)
+        dpci_dxbj = dpci_dxcicj.dot(dxcicj_dxwbj)
 
-        duir_ddepth = duir_dpcir.dot(dpcir_dpcjdepth.dot(dpcjdepth_ddepth))
-        duir_dxbi = duir_dpcir.dot(dpcir_dxcircj.dot(dxcircj_xcicj.dot(dxcicj_dxwbi)))
-        duir_dxbj = duir_dpcir.dot(dpcir_dxcircj.dot(dxcircj_xcicj.dot(dxcicj_dxwbj)))
+        dui_ddepth = dui_dpci.dot(dpci_depth)
+        dui_dxbi = dui_dpci.dot(dpci_dxbi)
+        dui_dxbj = dui_dpci.dot(dpci_dxbj)
+
+        duir_ddepth = duir_dpcir.dot(dpci_depth)
+        duir_dxbi = duir_dpcir.dot(dpci_dxbi)
+        duir_dxbj = duir_dpcir.dot(dpci_dxbj)
+
         r = np.hstack([u_i_reproj-u_il, u_ir_reproj-u_ir])
         J1 = np.vstack([dui_dxbi, duir_dxbi])
         J2 = np.vstack([dui_dxbj, duir_dxbj])
         J3 = np.vstack([dui_ddepth, duir_ddepth])
-
         return r, J1, J2, J3
     else:
         x_cicj = getTcicj(x_wbi, x_wbj, x_bc)
-        x_circj = pose_plus(x_crcl, x_cicj)
         p_ci = transform(x_cicj,  p_cj * depth)
         u_i_reproj = projection(p_ci, K)
-        p_cir = transform(x_circj, p_cj * depth)
-        u_ir_reproj = projection(p_cir, K)
+        u_ir_reproj = projection(p_ci - np.array([baseline,0,0]), K)
         r = np.hstack([u_i_reproj-u_il, u_ir_reproj-u_ir])
         return r
 
@@ -307,14 +307,14 @@ if __name__ == '__main__':
     x_wbi = np.array([0.1,0.3,0.5,0.1,0.2,0.3])
     x_wbj = np.array([0.2,0.1,-0.2,-0.1,-0.2,-0.1])
     x_bc = np.array([-0.1,-0.2,00.1,0.0,0.1,-0.3])
-    x_crcl = np.array([0,0,0, -0.075,0,0])
+    baseline = 0.075
     depth = np.array([1.5])
-    p_ci = np.array([1,1,1.])
-    reproj2_stereo(x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc)
-    r, J1, J2, J3 = reproj2_stereo(x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc, True)
-    J1m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc], 1, pose_plus, delta=1e-8)
-    J3m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_ci, np.zeros(2),np.zeros(2),x_crcl, K, x_bc], 2, delta=1e-8)
+    p_cj = np.array([1,1,1.])
+    reproj2_stereo(x_wbi, x_wbj, depth, p_cj, np.zeros(2),np.zeros(2),baseline, K, x_bc)
+    r, J1, J2, J3 = reproj2_stereo(x_wbi, x_wbj, depth, p_cj, np.zeros(2),np.zeros(2),baseline, K, x_bc, True)
+    J1m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_cj, np.zeros(2),np.zeros(2),baseline, K, x_bc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_cj, np.zeros(2),np.zeros(2),baseline, K, x_bc], 1, pose_plus, delta=1e-8)
+    J3m = numericalDerivative(reproj2_stereo, [x_wbi, x_wbj, depth, p_cj, np.zeros(2),np.zeros(2),baseline, K, x_bc], 2, delta=1e-8)
     check(J1,J1m)
     check(J2,J2m)
     check(J3,J3m)
