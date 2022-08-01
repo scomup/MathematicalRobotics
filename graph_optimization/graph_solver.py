@@ -148,6 +148,8 @@ class graphSolver:
             score += rho[0]
         #import matplotlib.pyplot as plt
         #plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
+        #plt.imshow(np.linalg.inv(H))
+        #plt.plot(g)
         #plt.show()
         #dx = np.linalg.solve(H, -g)
         #much faster than np.linalg.solve!
@@ -166,6 +168,10 @@ class graphSolver:
         iter = 0
         while(True):  
             dx, score = self.solve_once()
+            #import matplotlib.pyplot as plt
+            #plt.plot(dx)
+            #plt.show()
+
             if(step > 0 and np.linalg.norm(dx) > step):
                 dx = dx/np.linalg.norm(dx)*step
             iter +=1

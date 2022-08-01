@@ -8,52 +8,52 @@ from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
 from imu_preintegration.preintegration import *
 from imu_preintegration.imu_factor import *
-from slam.demo_visual_slam import *
+from slam.demo_visual_slam2 import *
 from graph_optimization.plot_pose import *
 
 
-class reproj2Edge:
-    def __init__(self, i, j, z, omega = None, kernel=None):
+class reproj2StereoEdge:
+    def __init__(self, i, j, k, z, omega = None, kernel=None):
         self.i = i
         self.j = j
+        self.k = k
         self.z = z
-        self.type = 'two'
+        self.type = 'three'
         self.omega = omega
         self.kernel = kernel
         if(self.omega is None):
             self.omega = np.eye(4)
     def residual(self, nodes):
-        x = nodes[self.i].x.vec()[0:6]
-        p = nodes[self.j].x
-        xc1c2, u1, u2, xbc, K = self.z
-        rl, Jl1, Jl2 = reporj(x, p, u1, K, xbc, True)
-        rr, Jr1, Jr2 = reporj(x, p, u2, K, pose_plus(xbc,xc1c2), True)
-        r = np.hstack([rl, rr])
-        J1 = np.vstack([Jl1, Jr1])
+        x_wbi = nodes[self.i].x.vec()[0:6]
+        x_wbj = nodes[self.j].x.vec()[0:6]
+        depth = nodes[self.k].x
+        p_cj, u_il, u_ir, baseline, K, x_bc = self.z
+        rl, J1, J2, J3 = reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, baseline, K, x_bc, True)
         J1t = np.zeros([4,9])
+        J2t = np.zeros([4,9])
         J1t[:,0:6] = J1
-        J2 = np.vstack([Jl2, Jr2])
-        return r, J1t, J2
+        J2t[:,0:6] = J2
+        return rl, J1t, J2t, J3
+
 
 def getPIM(frame, R_bi, t_bi):
-
     imuIntegrator = imuIntegration(9.81, Rbi = R_bi, tbi = t_bi)
     for imu_data in frame['imu']:
         imuIntegrator.update(imu_data[4:7], imu_data[1:4], 1/400.)
     return imuIntegrator
 
 
-def solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi, fix_points=False, fix_state=False):
+def solve(frames, points, K, baseline, x_bc):
     graph = graphSolver()
     frames_idx = {}
     points_idx = {}
     bias_idx = {}
     for i, frame in enumerate(frames):
-        x_wc = frame['pose']
+        x_wb = frame['pose']
         vel = frame['vel']
         bias = frame['bias']
-        state = navState.set(np.hstack([x_wc,vel]))
-        idx = graph.addNode(naviNode(state, frame['stamp'],i),fix_state) # add node to graph
+        state = navState.set(np.hstack([x_wb,vel]))
+        idx = graph.addNode(naviNode(state, frame['stamp'],i)) # add node to graph
         frames_idx.update({i: idx})
         idxb = graph.addNode(biasNode(bias, i))
         bias_idx.update({i: idxb})
@@ -65,29 +65,37 @@ def solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi, fix_points=False, fix_st
         else:
             graph.addEdge(biasEdge(bias_idx[0], np.zeros(6), biasOmega))
             graph.addEdge(naviEdge(frames_idx[0], state, prirOmega))
-       
-    for j in points:
-        idx = graph.addNode(featureNode(points[j]['p3d'], j),fix_points) # add feature to graph
-        points_idx.update({j: idx})
-        for i in points[j]['view']:
-            f_idx = frames_idx[i]
-            u0 = frames[i]['points'][j][0:2]
-            u1 = u0.copy()
-            u1[0] -= frames[i]['points'][j][2]
-            graph.addEdge(reproj2Edge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], reporjOmega,kernel=CauchyKernel(0.05)))   #kernel=CauchyKernel(0.5)
+    
+    for n in points:
+        if(len(points[n]['view'])<2):
+            continue
+        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n),False)
+        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']]),omega=np.eye(1)))      
+
+        points_idx.update({n: depth_idx})
+        bj_idx = frames_idx[points[n]['view'][0]]
+        for i in points[n]['view'][1:]:
+            bi_idx = frames_idx[i]
+            u_il = frames[i]['points'][n][0:2] 
+            u_ir = u_il.copy()
+            u_ir[0] -= frames[i]['points'][n][2]
+            p_cj = points[n]['pc']
+            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc],kernel=HuberKernel(0.1),omega=np.eye(4)*0.01))
+    
     graph.report()
-    graph.solve(min_step= 0.01, step=1)
+    graph.solve(min_score_change =0.01, step=5)
     graph.report()
-    graph.edges[2].z.predict(graph.nodes[0].x,graph.nodes[1].x)
     for n in graph.nodes:
-        if( type(n).__name__ == 'featureNode'):
-            points[n.id]['p3d'] = n.x
+        if( type(n).__name__ == 'depthNode'):
+            points[n.id]['dd'] = np.abs(points[n.id]['depth']-float(n.x))
+            points[n.id]['depth'] = n.x
         if( type(n).__name__ == 'naviNode'):
             v = n.x.vec()
             frames[n.id]['pose'] = v[0:6]
             frames[n.id]['vel'] = v[6:9]
         if( type(n).__name__ == 'biasNode'):
             frames[n.id]['bias'] = n.x
+
 
 def drawBias(frames):
     bias = []
@@ -115,18 +123,11 @@ def drawVel(frames):
     plt.show()
 
 if __name__ == '__main__':
-    W = 640.
-    H = 400.
-    fx = 403.5362854003906/W
-    fy = 403.4488830566406/H
-    cx = 323.534423828125/W - 0.5
-    cy = 203.87405395507812/H - 0.5
-    #fx = 403.5362854003906
-    #fy = 403.4488830566406
-    #cx = 323.534423828125
-    #cy = 203.87405395507812
-
-    x_c1c2 = np.array([0,0,0,0.075,0,0])
+    fx = 403.5362854003906
+    fy = 403.4488830566406
+    cx = 323.534423828125
+    cy = 203.87405395507812
+    baseline = 0.075
     x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
     K = np.array([[fx,0, cx],[0, fy,cy],[0,0,1.]])
 
@@ -138,8 +139,8 @@ if __name__ == '__main__':
     prirOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
     prirOmega[0:3,0:3] = 0
 
-    frames = readframes(20, 'data/slam', W, H)
-    points = initmap(frames, K, x_c1c2, x_bc)
+    frames = readframes(20, 'data/slam')
+    points = initmap(frames, K, baseline, x_bc)
     
     R_bi = np.zeros([3,3])
     t_bi = np.zeros([3])
@@ -147,10 +148,9 @@ if __name__ == '__main__':
     R_bi[1,1] = -1
     R_bi[2,0] = -1
     #solve(frames, points, K, x_c1c2, x_bc)
-    solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi, fix_points=True, fix_state=False)
-    solve2(frames, points, K, x_c1c2, x_bc, R_bi, t_bi, fix_points=False, fix_state=True)
-    #draw3d('view', frames, points, x_bc)
-    #draw_frame(frames, points, K, x_c1c2, x_bc)
+    solve(frames, points, K, baseline, x_bc)
+    draw3d('view', frames, points, x_bc)
+    #draw_frame(frames, points, K, baseline, x_bc)
     #drawBias(frames)
-    drawVel(frames)
+    #drawVel(frames)
     plt.show()
