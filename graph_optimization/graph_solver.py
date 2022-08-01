@@ -94,7 +94,7 @@ class graphSolver:
                 e_i = s_i + node_i.size
                 if(self.is_no_constant[edge.i]):
                     H[s_i:e_i,s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i)) 
-                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r)).flatten()
             elif(edge.type == 'two'):
                 r, jacobian_i, jacobian_j = edge.residual(self.nodes)
                 e2 = r.dot(omega.dot(r))
@@ -148,31 +148,38 @@ class graphSolver:
             score += rho[0]
         #import matplotlib.pyplot as plt
         #plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
+        #plt.imshow(np.linalg.inv(H))
+        #plt.plot(g)
         #plt.show()
         #dx = np.linalg.solve(H, -g)
         #much faster than np.linalg.solve!
         if(self.use_sparse):
             dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
         else:
-            dx = np.linalg.solve(H, -g)
-            #dx = np.linalg.pinv(H).dot(-g)
+            try:
+                dx = np.linalg.solve(H, -g)
+            except:
+                print('Bad Hassian matrix!')
+                dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 
-    def solve(self, show_info=True, min_step = 0.0001, step = 0):
+    def solve(self, show_info=True, min_score_change = 0.01, step = 0):
         last_score = np.inf
         iter = 0
         while(True):  
             dx, score = self.solve_once()
+            #import matplotlib.pyplot as plt
+            #plt.plot(dx)
+            #plt.show()
+
             if(step > 0 and np.linalg.norm(dx) > step):
                 dx = dx/np.linalg.norm(dx)*step
             iter +=1
             if(show_info):
                 print('iter %d: %f'%(iter, score))
-            if(last_score < score):
+            if(last_score - score < min_score_change):
                 break
             self.update(dx)
-            if(np.linalg.norm(dx) < min_step):
-                break
             last_score = score
 
 

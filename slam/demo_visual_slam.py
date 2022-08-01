@@ -25,7 +25,7 @@ class featureNode:
     def update(self, dx):
         self.x = self.x + dx
 
-class reporjEdge:
+class reprojEdge:
     def __init__(self, i, j, z, omega = None, kernel=None):
         self.i = i
         self.j = j
@@ -39,8 +39,8 @@ class reporjEdge:
         x = nodes[self.i].x
         p = nodes[self.j].x
         xc1c2, u1, u2, xbc, K = self.z
-        rl, Jl1, Jl2 = reporj(x, p, u1, K, xbc, True)
-        rr, Jr1, Jr2 = reporj(x, p, u2, K, pose_plus(xbc,xc1c2), True)
+        rl, Jl1, Jl2 = reproj(x, p, u1, K, xbc, True)
+        rr, Jr1, Jr2 = reproj(x, p, u2, K, pose_plus(xbc,xc1c2), True)
         r = np.hstack([rl, rr])
         J1 = np.vstack([Jl1, Jr1])
         J2 = np.vstack([Jl2, Jr2])
@@ -75,7 +75,7 @@ def calc_camera_pose(frame, points, x_wc, K, x_c1c2, x_bc):
         u1[0] -= frame['points'][p][2]
         p3d = points[p]['p3d']
         idx_p = graph.addNode(featureNode(p3d),True) 
-        graph.addEdge(reporjEdge(idx, idx_p, [x_c1c2, u0, u1, x_bc, K],kernel=HuberKernel(0.5)))
+        graph.addEdge(reprojEdge(idx, idx_p, [x_c1c2, u0, u1, x_bc, K],kernel=HuberKernel(0.5)))
     graph.solve(False)
     return graph.nodes[idx].x
 
@@ -103,8 +103,8 @@ def initmap(frames, K, x_c1c2, x_bc):
             p3d_b = transform(x_bc, p3d_c)
             p3d_w = transform(frames[i]['pose'], p3d_b)
             points.update({j: {'view':[i],'p3d':p3d_w}})
-            #u1 = reporj(frames[i]['pose'], p3d_w, np.array([u,v]), K, x_bc, calcJ = False)
-            #u2 = reporj(frames[i]['pose'], p3d_w, np.array([u-disp,v]), K, pose_plus(x_bc, x_c1c2), calcJ = False)
+            #u1 = reproj(frames[i]['pose'], p3d_w, np.array([u,v]), K, x_bc, calcJ = False)
+            #u2 = reproj(frames[i]['pose'], p3d_w, np.array([u-disp,v]), K, pose_plus(x_bc, x_c1c2), calcJ = False)
             #print(u1,u2)
     return points
 
@@ -117,8 +117,8 @@ def remove_outlier(frames, points, K, x_c1c2, x_bc):
                 u0 = frame['points'][j][0:2]
                 u1 = u0.copy()
                 u1[0] -= frame['points'][j][2]
-                u0_reproj = reporj(x, pw, np.zeros(2), K, x_bc)#x, p, u1, K, xbc, True
-                u1_reproj = reporj(x, pw, np.zeros(2), K, pose_plus(x_bc, x_c1c2))
+                u0_reproj = reproj(x, pw, np.zeros(2), K, x_bc)#x, p, u1, K, xbc, True
+                u1_reproj = reproj(x, pw, np.zeros(2), K, pose_plus(x_bc, x_c1c2))
                 d0 = np.linalg.norm(u0_reproj - u0)
                 d1 = np.linalg.norm(u1_reproj - u1)
                 d = d0 + d1
@@ -143,7 +143,7 @@ def draw_frame(frames, points, K, x_c1c2, x_bc):
             if j in points:
                 pw = points[j]['p3d']
                 u0 = frame['points'][j][0:2]
-                u1 = reporj(x_wb, pw, np.zeros(2), K, x_bc)
+                u1 = reproj(x_wb, pw, np.zeros(2), K, x_bc)
                 u0s.append(u0)
                 u1s.append(u1)
         u0s = np.array(u0s)
@@ -191,7 +191,7 @@ def solve(frames, points, K, x_c1c2, x_bc):
             u0 = frames[i]['points'][j][0:2]
             u1 = u0.copy()
             u1[0] -= frames[i]['points'][j][2]
-            graph.addEdge(reporjEdge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K],kernel=HuberKernel(0.1)))      
+            graph.addEdge(reprojEdge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K],kernel=HuberKernel(0.1)))      
     graph.report()
     graph.solve(step=1)
     graph.report()
