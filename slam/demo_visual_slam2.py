@@ -19,11 +19,11 @@ class camposeNode:
 
 class depthNode:
     def __init__(self, x, id=0):
-        self.x = x
+        self.x = float(x)
         self.size = 1
         self.id = id
     def update(self, dx):
-        self.x = self.x + dx
+        self.x = float(self.x + dx)
 
 class depthEdge:
     def __init__(self, i, z, omega = None, kernel=None):
@@ -114,7 +114,7 @@ def initmap(frames, K, baseline, x_bc):
                 continue
             p3d_c = Kinv.dot(np.array([u,v,1.]))
             depth = (baseline * focal) / (disp)
-            points.update({j: {'view':[i],'pc':p3d_c, 'depth': depth,'dd': 0}})
+            points.update({j: {'view':[i],'pc':p3d_c, 'depth': depth}})
     return points
 
 
@@ -218,7 +218,6 @@ def solve(frames, points, K, baseline, x_bc):
     graph.report()
     for n in graph.nodes:
         if( type(n).__name__ == 'depthNode'):
-            points[n.id]['dd'] = np.abs(points[n.id]['depth']-float(n.x))
             points[n.id]['depth'] = n.x
         if( type(n).__name__ == 'camposeNode'):
             frames[n.id]['pose'] = n.x

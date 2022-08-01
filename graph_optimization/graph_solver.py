@@ -68,7 +68,7 @@ class graphSolver:
         type_list = list(type_score)
         for t in type_list:
             #print("  -> %20s: %5f."%(t, type_score[t]))
-            print(' -> {:<20}: {:<.4f}'.format(t, float(type_score[t])))
+            print(' -> {:<20}: {:<.4f}'.format(t, type_score[t]))
         print("---------------------")
 
 

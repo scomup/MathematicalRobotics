@@ -93,7 +93,6 @@ def reproj2(x_wbi, x_wbj, depth, p_cj, u_i, K, x_bc = np.zeros(6), calcJ = False
     """
     reporject a local point in camera j to camera i.
     """
-    depth = float(depth)
     if(calcJ == True):
         x_cicj, dxcicj_dxwbi, dxcicj_dxwbj = getTcicj(x_wbi, x_wbj, x_bc, True)
         p_ci, dpci_dxcicj, dpci_dpcjdepth = transform(x_cicj, p_cj * depth, True)
@@ -115,7 +114,7 @@ def reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, baseline, K, x_bc = np
     """
     if(calcJ == True):
         x_cicj, dxcicj_dxwbi, dxcicj_dxwbj = getTcicj(x_wbi, x_wbj, x_bc, True)
-        p_ci, dpci_dxcicj, dpci_dpcjdepth = transform(x_cicj, p_cj * float(depth), True)
+        p_ci, dpci_dxcicj, dpci_dpcjdepth = transform(x_cicj, p_cj * depth, True)
         u_i_reproj, dui_dpci = projection(p_ci, K, True)
         u_ir_reproj, duir_dpcir = projection(p_ci - np.array([baseline,0,0]), K, True)
 
