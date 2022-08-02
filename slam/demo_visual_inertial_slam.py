@@ -78,6 +78,30 @@ class reproj2StereoEdge:
         J2t[:,0:6] = J2
         return rl, J1t, J2t, J3
 
+class reproj2Edge:
+    def __init__(self, i, j, k, z, omega = None, kernel=None):
+        self.i = i
+        self.j = j
+        self.k = k
+        self.z = z
+        self.type = 'three'
+        self.omega = omega
+        self.kernel = kernel
+        if(self.omega is None):
+            self.omega = np.eye(2)
+    def residual(self, nodes):
+        x_wbi = nodes[self.i].x.vec()[0:6]
+        x_wbj = nodes[self.j].x.vec()[0:6]
+        depth = nodes[self.k].x
+        p_cj, u_il, u_ir, baseline, K, x_bc = self.z        
+        rl, J1, J2, J3 = reproj2(x_wbi, x_wbj, depth, p_cj, u_il, K, x_bc, True)
+        J1t = np.zeros([2,9])
+        J2t = np.zeros([2,9])
+        J1t[:,0:6] = J1
+        J2t[:,0:6] = J2
+
+        return rl, J1t, J2t, J3
+
 
 def getPIM(frame, R_bi, t_bi):
     imuIntegrator = imuIntegration(G, Rbi = R_bi, tbi = t_bi)
@@ -86,7 +110,7 @@ def getPIM(frame, R_bi, t_bi):
     return imuIntegrator
 
 
-def solve(frames, points, K, baseline, x_bc):
+def solve(frames, points, K, baseline, x_bc, use_imu = True):
     graph = graphSolver()
     frames_idx = {}
     """
@@ -110,18 +134,19 @@ def solve(frames, points, K, baseline, x_bc):
     """
     Add imu edges
     """
-    for j in range(1,len(frames)):
-        i = j - 1
-        idx_i = frames_idx[i]
-        idx_j = frames_idx[j]
-        idxb_i = bias_idx[i]
-        idxb_j = bias_idx[j]
-        imuIntegrator = getPIM(frames[i], R_bi, t_bi)
-        graph.addEdge(imupreintEdge(idx_i, idx_j, idxb_i, imuIntegrator, imupreintOmega)) # add imu preintegration to graph
-        graph.addEdge(posvelEdge(idx_i, idx_j, imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
-        graph.addEdge(biaschangeEdge(idxb_i, idxb_j, biaschangeOmega)) # add the bias change error to graph
-        graph.addEdge(gravityEdge(idx_i, imuIntegrator,np.eye(3)*0.1))
-        #graph.addEdge(gravityBiasEdge(idx_i,idxb_i, imuIntegrator,np.eye(3)*0.1))
+    if(use_imu):
+        for j in range(1,len(frames)):
+            i = j - 1
+            idx_i = frames_idx[i]
+            idx_j = frames_idx[j]
+            idxb_i = bias_idx[i]
+            idxb_j = bias_idx[j]
+            imuIntegrator = getPIM(frames[i], R_bi, t_bi)
+            graph.addEdge(imupreintEdge(idx_i, idx_j, idxb_i, imuIntegrator, imupreintOmega)) # add imu preintegration to graph
+            graph.addEdge(posvelEdge(idx_i, idx_j, imuIntegrator.d_tij, posvelOmega)) # add the relationship between velocity and position to graph
+            graph.addEdge(biaschangeEdge(idxb_i, idxb_j, biaschangeOmega)) # add the bias change error to graph
+            graph.addEdge(gravityEdge(idx_i, imuIntegrator,gravityOmega))
+            #graph.addEdge(gravityBiasEdge(idx_i,idxb_i, imuIntegrator,np.eye(3)*0.1))
     """
     Add reproj edges
     """
@@ -139,7 +164,8 @@ def solve(frames, points, K, baseline, x_bc):
             u_ir = u_il.copy()
             u_ir[0] -= frames[i]['points'][n][2]
             p_cj = points[n]['pc']
-            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc],kernel=HuberKernel(0.1),omega=np.eye(4)*0.01))
+            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc],kernel=CauchyKernel(0.1),omega=reporjOmega))
+            #graph.addEdge(reproj2Edge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc],kernel=HuberKernel(0.1),omega=reporjOmega[0:2,0:2]))
 
     graph.report()
     graph.solve(min_score_change =0.01, step=0)
@@ -197,10 +223,12 @@ def drawG(frames, R_bi):
 
 
 if __name__ == '__main__':
-    fx = 403.5362854003906
-    fy = 403.4488830566406
-    cx = 323.534423828125
-    cy = 203.87405395507812
+
+    scale = 1.
+    fx = 403.5362854003906/scale
+    fy = 403.4488830566406/scale
+    cx = 323.534423828125/scale
+    cy = 203.87405395507812/scale
     baseline = 0.075
     # from camera frame to body frame (rosrun tf tf_echo oak-d_frame oak_left_camera_optical_frame )
     x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
@@ -216,25 +244,31 @@ if __name__ == '__main__':
     biaschangeOmega = np.linalg.inv(np.diag(np.ones(6)*1e-1)) 
     biasOmega = np.linalg.inv(np.diag(np.ones(6)*1e2))
     posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1e-3))
-    reporjOmega = np.linalg.inv(np.diag(np.ones(4)*1e-2))
+    reporjOmega =np.eye(4)*0.01
     prirOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
+    gravityOmega = np.eye(3)*0.1
     prirOmega[0:3,0:3] = 0
     navitransformOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
     navitransformOmega[6:9,6:9] = 0
+    
+    if(True):
+        frames = readframes(10, 'data/slam',scale)
+        points = initmap(frames, K, baseline, x_bc, scale)
+        import pickle
+        pickle.dump( frames, open( "frames.p", "wb" ) )
+        pickle.dump( points, open( "points.p", "wb" ) )
+    else:
+        import pickle
+        frames = pickle.load( open( "frames.p", "rb" ) )
+        points = pickle.load( open( "points.p", "rb" ) )
 
-    frames = readframes(30, 'data/slam')
-    points = initmap(frames, K, baseline, x_bc)
-    #import pickle
-    #pickle.dump( frames, open( "frames.p", "wb" ) )
-    #pickle.dump( points, open( "points.p", "wb" ) )
-    #frames = pickle.load( open( "frames.p", "rb" ) )
-    #points = pickle.load( open( "points.p", "rb" ) )
-
-    solve(frames, points, K, baseline, x_bc)
+    solve(frames, points, K, baseline, x_bc,True)
     remove_outlier(frames, points, K, baseline, x_bc)
     solve(frames, points, K, baseline, x_bc)
-    draw3d('view', frames, points, x_bc)
-    #draw_frame(frames, points, K, baseline, x_bc)
+
+
+    draw3d('view', frames, points, x_bc, R_bi)
+    #draw_frame(frames, points, K, baseline, x_bc, scale)
     #drawBias(frames)
     #drawVel(frames)
     #drawG(frames, R_bi)

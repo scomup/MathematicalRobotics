@@ -109,6 +109,35 @@ def plot_pose3(
     axes.set_zlabel(axis_labels[2])
     return fig
 
+def plot_pose3_gravity(
+    fignum,
+    pose,
+    gravity,
+    axis_length = 0.1,
+    axis_labels=("X axis", "Y axis", "Z axis")):
+    
+
+    # get figure object
+    fig = plt.figure(fignum,figsize=plt.figaspect(1))
+    #plt.axis('equal')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
+    plot_pose3_on_axes(axes, pose, axis_length=axis_length)
+
+    gravity /= np.linalg.norm(gravity)
+    gravity *= -axis_length
+    _, origin = makeRt(pose)
+    gravity += origin
+    line = np.vstack([origin, gravity])
+
+    axes.plot(line[:, 0], line[:, 1], line[:, 2], 'y-')
+
+    axes.set_xlabel(axis_labels[0])
+    axes.set_ylabel(axis_labels[1])
+    axes.set_zlabel(axis_labels[2])
+    return fig
 
 if __name__ == '__main__':
     import sys, os
