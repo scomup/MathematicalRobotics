@@ -159,7 +159,7 @@ class graphSolver:
             try:
                 dx = np.linalg.solve(H, -g)
             except:
-                print('Bad Hassian matrix!')
+                #print('Bad Hassian matrix!')
                 dx = np.linalg.pinv(H).dot(-g)
         return dx, score
 

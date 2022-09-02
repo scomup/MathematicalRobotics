@@ -81,16 +81,16 @@ def _arrow3D(ax, x, y, z, dx, dy, dz, *args, **kwargs):
 
 setattr(Axes3D, 'arrow3D', _arrow3D)
 
-def draw_point(ax, p, name='none'):
+def draw_point(ax, p, name=''):
     ax.scatter(p[0], p[1], p[2], s=30, marker='o', color='green')
     ax.annotate3D(name, p, xytext=(3, 3), textcoords='offset points')
 
-def draw_arrow(ax, org, direction, name='none'):
+def draw_arrow(ax, org, direction, name=''):
     ax.arrow3D(*org, *direction, mutation_scale=20, arrowstyle="-|>", linestyle='dashed')
     center = org + direction * 0.5
     ax.annotate3D(name, center, xytext=(3, 3), textcoords='offset points')
 
-def draw_line(ax, org, direction, name='none', length=5):
+def draw_line(ax, org, direction, name='', length=5):
     a = org + direction * 0.5 * length
     b = org - direction * 0.5 * length
     ax.plot([a[0], b[0]],[a[1], b[1]],[a[2], b[2]])
