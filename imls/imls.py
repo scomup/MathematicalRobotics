@@ -24,62 +24,84 @@ def find_normal(pts):
 def get_norm_vec(pt):
     norm_vec = np.zeros([pt.shape[0],2])
     tree = KDTree(pt)
-    print(norm_vec)
     for i, p in enumerate(pt):
-        print(p)
-        dists, indexes = tree.query(p, k=5)
+        #_, indexes = tree.query(p, k=5)
+        indexes = tree.query_ball_point(p, 1)
         near_pt = pt[indexes]
         s, vec = find_normal(near_pt)
-        #if s is False:
-        #    continue
         norm_vec[i,:] = vec
-        print(indexes)
     return norm_vec
 
-def p2surf(x, pt, nvec):
+def p2surf(x, pt, n):
     h = 1
     tree = KDTree(pt)
-    indexes = tree.query_ball_point(x, h)
-    near_pt = pt[indexes]
+    #indexes = tree.query_ball_point(x, h)
+    dists, indexes = tree.query(x, k=5)
+    #near_pt = pt[indexes]
     weight_sum = 0.
     proj_sum = 0.
-    for i, p in enumerate(near_pt):
-        e_height = x - p
-        weight  = np.exp(-(e_height.dot(e_height)/(h*h)))
-        proj_sum += weight *e_height * nvec[i]
+    dir_sum = np.array([0,0.])
+    for i in indexes:
+        p = pt[i]
+        x_p = x - p
+        weight  = np.exp(-(x_p.dot(x_p)/(h*h)))
+        sign = np.sign(x_p.dot(n[i]))
+        proj_sum += weight * x_p.dot(n[i]) * sign
         weight_sum += weight
-    height = proj_sum / weight_sum
-    return height
+        dir_sum += weight * n[i] * sign
+    dist = proj_sum / weight_sum
+    dir = dir_sum / weight_sum
+    return dist, dir
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.set_aspect('equal')
+def draw_norm(figname, pt, n, c='C0'):
+    pt = pt.reshape([-1,2])
+    n = n.reshape([-1,2])
+    fig = plt.figure(figname)
+    axes = fig.gca()
+    for i, p in enumerate(pt):
+        axes.annotate('', xy=p + n[i], xytext=p,
+                    arrowprops=dict(arrowstyle='-|>', 
+                                    connectionstyle='arc3', 
+                                    facecolor=c, 
+                                    edgecolor=c))
 
-f = lambda x: np.cos(x)
-xx = np.linspace(-2*np.pi, 2*np.pi, 30)
-yy = f(xx)
-ax.scatter(xx, yy)
-pt = np.vstack([xx,yy]).T
+
+
+def test_data():
+    f = lambda x: np.cos(1.5*x)
+    xx = np.linspace(-np.pi, np.pi, 50)
+    yy = f(xx)
+    pt = np.vstack([xx,yy]).T 
+    pt += np.random.normal(0,0.05,pt.shape)
+
+    xx = np.linspace(-np.pi, np.pi, 100)
+    yy = f(xx)
+    truth = np.vstack([xx,yy]).T
+    return pt, truth
+
+pt, truth = test_data()
 nvec = get_norm_vec(pt)
 
-x = np.array([1.6,0.8])
-ax.scatter(x[0], x[1],c='r')
+#x = np.array([2.0,0.0])
+#x = np.array([0.2,0.6])
+xs = np.array([[2,-0.5],[1.0,0.4],[0.2,0.6]])
 
-height = p2surf(x, pt, nvec)
-for i, p in enumerate(pt):
-    ax.annotate('', xy=p + nvec[i,:] * 0.2, xytext=p,
-                arrowprops=dict(arrowstyle='-|>', 
-                                connectionstyle='arc3', 
-                                facecolor='C0', 
-                                edgecolor='C0')
-               )
 
-ax.annotate('', xy=x - height, xytext=x,
-            arrowprops=dict(arrowstyle='-|>', 
-                            connectionstyle='arc3', 
-                            facecolor='C0', 
-                            edgecolor='C0')
-           )
+fig = plt.figure("test")
+ax = fig.gca()
+ax.set_aspect('equal')
+ax.scatter(pt[:,0], pt[:,1])
+draw_norm('test', pt, nvec * 0.3)
+
+for x in xs:
+    dist, dir = p2surf(x, pt, nvec)
+    v = - dist * dir
+    ax.scatter(x[0], x[1], c='r')
+    draw_norm('test', x, v,'r')
+
+
+ax.plot(truth[:,0], truth[:,1])
+
 
 
 plt.grid()
