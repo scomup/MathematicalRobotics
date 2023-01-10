@@ -1,8 +1,9 @@
-from pyqtgraph.Qt import QtCore, QtGui
+from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QRadioButton
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QRadioButton, QApplication
 from OpenGL.GL import *
+#from PyQt5 import QtCore, QtGui, QtWidgets
 from scipy.spatial.transform import Rotation   
 
 import numpy as np
@@ -81,12 +82,12 @@ def cube(size = 2):
                      [0, 1, 1], #6
                      [1, 0, 1]])#7
     vertexes *= size
-    faces = np.array([[1,0,7], [1,3,7],
-                      [1,2,4], [1,0,4],
-                      [1,2,6], [1,3,6],
-                      [0,4,5], [0,7,5],
-                      [2,4,5], [2,6,5],
-                      [3,6,5], [3,7,5]])
+    faces = np.array([[1,0,7], [7,3,1],
+                      [1,2,4], [4,0,1],
+                      [1,2,6], [6,3,1],
+                      [0,4,5], [5,7,0],
+                      [2,4,5], [5,6,2],
+                      [3,6,5], [5,7,3]])
     colors = np.array([
                        [1,1,0,1],[1,1,0,1],
                        [0,1,1,1],[0,1,1,1],
@@ -94,7 +95,7 @@ def cube(size = 2):
                        [1,0,0,1],[1,0,0,1],
                        [0,1,0,1],[0,1,0,1],
                        [0,0,1,1],[0,0,1,1]])
-    obj = gl.GLMeshItem(vertexes=vertexes, faces=faces, faceColors=colors, drawEdges=False)
+    obj = gl.GLMeshItem(vertexes=vertexes, faces=faces, faceColors=colors, smooth=False)
     return obj
 
 class MyWindow(QMainWindow):
@@ -235,7 +236,7 @@ class MyWindow(QMainWindow):
         #self.cube.rotate(self.yaw, 0, 0, 1)
 
 if __name__ == '__main__':
-    app = QtGui.QApplication([])
+    app = QApplication([])
     window = MyWindow()
     window.show()
     app.exec_()
