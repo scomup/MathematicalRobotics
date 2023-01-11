@@ -8,6 +8,35 @@ from scipy.spatial.transform import Rotation
 
 import numpy as np
 
+class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
+    def __init__(self, size = 1., width = 100, color = [1,0,0,1], glOptions='translucent'):
+        gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
+        self.width = width
+        self.color = color
+        self.o = np.array([0,0,0,1])
+        self.a = np.array([size,0,0,1])
+        self.b = np.array([0.9*size,0,size*0.1,1])
+        self.setGLOptions(glOptions)
+        self.T = np.eye(4)
+
+    def setTransform(self, T):
+        #print(T)
+        self.T = T
+
+    def paint(self):
+        o = self.T.dot(self.o) 
+        a = self.T.dot(self.a) 
+        b = self.T.dot(self.b) 
+        glLineWidth(self.width)
+        glBegin( GL_LINES )
+        glColor4f(self.color[0], self.color[1], self.color[2], self.color[3])  # z is blue
+        glVertex3f(o[0], o[1], o[2])
+        glVertex3f(a[0], a[1], a[2])
+        glVertex3f(a[0], a[1], a[2])
+        glVertex3f(b[0], b[1], b[2])
+        glEnd()
+
+
 class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
     def __init__(self, size = [1,1,1], width = 100, glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
@@ -72,7 +101,7 @@ def euler2mat(euler, order='xyz'):
         R = Rz.dot(Rx.dot(Ry))
     return R
 
-def cube(size = 2):
+def create_cube(size = 2):
     vertexes = np.array([[1, 0, 0], #0
                      [0, 0, 0], #1
                      [0, 1, 0], #2
@@ -98,15 +127,22 @@ def cube(size = 2):
     obj = gl.GLMeshItem(vertexes=vertexes, faces=faces, faceColors=colors, smooth=False)
     return obj
 
-class MyWindow(QMainWindow):
-    def __init__(self):
+def create_ball(size = 2):
+    md = gl.MeshData.sphere(rows=100, cols=100, radius=10)
+    obj = gl.GLMeshItem(meshdata=md, smooth=True, color=(0, 1, 0, 0.05), shader='balloon', glOptions='additive')
+    return obj
+
+
+class Gui3d(QMainWindow):
+    def __init__(self, static_obj = [], dynamic_obj = []):
         self.roll = 0.0
         self.pitch = 0.0
         self.yaw = 0.0
-        super(MyWindow, self).__init__()
+        self.static_obj = static_obj
+        self.dynamic_obj = dynamic_obj
+        super(Gui3d, self).__init__()
         self.setGeometry(0, 0, 700, 900) 
         self.initUI()
-
 
     def initUI(self):
         centerWidget = QWidget()
@@ -177,7 +213,6 @@ class MyWindow(QMainWindow):
         timer.setInterval(20)  # period, in milliseconds
         timer.timeout.connect(self.update)
     
-
         self.viewer.setWindowTitle('Euler rotation')
         self.viewer.setCameraPosition(distance=40)
 
@@ -186,12 +221,11 @@ class MyWindow(QMainWindow):
         g.setSpacing(5, 5)
         self.viewer.addItem(g)
 
-        self.cube = cube(8)
-        self.cube_axis = GLAxisItem(size=[8,8,8], width=50)
-        self.axis = GLAxisItem(size=[10,10,10] , width=100)
-        self.viewer.addItem(self.cube)
-        self.viewer.addItem(self.cube_axis)
-        self.viewer.addItem(self.axis)
+        for obj in self.static_obj:
+            self.viewer.addItem(obj)
+        for obj in self.dynamic_obj:
+            self.viewer.addItem(obj)
+
         timer.start()
 
     def setRotX(self, val):
@@ -221,22 +255,19 @@ class MyWindow(QMainWindow):
             self.rotate_mode = 'yxz'
 
     def update(self):
-        #self.cube.resetTransform()
         roll = np.deg2rad(self.roll)
         pitch = np.deg2rad(self.pitch)
         yaw = np.deg2rad(self.yaw)
         R = euler2mat([roll, pitch, yaw], self.rotate_mode)
         T = np.eye(4)
         T[0:3, 0:3] = R
-        self.cube.setTransform(T)
-        self.cube_axis.setTransform(T)
-        #r = R.from_rotvec([roll, pitch, yaw])
-        #self.cube.rotate(self.roll, 1, 0, 0)
-        #self.cube.rotate(self.pitch, 0, 1, 0)
-        #self.cube.rotate(self.yaw, 0, 0, 1)
+        for obj in self.dynamic_obj:
+            obj.setTransform(T)
+        self.viewer.update()
 
 if __name__ == '__main__':
     app = QApplication([])
-    window = MyWindow()
+    axis = GLAxisItem(size=[10,10,10] , width=100)
+    window = Gui3d(static_obj = [axis],dynamic_obj=[])
     window.show()
     app.exec_()
