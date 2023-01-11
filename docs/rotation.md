@@ -1,5 +1,9 @@
 # 3D rotation   
 
+$\gdef\skew#1{[{#1}]_{\times}}$
+$\gdef\norm#1{\|{#1}\|}$
+$\gdef\so3{\mathfrak{so}(3)}$
+
 ## Euler angles
 
 The Euler angles are three angles introduced by Leonhard Euler to describe the orientation of a rigid body.
@@ -105,9 +109,7 @@ $sin(a)sin(b) = 0$
 
 If we substitute the above equations into (8) and (9), we can yield the same results.
 
-$\gdef\skew#1{[{#1}]_{\times}}$
-$\gdef\norm#1{\|{#1}\|}$
-
+$\mathfrak{so}(3)$
 $$
 \begin{aligned} 
 R_{xyz} \approx R_{zxy} &\approx
@@ -157,7 +159,7 @@ R(\omega)
 \tag{9}
 $$
 
-In actually, some theories of Lie groups have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\mathfrak{so}(3)$ associated with $SO(3)$ by exponential map.
+In actually, some theories of Lie groups have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so3$ associated with $SO(3)$ by exponential map.
 
 ##Group
 
@@ -182,4 +184,35 @@ For example, the Rubik's Cube group is a group, we can simply verify that the gr
 ##Lie group
 
 A Lie group is a continuous group, This means that a Lie group can be infinitely differentiable.
-Therefore, The Rubik's Cube group is a group, but not a Lie group. 3D rotation space is a group also is a Lie group.
+Therefore, The Rubik's Cube group is a group, but not a Lie group. 3D rotation space is a group also is a Lie group. 
+
+Because of the following advantages, Lie group and Lie algebra are often used to represent rotations in the latest SLAM studies.
+
+* Lie algebra only use 3 values to represent a rotation.
+* A Lie group and Lie algebra is smooth (differentiable).
+* There is no gimbal lock problem in Lie group or Lie algebra.
+* For small rotation, multiplication of Lie group is commutative.
+* For small rotation, Lie group is easy to be linearized (6).
+
+## Special orthogonal group $SO(3)$
+
+### exponential map
+We can map a $\so3$ to $SO(3)$ by (8) or (9), But the calculation is too complicated. Here We will try to simplify it.
+
+We define $\omega = \theta * k$
+k is a unit vector
+
+$$
+\exp ( {{\mathbf{\phi}^\wedge }} ) 
+a[0]
+= \exp ( {\theta {\mathbf{a}^ \wedge }} ) \\ 
+= \sum\limits_{n = 0}^\infty 
+{\frac{1}{{n!}}{{( {\theta {\mathbf{a}^ \wedge }} )}^n}} a[0] \\
+= \mathbf{I} + \theta {\mathbf{a}^ \wedge } + \frac{1}{{2!}}{\theta ^2}{\mathbf{a}^ \wedge }{\mathbf{a}^\wedge } + \frac{1}{{3!}}{\theta ^3}
+$$
+ + \frac{1}{{3!}}{\theta ^3}{\mathbf{a}^
+$$
+
+$$
+
+
