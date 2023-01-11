@@ -103,13 +103,12 @@ Euler angles are frequently used, however, they are not continuous because of th
 
 If the angles are small enough, the following equations are true.
 
-$cos(a) \approx 1$
-$sin(a)=a$
-$sin(a)sin(b) = 0$
+* $cos(a) \approx 1$
+* $sin(a)\approx a$
+* $sin(a)sin(b) \approx 0$
 
 If we substitute the above equations into (8) and (9), we can yield the same results.
 
-$\mathfrak{so}(3)$
 $$
 \begin{aligned} 
 R_{xyz} \approx R_{zxy} &\approx
@@ -131,9 +130,9 @@ $$
 
 $\skew{\omega}$ is a [skew-symmetric matrix](https://en.wikipedia.org/wiki/Skew-symmetric_matrix), which is composed of $\alpha$, $\beta$ and $\gamma$.
 
-Now that we can obtain a commutative represention of a small rotation by a 3d vector. the remaining question is how to represent a larger rotation?
+Now that we can obtain a commutative represention of a small rotation by a 3d vector. The remaining question is how to represent a larger rotation?
 
-If we want a larger rotation, We can simply split 3d vector $\omega$ into n pieces, and compose the as follows:
+If we want a larger rotation, we can simply split 3d vector $\omega$ into n pieces, and compose the as follows:
 $$
 R(\omega) =
 \underbrace{(I+\frac{\skew{\omega}}{n}) \times ...  (I+\frac{\skew{\omega}}{n})}_\text{n factors}
@@ -142,7 +141,7 @@ R(\omega) =
 $$
 
 For real numbers, this series is very famous, shows a way to compute the exponential function.
-similarly, we can extend the definition of exponential function to skew-symmetric matrix.
+Similarly, we can extend the definition of exponential function to skew-symmetric matrix.
 
 $$
 R(\omega) 
@@ -150,7 +149,7 @@ R(\omega)
 \tag{8}
 $$
 
-The exponential sum formula is also applicable to skew-symmetric matrix. Now, the above exponential map can transform a 3d vector into a rotation matrix.
+The exponential sum formula is also applicable to skew-symmetric matrix. Now, the exponential map (8) or (9) can transform a 3d vector into a rotation matrix.
 
 $$
 R(\omega) 
@@ -159,7 +158,7 @@ R(\omega)
 \tag{9}
 $$
 
-In actually, some theories of Lie groups have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so3$ associated with $SO(3)$ by exponential map.
+In actually, some part of Lie group theories have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so3$ associated with $SO(3)$ by the exponential map.
 
 ##Group
 
@@ -183,36 +182,58 @@ For example, the Rubik's Cube group is a group, we can simply verify that the gr
 
 ##Lie group
 
-A Lie group is a continuous group, This means that a Lie group can be infinitely differentiable.
-Therefore, The Rubik's Cube group is a group, but not a Lie group. 3D rotation space is a group also is a Lie group. 
+A Lie group is a continuous group, which means a Lie group is infinitely differentiable (smooth).
+Therefore, the Rubik's Cube group is a group, but not a Lie group. 3D rotation space is a group as well as a Lie group. 
 
 Because of the following advantages, Lie group and Lie algebra are often used to represent rotations in the latest SLAM studies.
 
 * Lie algebra only use 3 values to represent a rotation.
-* A Lie group and Lie algebra is smooth (differentiable).
+* A Lie group and Lie algebra is differentiable.
 * There is no gimbal lock problem in Lie group or Lie algebra.
-* For small rotation, multiplication of Lie group is commutative.
 * For small rotation, Lie group is easy to be linearized (6).
 
 ## Special orthogonal group $SO(3)$
 
-### exponential map
+### Exponential map
 We can map a $\so3$ to $SO(3)$ by (8) or (9), But the calculation is too complicated. Here We will try to simplify it.
 
-We define $\omega = \theta * k$
-k is a unit vector
+We define $\omega = \theta r$
+* $r$ is a unit vector of $\omega$,  $ r =\frac{\omega}{\norm{\omega}} $ 
+* $\theta$ is the norm of a $\omega$, $ \theta = \norm{\omega} $  
 
 $$
-\exp ( {{\mathbf{\phi}^\wedge }} ) 
-a[0]
-= \exp ( {\theta {\mathbf{a}^ \wedge }} ) \\ 
-= \sum\limits_{n = 0}^\infty 
-{\frac{1}{{n!}}{{( {\theta {\mathbf{a}^ \wedge }} )}^n}} a[0] \\
-= \mathbf{I} + \theta {\mathbf{a}^ \wedge } + \frac{1}{{2!}}{\theta ^2}{\mathbf{a}^ \wedge }{\mathbf{a}^\wedge } + \frac{1}{{3!}}{\theta ^3}
-$$
- + \frac{1}{{3!}}{\theta ^3}{\mathbf{a}^
+\begin{aligned} 
+\exp ( \skew{\omega} ) 
+&= \exp ( \theta \skew{r} ) \\ 
+&= \sum\limits_{k = 0}^\infty 
+\frac{1}{k!} (\theta \skew{r} )^n \\
+&= I + \theta \skew{r} + 
+\frac{1}{2!} \theta^2 \skew{r}^2 +
+\frac{1}{3!} \theta^3 \skew{r}^3 +
+\frac{1}{4!} \theta^4 \skew{r}^4 + ... \\ 
+&= r^T r - 
+\skew{r}^2 + \theta \skew{r} +
+\frac{1}{2!} \theta^2 \skew{r}^2 +
+\frac{1}{3!} \theta^3 \skew{r}^3 +
+\frac{1}{4!} \theta^4 \skew{r}^4 + ... \\ 
+&= r^T r - (\skew{r}^2 - 
+\frac{1}{2!} \theta^2 \skew{r}^2 -
+\frac{1}{4!} \theta^4 \skew{r}^4 - ...) + (\theta \skew{r} +\frac{1}{3!} \theta^3 \skew{r}^3 + ...) \\ 
+&= r^T r - (1 - 
+\frac{1}{2!} \theta^2  +
+\frac{1}{4!} \theta^4  - ...)\skew{r}^2 + (\theta -\frac{1}{3!}  \skew{r}^3 + ...)\skew{r} \\ 
+&= r^T r - cos(\theta) \skew{r}^2 + sin(\theta)\skew{r} \\ 
+&= \skew{r}^2 + I - cos(\theta) \skew{r}^2 + sin(\theta)\skew{r} \\ 
+&= I + (1- cos(\theta)) \skew{r}^2 + sin(\theta)\skew{r} 
+\end{aligned} 
+\tag{10}
 $$
 
-$$
+In (10) two properties of skew symmetric matrices are used.
+If $r$ is a unit vector:
+* $\skew{r}\skew{r}\skew{r} = -\skew{r} $
+* $r^Tr = \skew{r}^2 + I $
 
+
+The formula (10) show a fast way to calculate the exponential map form $\so3$ to $SO(3)$, it is known as [Rodrigues' Formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula).
 
