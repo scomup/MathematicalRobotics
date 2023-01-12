@@ -158,7 +158,7 @@ $\gdef\so3{\mathfrak{so}(3)}$
 
 In actually, some part of Lie group theories have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so3$ associated with $SO(3)$ by the exponential map.
 
-##Group
+## Group
 
 A [Group](https://en.wikipedia.org/wiki/Group_(mathematics)
 ) satisfied following requirements, known as group axioms.
@@ -178,7 +178,7 @@ For example, the Rubik's Cube group is a group, we can simply verify that the gr
 
 ![cube](https://upload.wikimedia.org/wikipedia/commons/a/a6/Rubik%27s_cube.svg)
 
-##Lie group
+##  Lie group
 
 A Lie group is a continuous group, which means a Lie group is infinitely differentiable (smooth).
 Therefore, the Rubik's Cube group is a group, but not a Lie group. 3D rotation space is a group as well as a Lie group. 
