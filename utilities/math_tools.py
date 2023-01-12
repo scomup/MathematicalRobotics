@@ -90,6 +90,10 @@ def logSE3(pose):
         return np.hstack([u,w])
 
 def expSO3(omega):
+    """
+    Exponential map of SO3
+    The proof is shown in rotation.md (10)
+    """
     theta2 = omega.dot(omega)
     theta = np.sqrt(theta2)
     nearZero = theta2 <= epsilon
@@ -101,7 +105,7 @@ def expSO3(omega):
         KK = K.dot(K)
         sin_theta = np.sin(theta)
         one_minus_cos = 1 - np.cos(theta)
-        R = np.eye(3) + sin_theta * K + one_minus_cos * KK
+        R = np.eye(3) + sin_theta * K + one_minus_cos * KK # rotation.md (10)
         return R 
 
 def expSO3test(x):
@@ -116,66 +120,14 @@ def expSO3test(x):
     return T
 
 def logSO3(R):
-    R11, R12, R13 = R[0, :]
-    R21, R22, R23 = R[1, :]
-    R31, R32, R33 = R[2, :]
+    """
+    Logarithm map of SO3
+    The proof is shown in rotation.md (14)
+    """
     tr = np.trace(R)
-    omega = np.zeros(3)
-    # when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
-    # we do something special
-    if (tr + 1.0 < 1e-3):
-        if (R33 > R22 and R33 > R11):
-            # R33 is the largest diagonal, a=3, b=1, c=2
-            W = R21 - R12
-            Q1 = 2.0 + 2.0 * R33
-            Q2 = R31 + R13
-            Q3 = R23 + R32
-            r = np.sqrt(Q1)
-            one_over_r = 1 / r
-            norm = np.sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W)
-            sgn_w = np.sign(W)
-            mag = np.pi - (2 * sgn_w * W) / norm
-            scale = 0.5 * one_over_r * mag
-            omega = sgn_w * scale * np.array([Q2, Q3, Q1])
-        elif (R22 > R11):
-            # R22 is the largest diagonal, a=2, b=3, c=1
-            W = R13 - R31
-            Q1 = 2.0 + 2.0 * R22
-            Q2 = R23 + R32
-            Q3 = R12 + R21
-            r = np.sqrt(Q1)
-            one_over_r = 1 / r
-            norm = np.sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W)
-            sgn_w = np.sign(W)
-            mag = np.pi - (2 * sgn_w * W) / norm
-            scale = 0.5 * one_over_r * mag
-            omega = sgn_w * scale * np.array([Q2, Q3, Q1])
-        else:
-            #R11 is the largest diagonal, a=1, b=2, c=3
-            W = R32 - R23
-            Q1 = 2.0 + 2.0 * R11
-            Q2 = R12 + R21
-            Q3 = R31 + R13
-            r = np.sqrt(Q1)
-            one_over_r = 1 / r
-            norm = np.sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W)
-            sgn_w = np.sign(W)
-            mag = np.pi - (2 * sgn_w * W) / norm
-            scale = 0.5 * one_over_r * mag
-            omega = sgn_w * scale * np.array([Q2, Q3, Q1])
-    else:
-        magnitude = 0
-        tr_3 = tr - 3.0
-        if (tr_3 < -1e-6):
-            # this is the normal case -1 < trace < 3
-            theta = np.arccos((tr - 1.0) / 2.0)
-            magnitude = theta / (2.0 * np.sin(theta))
-        else:
-            #when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
-            #use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
-            #see https://github.com/borglab/gtsam/issues/746 for details
-            magnitude = 0.5 - tr_3 / 12.0 + tr_3*tr_3/60.0
-        omega = magnitude * np.array([R32 - R23, R13 - R31, R21 - R12])
+    theta = np.arccos((tr - 1) / 2)
+    r = np.array([R[2, 1] - R[1, 2], R[0, 2] - R[2, 0], R[1, 0] - R[0, 1]]) / (2 * np.sin(theta))
+    omega = theta * r
     return omega
 
 def transform2d(x,p, x2T = v2m):
