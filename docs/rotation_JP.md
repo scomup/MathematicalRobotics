@@ -146,9 +146,8 @@ $$
 ジンバルロックのイメージ：
 
 <img src="lock.gif" width="400">
-### Infinitesimal Rotation
 
-ジンバルロック問題のが存在するために、オイラー角は数学的に連続的な表現ではない。また、非可換という性質があるため、多くの数学的問題で扱いにくいものとなる。
+ジンバルロック問題のが存在するために、オイラー角は数学的に非連続的な回転表現である。また、非可換という性質があるため、多くの数学的問題で扱いにくいものとなる。
 
 
 ## 微小回転
@@ -187,9 +186,9 @@ $$
 
 $\skew{\omega}$ は $\alpha$, $\beta$ と $\gamma$から構成された交代行列([skew-symmetric matrix](https://en.wikipedia.org/wiki/Skew-symmetric_matrix))である。
 
-さて、これで小さな回転は可換表現で表すことできることが証明したが。残る問題は、より大きな回転をどのように表現するかである。
+これで小さな回転は可換表現で表すことできることが証明したが。残る問題は、より大きな回転をどのように表現するかである。
 
-シンプルな考えとして、3次元ベクトル$НОω$をn個に小っちゃく分割して、掛け算で合成すればよい。
+方法はとてもシンプルで、3次元ベクトル$\omega$をn個に小っちゃく分割し、掛け算で合成すればよい。
 
 $$
 R(\omega) =
@@ -198,9 +197,7 @@ R(\omega) =
 \tag{7}
 $$
 
-敏感な数学神経がある人なら、この式を見たら大興奮するでしょう、
-実数の場合、この級数は非常に有名で、指数関数の積表現である。
-同様に、指数関数の積表現を交代行列に拡張することができる。
+敏感な数学神経がある人なら、この式を見たら興奮するでしょう、実数の場合、この級数は非常に有名で、指数関数の積表現である。同様に、指数関数の積表現を交代行列に拡張することができる。
 
 $$
 R(\omega) 
@@ -208,8 +205,7 @@ R(\omega)
 \tag{8}
 $$
 
-また、指数和の公式も交代行列に適用できる。
-ここで、我々は指数写像(8)、(9)を用いて、3次元ベクトルを回転行列に変換することができる。
+また、指数和の公式も交代行列に適用できる。ここで、我々は指数写像(8)、(9)を用いて、3次元ベクトルを回転行列に変換することができる。
 
 $$
 R(\omega) 
@@ -219,14 +215,12 @@ R(\omega)
 $$
 $\gdef\so3{\mathfrak{so}(3)}$
 
-今まで、リー群という言葉を一回も使ってないが、実際に、上記は既にリー群の知識を一部的に導入しました。3次元回転空間 $R$ は、*特殊直交群* $SO(3)$ と呼ばれる。3次元ベクトル $\omega$ は、リー代数 $\so3$ と呼ばれ,指数写像によって $SO(3)$ に変換することができる。
+今まで、リー群という言葉を一回も使ってないが、実際に、上記は既にリー群の知識を一部的に議論しました。3次元回転空間 $R$ は、*特殊直交群* $SO(3)$ と呼ばれる。3次元ベクトル $\omega$ は、リー代数 $\so3$ と呼ばれ,指数写像によって $SO(3)$ に変換することができる。
 
 ## 群
 
 ここから群([Group](https://en.wikipedia.org/wiki/Group_(mathematics)
-))の基本を軽く紹介するが。
-以下4つの群の公理を満たす集合は群である。
-
+))の基本を軽く紹介するが、以下4つの群の公理を満たす集合は群である。
 
 * 閉集合:
  if $ a_1, a_2 \in G$, then $a_1 \cdot a_2 \in G$
@@ -236,7 +230,6 @@ $\gdef\so3{\mathfrak{so}(3)}$
  For every $ a \in G$, there exists a $a_0 \in G$, such that $ a_0 \cdot a = a \cdot a_0 = a $
 * 逆元:
  For every $ a \in G$, there exists a $a^{-1} \in G$, such that $ a \cdot a^{-1} = a_0 $
-
 
 例えば、ルービックキューブは群であり、群の公理がすべて満たされていることを簡単に検証することができる。
 
@@ -256,13 +249,16 @@ $\gdef\so3{\mathfrak{so}(3)}$
 
 ## 3次元の特殊直交群 $SO(3)$
 
-### Exponential map
-We can map a $\so3$ to $SO(3)$ by (8) or (9), But the calculation is too complicated. Here we will try to simplify it.
+### 指数写像(Exponential map)
+
+(8)や(9)で$\so3$を$SO(3)$に変換することができるが、計算が煩雑であるため、以下で計算を簡略化する。
+
 $\gdef\norm#1{\|{#1}\|}$
 
-We define $\omega = \theta r$
-* $r$ is a unit vector of $\omega$,  $ r =\frac{\omega}{\norm{\omega}} $ 
-* $\theta$ is the norm of a $\omega$, $ \theta = \norm{\omega} $  
+$\omega = \theta r$ を定義する。
+
+* $r$ $\omega$の単位ベクトル,  $ r =\frac{\omega}{\norm{\omega}} $ 
+* $\theta$ は $\omega$のノルム, $ \theta = \norm{\omega} $  
 
 $$
 \begin{aligned} 
@@ -292,20 +288,21 @@ $$
 \tag{10}
 $$
 
-In (10) two properties of skew symmetric matrices are used.
-If $r$ is a unit vector:
+(10)では、交代行列の2つの性質が使われている。$r$は単位ベクトルのとき：
+
 * $\skew{r}\skew{r}\skew{r} = -\skew{r} $
 * $r^Tr = \skew{r}^2 + I $
 
+(10)式は、[Rodrigues' Formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula).として知られている、$\so3$から$SO(3)$への指数写像の高速に計算する方法である。
 
 
-The formula (10) show a fast way to calculate the exponential map from $\so3$ to $SO(3)$, it is known as [Rodrigues' Formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula).
+### 対数写像 (Logarithm map)
 
-### Logarithm map
+指数写像と逆に、対数写像は指数写像の逆計算であり、リー代数をリー群を対応させることができる。
 
-In contrast to Exponential map, using the Logarithm map can correspond a Lie algebra to a Lie group.
 
-The formula (10) can be wrtten as matrix:
+式(10)は、行列として書くことができる。
+
 
 $$
 \begin{aligned} 
@@ -331,7 +328,7 @@ r_1 r_2 (1-cos\theta) +r_3 sin\theta   & r_2^2 (1-cos\theta) + cos\theta      & 
 \tag{11}
 $$
 
-From (11) we can see:
+(11)から：
 
 $$
 \theta = arccos( \frac{1}{2}(R_{11} + R_{22} + R_{33} -1)) \\
@@ -344,8 +341,7 @@ r = [ R_{32} - R_{23}, R_{13} - R_{31}, R_{12} - R_{21}]/2 sin \theta
 \tag{13}
 $$
 
-from (12) (13), Logarithm map can be implmented as follows:
-
+(12) (13)より、対数写像は以下のように計算することができる。
 $$
 log(R)^{\vee} = \omega = \frac{\theta[ R_{32} - R_{23}, R_{13} - R_{31}, R_{12} - R_{21}]}{2 sin \theta}  
 \tag{14}
