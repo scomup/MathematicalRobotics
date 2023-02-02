@@ -1,4 +1,4 @@
-# 3D rotation   
+# 3D rotation and Lie group
 
 ## Euler angles
 
