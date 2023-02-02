@@ -81,7 +81,7 @@ I_2x2     0         I_2x2 dt
 0        1         0
 0_2x2 exp(th)hat2d(u_v-n_v) 0
 """
-Jn = numericalDerivative(F, [x_last_hat, x_last_delta, u, n, dt], 3)
+Jn = numericalDerivative(F, [x_last_hat, x_last_delta, u, n, dt], 3,minus=boxminus)
 """
 0_2x2     0_2x1
 0_2x1     -dt
@@ -91,21 +91,29 @@ figname = "test"
 fig = plt.figure(figname)
 axes = fig.gca()
 
-P = np.eye(5) * 0.001
+P = np.zeros([5,5]) 
+P[0:2,0:2] = np.eye(2) * 0.1
+P[2,2] = 0.0
 Q = np.zeros([3,3])
+Q[0,0] = 0.2
+Q[1,1] = 0.01
+Q[2,2] = 0.001
 
 get_Jn(x_last_hat,u, dt)
 x = np.array([0,0,0,0,0])
-u = np.array([2,0,0])
-dt = 0.1
-for i in range(100):
+u = np.array([2,0,0.2])
+dt = 1.
+for i in range(10):
     x = func(x,u, dt)
     Jn = get_Jn(x, u, dt)
     Jx = get_Jx(x, u, dt)
+    #Jx = numericalDerivative(F, [x, x_last_delta, u, n, dt], 1, plus=boxplus, minus=boxminus)
+    #Jn = numericalDerivative(F, [x, x_last_delta, u, n, dt], 3, minus=boxminus)
+
+
     P = Jx.dot(P.dot(Jx.T)) + Jn.dot(Q.dot(Jn.T))
-    print(P[0:2,0:2])
+    #zprint(P[0:2,0:2])
     plot_pose2(figname, v2m(x[0:3]), 0.2, P[0:2,0:2])
 
 
-#set_axes_equal(figname)
 plt.show()
