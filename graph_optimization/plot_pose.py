@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 def plot_pose2_on_axes(axes,
                        pose,
-                       axis_length: float = 0.1):
+                       axis_length: float = 0.1, covariance = None):
 
     gRp, origin = makeRt(pose)
 
@@ -21,6 +21,17 @@ def plot_pose2_on_axes(axes,
     axes.plot(line[:, 0], line[:, 1], 'g-')
 
     e1 = patches.Circle(xy=origin, radius=axis_length, fill=False)
+    if covariance is not None:
+        #pPp = covariance[0:2, 0:2]
+        #gPp = np.matmul(np.matmul(gRp, pPp), gRp.T)
+
+        lambda_, v = np.linalg.eig(covariance)
+        lambda_ = np.sqrt(lambda_)
+        e1 = patches.Ellipse(xy=(origin[0], origin[1]),
+                  width=lambda_[0]*2, height=lambda_[1]*2,
+                  angle=np.rad2deg(np.arccos(v[0, 0])))
+        e1.set_edgecolor('red')
+        e1.set_facecolor('none')
 
     axes.add_patch(e1)
 
@@ -28,7 +39,7 @@ def plot_pose2_on_axes(axes,
 def plot_pose2(
         fignum,
         pose,
-        axis_length: float = 0.1,
+        axis_length: float = 0.1, covariance = None,
         axis_labels=("X axis", "Y axis", "Z axis")):
     # get figure object
     fig = plt.figure(fignum)
@@ -36,7 +47,7 @@ def plot_pose2(
     axes = fig.gca()
     plot_pose2_on_axes(axes,
                        pose,
-                       axis_length=axis_length)
+                       axis_length=axis_length, covariance = covariance)
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
@@ -148,15 +159,15 @@ if __name__ == '__main__':
     odom = v2m(np.array([0.2, 0, 0.5]))
     for i in range(12):
         cur_pose = cur_pose.dot(odom)
-        plot_pose2('test plot 2d', cur_pose, 0.05)
+        plot_pose2('test plot 2d', cur_pose, 0.05, np.eye(2)*0.01)
     plt.axis('equal')
 
-    cur_pose = np.eye(4)
-    odom = expSE3(np.array([0.2, 0, 0.01, 0, 0, 0.5]))
-    for i in range(12):
-        cur_pose = cur_pose.dot(odom)
-        plot_pose3('test plot 3d', cur_pose, 0.05)
-    set_axes_equal('test plot 3d')
+    #cur_pose = np.eye(4)
+    #odom = expSE3(np.array([0.2, 0, 0.01, 0, 0, 0.5]))
+    #for i in range(12):
+    #    cur_pose = cur_pose.dot(odom)
+    #    plot_pose3('test plot 3d', cur_pose, 0.05)
+    #set_axes_equal('test plot 3d')
 
 
     plt.show()
