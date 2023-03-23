@@ -10,6 +10,13 @@ def v2m(v):
 def m2v(m):
     return np.array([m[0,2],m[1,2],np.arctan2(m[1,0],m[0,0])])
 
+def expSO2(v):
+    return np.array([[np.cos(v),-np.sin(v)],
+            [np.sin(v),np.cos(v)]])
+
+def logSO2(m):
+    return np.arctan2(m[1,0],m[0,0])
+
 def p2m(x):
     t = x[0:3]
     R = expSO3(x[3:6])
@@ -62,6 +69,20 @@ def expSE3(x):
     else:
         return makeT(R, rho)
 
+def expSE3test(x):
+    hat_x = np.zeros([4,4])
+    omega = x[3:6]
+    v = x[0:3]
+    hat_x[0:3,0:3] = skew(omega) 
+    hat_x[0:3,3] = v
+    hat_x_powk = hat_x.copy()
+    T = np.eye(4)
+    k_factorial = 1
+    for k in range(1,20):
+        k_factorial *= k
+        T += hat_x_powk / k_factorial
+        hat_x_powk = hat_x_powk.dot(hat_x)
+    return T
 
 
 def logSE3(pose):
@@ -74,27 +95,11 @@ def logSE3(pose):
         r = omega/theta
         r_skew = skew(r)
         r_skew2 = r_skew.dot(r_skew)
-        sin2 = 2 * np.sin(theta)
-        J_inv = np.eye(3) - (theta/2) * r_skew + ((sin2-theta*(1+np.cos(theta)))/sin2) * r_skew2
+        sin_th_2 = 2 * np.sin(theta)
+        J_inv = np.eye(3) - (theta/2) * r_skew + (1-(theta*(1+np.cos(theta)))/sin_th_2) * r_skew2
         rho = J_inv.dot(t)
         return np.hstack([rho, omega])
 
-
-def logSE3(pose):
-    w = logSO3(pose[0:3,0:3])
-    T = pose[0:3,3]
-    t = np.linalg.norm(w)
-    if (t < 1e-10):
-      return np.hstack([T,w])
-    else:
-        W = skew(w / t)
-        # Formula from Agrawal06iros, equation (14)
-        # simplified with Mathematica, and multiplying in T to avoid matrix math
-        Tan = np.tan(0.5 * t)
-        WT = W.dot(T)
-        u = T - (0.5 * t) * WT + (1 - t / (2. * Tan)) * (W.dot(WT))
-        #Vector6 log
-        return np.hstack([u,w])
 
 def expSO3(omega):
     """
@@ -127,11 +132,16 @@ def expSO3test(x):
     return T
 
 def logSO3(R):
+    """
+    Logarithm map of SO3
+    The proof is shown in rotation.md (14)
+    """
     R11, R12, R13 = R[0, :]
     R21, R22, R23 = R[1, :]
     R31, R32, R33 = R[2, :]
     tr = np.trace(R)
     omega = np.zeros(3)
+    v = np.array([R32 - R23, R13 - R31, R21 - R12])
     # when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
     # we do something special
     if (tr + 1.0 < 1e-3):
@@ -188,18 +198,6 @@ def logSO3(R):
             magnitude = 0.5 - tr_3 / 12.0 + tr_3*tr_3/60.0
         omega = magnitude * np.array([R32 - R23, R13 - R31, R21 - R12])
     return omega
-    """
-    Logarithm map of SO3
-    The proof is shown in rotation.md (14)
-    """
-    tr = np.trace(R)
-    theta = np.arccos((tr - 1) / 2)
-    if(theta < 1e-10):
-        return np.array([0,0,0.])
-    else:
-        r = np.array([R[2, 1] - R[1, 2], R[0, 2] - R[2, 0], R[1, 0] - R[0, 1]]) / (2 * np.sin(theta))
-        omega = theta * r
-        return omega
 
 def transform2d(x,p, x2T = v2m):
     R, t = makeRt(x2T(x))
