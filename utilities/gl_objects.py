@@ -163,6 +163,9 @@ class GLTrajItem(gl.GLGraphicsItem.GLGraphicsItem):
 
     def paint(self):
         glLineWidth(self.width)
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnable( GL_BLEND )
         glBegin( GL_LINE_STRIP )
         glColor4f(self.color[0], self.color[1], self.color[2], self.color[3])  # z is blue
         for p in self.points:

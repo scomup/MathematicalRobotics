@@ -156,7 +156,7 @@ def transformVelocity3D(Tba, va):
 
 if __name__ == '__main__':
     glutInit(sys.argv)
-    Tba = expSE3(np.array([0., 0., 10, 1., 0.3, 0.]))
+    Tba = expSE3(np.array([2, 5, 10, 1., 0.3, 0.1]))
     va = np.array([5,0.8,1,0,0.0,2])
     vb = transformVelocity3D(Tba, va)
     print("The Velocities of B is:",vb)
@@ -165,8 +165,8 @@ if __name__ == '__main__':
     colorA = np.array([1,0,0,1])
     colorB = np.array([0,1,0,1])
     arm = GLRobotARMItem(Tba, colorA, colorB)
-    trajA = GLTrajItem(width=5, color = colorA)
-    trajB = GLTrajItem(width=5, color = colorB)
+    trajA = GLTrajItem(width=5, color = np.append(colorA[0:3],0.3))
+    trajB = GLTrajItem(width=5, color = np.append(colorB[0:3],0.3))
     offset = np.array([2,2,0])
     window = Gui3d(arm, trajA, trajB ,va)
     window.show()
