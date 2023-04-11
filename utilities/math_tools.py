@@ -17,6 +17,7 @@ def expSO2(v):
 def logSO2(m):
     return np.arctan2(m[1,0],m[0,0])
 
+
 def p2m(x):
     t = x[0:3]
     R = expSO3(x[3:6])
@@ -40,6 +41,8 @@ def skew(vector):
 def unskew(m):
     return np.array([m[2,1],m[0,2], m[1,0]])
 
+def hat2d(v):
+    return np.array([-(v)[1],(v)[0]])
 
 def makeT(R,t):
     n = t.shape[0]
@@ -51,6 +54,41 @@ def makeT(R,t):
 def makeRt(T):
     n = T.shape[0] - 1
     return T[0:n,0:n], T[0:n,n]
+
+def left_jacobian(phi):
+    if np.isclose(phi, 0.):
+        return np.identity(2) + 0.5 * wedge(phi)
+    s = np.sin(phi)
+    c = np.cos(phi)
+    return (s / phi) * np.identity(2) + ((1 - c) / phi) * wedge(1.)
+
+def inv_left_jacobian(phi):
+    if np.isclose(phi, 0.):
+        return np.identity(2) - 0.5 * wedge(phi)
+    half_angle = 0.5 * phi
+    cot_half_angle = 1. / np.tan(half_angle)
+    return half_angle * cot_half_angle * np.identity(2) - half_angle * wedge(1.)
+
+def wedge(phi):
+    phi = np.atleast_1d(phi)
+    Phi = np.zeros([len(phi), 2, 2])
+    Phi[:, 0, 1] = -phi
+    Phi[:, 1, 0] = phi
+    return np.squeeze(Phi)
+
+def expSE2(xi):
+    rho = xi[0:2]
+    phi = xi[2]
+    R = expSO2(phi)
+    t = left_jacobian(phi).dot(rho)
+    return makeT(R, t)
+
+
+def logSE2(T):
+    R,t = makeRt(T)
+    phi = logSO2(R)
+    rho = inv_left_jacobian(phi).dot(t)
+    return np.hstack([rho, phi])
 
 
 def expSE3(x):

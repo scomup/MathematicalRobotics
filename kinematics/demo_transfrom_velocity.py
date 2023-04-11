@@ -43,7 +43,7 @@ class GLTextViewWidget(gl.GLViewWidget):
 
 
 class Gui3d(QMainWindow):
-    def __init__(self, robot_arm , traj_A, traj_B, va):
+    def __init__(self, robot_arm , traj_A, traj_B, va, dt):
         self.time = 0.0
         self.robot_arm = robot_arm
         self.traj_A = traj_A
@@ -52,6 +52,7 @@ class Gui3d(QMainWindow):
         self.pre_B = np.eye(4)
         self.pre_time = 0.
         self.va  = va
+        self.dt = dt
 
         super(Gui3d, self).__init__()
         self.setGeometry(0, 0, 700, 900) 
@@ -112,7 +113,7 @@ class Gui3d(QMainWindow):
 
     def update(self):
         if(self.start):
-            self.time += 0.1
+            self.time += self.dt
         time = self.time
         T = expSE3(self.va * time)
         self.robot_arm.setTransform(T)
@@ -121,20 +122,18 @@ class Gui3d(QMainWindow):
         B = self.robot_arm.getB()
         self.traj_A.addPoints(A[0:3,3])
         self.traj_B.addPoints(B[0:3,3])
-        deltaA = np.linalg.inv(self.pre_A) @ A
+        #deltaA = np.linalg.inv(self.pre_A) @ A
         deltaB = np.linalg.inv(self.pre_B) @ B
-        Ra, ta = makeRt(deltaA)
-        dt = time - self.pre_time
-        if(dt != 0):
-            #omega_a = logSO3(Ra)/dt
-            #v_a = ta/dt
-            va = self.va
-            Rb, tb = makeRt(deltaB)
-            omega_b = logSO3(Rb)/dt
-            v_b = tb/dt
-            vb = np.concatenate((v_b, omega_b))
-            self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(va[0],va[1],va[2], va[3], va[4], va[5]))
-            self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(vb[0],vb[1],vb[2], vb[3], vb[4], vb[5]))
+        #Ra, ta = makeRt(deltaA)
+        #omega_a = logSO3(Ra)/dt
+        #v_a = ta/dt
+        va = self.va
+        Rb, tb = makeRt(deltaB)
+        omega_b = logSO3(Rb)/self.dt
+        v_b = tb/self.dt
+        vb = np.concatenate((v_b, omega_b))
+        self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(va[0],va[1],va[2], va[3], va[4], va[5]))
+        self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(vb[0],vb[1],vb[2], vb[3], vb[4], vb[5]))
         self.pre_A = A
         self.pre_B = B
         self.pre_time = time
@@ -167,8 +166,8 @@ if __name__ == '__main__':
     arm = GLRobotARMItem(Tba, colorA, colorB)
     trajA = GLTrajItem(width=5, color = np.append(colorA[0:3],0.3))
     trajB = GLTrajItem(width=5, color = np.append(colorB[0:3],0.3))
-    offset = np.array([2,2,0])
-    window = Gui3d(arm, trajA, trajB ,va)
+    dt = 0.1
+    window = Gui3d(arm, trajA, trajB ,va, dt)
     window.show()
 
     app.exec_()
