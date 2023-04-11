@@ -157,6 +157,7 @@ class GLTrajItem(gl.GLGraphicsItem.GLGraphicsItem):
         d = np.linalg.norm(l - p)
         if(d > 0.1):
             self.points.append(p)
+
     def clear(self):
         self.points.clear()
 
@@ -203,37 +204,32 @@ class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
         glEnd()
 
 class GLRobotARMItem(gl.GLGraphicsItem.GLGraphicsItem):
-    def __init__(self, x, y, z, glOptions='translucent'):
+    def __init__(self, Tba, colorA, colorB, glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
-        self.x, self.y, self.z = x, y, z
-        self.vertexes = np.array([[x, 0, 0], #0
-                         [-x/2, -y/2, 0], #1
-                         [-x/2, y/2, 0], #2
-                         [-x/2, -y/2, z], #3
-                         [x/2, y/2, 0], #4
-                         [x/2, y/2, z], #5
-                         [-x/2, y/2, z], #6
-                         [x/2, -y/2, z]])#7
-        self.faces = np.array([[1,0,7], [7,3,1],
-                  [1,2,4], [4,0,1],
-                  [1,2,6], [6,3,1],
-                  [0,4,5], [5,7,0],
-                  [2,4,5], [5,6,2],
-                  [3,6,5], [5,7,3]])
-        self.color = [0.8, 0.2, 0.2, 1.0]
         self.T = np.eye(4)
+        self.A = np.eye(4)
+        self.Tba = Tba
+        self.Tab = np.linalg.inv(Tba)
+        self.B = self.T @ self.Tab
+        self.colorA = colorA
+        self.colorB = colorB
 
     def setTransform(self, T):
-        self.T = T.T
+        self.T = T
 
     def arm(self):
-        glColor4f(*self.color)  # z is blue
-        glBegin(GL_TRIANGLES)
-        for face in self.faces:
-            glVertex4f(*self.vertexes[face[0]],1)
-            glVertex4f(*self.vertexes[face[1]],1)
-            glVertex4f(*self.vertexes[face[2]],1)
+        glLineWidth(10)
+        glBegin(GL_LINES)
+        glColor4f(0.2, 0.2, 0.8, 0.1)  # z is blue
+        glVertex4f(*self.A[:,3])
+        glVertex4f(*self.B[:,3])
         glEnd()
+
+    def getA(self):
+        return (self.T)
+        
+    def getB(self):
+        return (self.T @ self.Tab)
 
     def sphere(self, radius, slices, stacks, offset):
         """
@@ -260,16 +256,16 @@ class GLRobotARMItem(gl.GLGraphicsItem.GLGraphicsItem):
     def paint(self):
         self.setupGLState()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glEnable(GL_LIGHTING)
-        glEnable(GL_LIGHT0)
-        glEnable( GL_COLOR_MATERIAL )
+        #glEnable(GL_LIGHTING)
+        #glEnable(GL_LIGHT0)
+        #glEnable( GL_COLOR_MATERIAL )
         glMatrixMode(GL_MODELVIEW)
-        glMultMatrixf(self.T)
+        glMultMatrixf(self.T.T)
         self.arm()
-        glColor4f(0,1,0,1)
-        self.sphere(1, 50, 50, np.array([0,0,self.z]))
-        glColor4f(0,0,1,1)
-        self.sphere(1, 50, 50, np.array([0,0,0]))
+        glColor4f(*self.colorA)
+        self.sphere(1, 50, 50, self.A[0:3,3])
+        glColor4f(*self.colorB)
+        self.sphere(1, 50, 50, self.B[0:3,3])
 
 
 

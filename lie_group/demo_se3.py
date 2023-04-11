@@ -102,10 +102,6 @@ class Gui3d(QMainWindow):
         self.trajs[1].addPoints(x[0:3])
         if(self.start):
             self.x += 0.1
-        else:
-            self.x = 0
-            self.trajs[0].clear()
-            self.trajs[1].clear()
 
         self.viewer.update()
 
