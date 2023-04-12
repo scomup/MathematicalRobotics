@@ -53,6 +53,7 @@ class Gui3d(QMainWindow):
         self.pre_time = 0.
         self.va  = va
         self.dt = dt
+        self.T = np.eye(4)
 
         super(Gui3d, self).__init__()
         self.setGeometry(0, 0, 700, 900) 
@@ -115,22 +116,20 @@ class Gui3d(QMainWindow):
         if(self.start):
             self.time += self.dt
         time = self.time
-        T = expSE3(self.va * time)
-        self.robot_arm.setTransform(T)
+        dt = time - self.pre_time
+
+        self.T = self.T @ expSE3(self.va * dt)
+        self.robot_arm.setTransform(self.T)
 
         A = self.robot_arm.getA()
         B = self.robot_arm.getB()
         self.traj_A.addPoints(A[0:3,3])
         self.traj_B.addPoints(B[0:3,3])
-        #deltaA = np.linalg.inv(self.pre_A) @ A
         deltaB = np.linalg.inv(self.pre_B) @ B
-        #Ra, ta = makeRt(deltaA)
-        #omega_a = logSO3(Ra)/dt
-        #v_a = ta/dt
         va = self.va
         Rb, tb = makeRt(deltaB)
-        omega_b = logSO3(Rb)/self.dt
-        v_b = tb/self.dt
+        omega_b = logSO3(Rb)/dt
+        v_b = tb/dt
         vb = np.concatenate((v_b, omega_b))
         self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(va[0],va[1],va[2], va[3], va[4], va[5]))
         self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(vb[0],vb[1],vb[2], vb[3], vb[4], vb[5]))
