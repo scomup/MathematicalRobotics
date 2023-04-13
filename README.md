@@ -10,7 +10,7 @@ We want to select some widely used and practical algorithms. for each algorithm,
 * Show a detailed mathematical proof.
 * To show the math behind it, minimal use of third-party libraries. 
 
-## requirements.txt 
+## Requirements 
 
 ```bash
 pip3 install -r requirements.txt
