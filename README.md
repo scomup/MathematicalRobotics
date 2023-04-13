@@ -10,6 +10,12 @@ We want to select some widely used and practical algorithms. for each algorithm,
 * Show a detailed mathematical proof.
 * To show the math behind it, minimal use of third-party libraries. 
 
+## requirements.txt 
+
+```bash
+pip3 install -r requirements.txt
+```
+
 ## Demo Lists
 
 ### guass_newton_method
