@@ -1,16 +1,14 @@
 from pyqtgraph.Qt import QtCore
-import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QRadioButton, QApplication,QPushButton
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLabel, QApplication,QPushButton
 from OpenGL.GL import *
-from PyQt5 import QtCore, QtGui, QtWidgets
-from scipy.spatial.transform import Rotation   
+from PyQt5 import QtCore, QtGui
 import numpy as np
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from utilities.gl_objects import *
-from OpenGL.GLUT import *
+
 
 class GLTextViewWidget(gl.GLViewWidget):
     def __init__(self, parent=None):
@@ -126,13 +124,13 @@ class Gui3d(QMainWindow):
         self.traj_A.addPoints(A[0:3,3])
         self.traj_B.addPoints(B[0:3,3])
         deltaB = np.linalg.inv(self.pre_B) @ B
-        va = self.va
-        Rb, tb = makeRt(deltaB)
-        omega_b = logSO3(Rb)/dt
-        v_b = tb/dt
-        vb = np.concatenate((v_b, omega_b))
-        self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(va[0],va[1],va[2], va[3], va[4], va[5]))
-        self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(vb[0],vb[1],vb[2], vb[3], vb[4], vb[5]))
+        if(dt != 0):
+            Rb, tb = makeRt(deltaB)
+            omega_b = logSO3(Rb)/dt
+            v_b = tb/dt
+            vb = np.concatenate((v_b, omega_b))
+            self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(va[0],va[1],va[2], va[3], va[4], va[5]))
+            self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(vb[0],vb[1],vb[2], vb[3], vb[4], vb[5]))
         self.pre_A = A
         self.pre_B = B
         self.pre_time = time
@@ -153,9 +151,12 @@ def transformVelocity3D(Tba, va):
 
 
 if __name__ == '__main__':
-    glutInit(sys.argv)
+
+    #try different values at here
     Tba = expSE3(np.array([2, 5, 10, 1., 0.3, 0.1]))
     va = np.array([5,0.8,1,0,0.0,2])
+    dt = 0.1 #
+    
     vb = transformVelocity3D(Tba, va)
     print("The Velocities of B is:",vb)
     app = QApplication([])
@@ -165,7 +166,6 @@ if __name__ == '__main__':
     arm = GLRobotARMItem(Tba, colorA, colorB)
     trajA = GLTrajItem(width=5, color = np.append(colorA[0:3],0.3))
     trajB = GLTrajItem(width=5, color = np.append(colorB[0:3],0.3))
-    dt = 0.1
     window = Gui3d(arm, trajA, trajB ,va, dt)
     window.show()
 
