@@ -10,6 +10,14 @@ def v2m(v):
 def m2v(m):
     return np.array([m[0,2],m[1,2],np.arctan2(m[1,0],m[0,0])])
 
+def expSO2(v):
+    return np.array([[np.cos(v),-np.sin(v)],
+            [np.sin(v),np.cos(v)]])
+
+def logSO2(m):
+    return np.arctan2(m[1,0],m[0,0])
+
+
 def p2m(x):
     t = x[0:3]
     R = expSO3(x[3:6])
@@ -33,6 +41,8 @@ def skew(vector):
 def unskew(m):
     return np.array([m[2,1],m[0,2], m[1,0]])
 
+def hat2d(v):
+    return np.array([-(v)[1],(v)[0]])
 
 def makeT(R,t):
     n = t.shape[0]
@@ -45,18 +55,57 @@ def makeRt(T):
     n = T.shape[0] - 1
     return T[0:n,0:n], T[0:n,n]
 
+def left_jacobian(phi):
+    if np.isclose(phi, 0.):
+        return np.identity(2) + 0.5 * wedge(phi)
+    s = np.sin(phi)
+    c = np.cos(phi)
+    return (s / phi) * np.identity(2) + ((1 - c) / phi) * wedge(1.)
+
+def inv_left_jacobian(phi):
+    if np.isclose(phi, 0.):
+        return np.identity(2) - 0.5 * wedge(phi)
+    half_angle = 0.5 * phi
+    cot_half_angle = 1. / np.tan(half_angle)
+    return half_angle * cot_half_angle * np.identity(2) - half_angle * wedge(1.)
+
+def wedge(phi):
+    phi = np.atleast_1d(phi)
+    Phi = np.zeros([len(phi), 2, 2])
+    Phi[:, 0, 1] = -phi
+    Phi[:, 1, 0] = phi
+    return np.squeeze(Phi)
+
+def expSE2(xi):
+    rho = xi[0:2]
+    phi = xi[2]
+    R = expSO2(phi)
+    t = left_jacobian(phi).dot(rho)
+    return makeT(R, t)
+
+
+def logSE2(T):
+    R,t = makeRt(T)
+    phi = logSO2(R)
+    rho = inv_left_jacobian(phi).dot(t)
+    return np.hstack([rho, phi])
+
+
 def expSE3(x):
     omega = x[3:6]
-    v = x[0:3]
+    rho = x[0:3]
     R = expSO3(omega)
-    theta2 = omega.dot(omega)
-    if theta2 > epsilon:
-        t_parallel = omega * omega.dot(v)
-        omega_cross_v = np.cross(omega, v)
-        t = (omega_cross_v - R.dot(omega_cross_v) + t_parallel) / theta2
+    theta = np.linalg.norm(omega)
+    if theta > epsilon:
+        r = omega/theta
+        r_skew = skew(r)
+        r_skew2 = r_skew.dot(r_skew)
+        J = np.eye(3) + ((1-np.cos(theta))/theta) * r_skew + (1-np.sin(theta)/theta) * r_skew2
+        t = J.dot(rho)
+
         return makeT(R, t)
     else:
-        return makeT(R, v)
+        return makeT(R, rho)
 
 def expSE3test(x):
     hat_x = np.zeros([4,4])
@@ -73,21 +122,22 @@ def expSE3test(x):
         hat_x_powk = hat_x_powk.dot(hat_x)
     return T
 
+
 def logSE3(pose):
-    w = logSO3(pose[0:3,0:3])
-    T = pose[0:3,3]
-    t = np.linalg.norm(w)
-    if (t < 1e-10):
-      return np.hstack([T,w])
+    omega = logSO3(pose[0:3,0:3])
+    t = pose[0:3,3]
+    theta = np.linalg.norm(omega)
+    if (theta < 1e-10):
+      return np.hstack([t, omega])
     else:
-        W = skew(w / t)
-        # Formula from Agrawal06iros, equation (14)
-        # simplified with Mathematica, and multiplying in T to avoid matrix math
-        Tan = np.tan(0.5 * t)
-        WT = W.dot(T)
-        u = T - (0.5 * t) * WT + (1 - t / (2. * Tan)) * (W.dot(WT))
-        #Vector6 log
-        return np.hstack([u,w])
+        r = omega/theta
+        r_skew = skew(r)
+        r_skew2 = r_skew.dot(r_skew)
+        sin_th_2 = 2 * np.sin(theta)
+        J_inv = np.eye(3) - (theta/2) * r_skew + (1-(theta*(1+np.cos(theta)))/sin_th_2) * r_skew2
+        rho = J_inv.dot(t)
+        return np.hstack([rho, omega])
+
 
 def expSO3(omega):
     """
@@ -124,10 +174,67 @@ def logSO3(R):
     Logarithm map of SO3
     The proof is shown in rotation.md (14)
     """
+    R11, R12, R13 = R[0, :]
+    R21, R22, R23 = R[1, :]
+    R31, R32, R33 = R[2, :]
     tr = np.trace(R)
-    theta = np.arccos((tr - 1) / 2)
-    r = np.array([R[2, 1] - R[1, 2], R[0, 2] - R[2, 0], R[1, 0] - R[0, 1]]) / (2 * np.sin(theta))
-    omega = theta * r
+    omega = np.zeros(3)
+    v = np.array([R32 - R23, R13 - R31, R21 - R12])
+    # when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
+    # we do something special
+    if (tr + 1.0 < 1e-3):
+        if (R33 > R22 and R33 > R11):
+            # R33 is the largest diagonal, a=3, b=1, c=2
+            W = R21 - R12
+            Q1 = 2.0 + 2.0 * R33
+            Q2 = R31 + R13
+            Q3 = R23 + R32
+            r = np.sqrt(Q1)
+            one_over_r = 1 / r
+            norm = np.sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W)
+            sgn_w = np.sign(W)
+            mag = np.pi - (2 * sgn_w * W) / norm
+            scale = 0.5 * one_over_r * mag
+            omega = sgn_w * scale * np.array([Q2, Q3, Q1])
+        elif (R22 > R11):
+            # R22 is the largest diagonal, a=2, b=3, c=1
+            W = R13 - R31
+            Q1 = 2.0 + 2.0 * R22
+            Q2 = R23 + R32
+            Q3 = R12 + R21
+            r = np.sqrt(Q1)
+            one_over_r = 1 / r
+            norm = np.sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W)
+            sgn_w = np.sign(W)
+            mag = np.pi - (2 * sgn_w * W) / norm
+            scale = 0.5 * one_over_r * mag
+            omega = sgn_w * scale * np.array([Q2, Q3, Q1])
+        else:
+            #R11 is the largest diagonal, a=1, b=2, c=3
+            W = R32 - R23
+            Q1 = 2.0 + 2.0 * R11
+            Q2 = R12 + R21
+            Q3 = R31 + R13
+            r = np.sqrt(Q1)
+            one_over_r = 1 / r
+            norm = np.sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W)
+            sgn_w = np.sign(W)
+            mag = np.pi - (2 * sgn_w * W) / norm
+            scale = 0.5 * one_over_r * mag
+            omega = sgn_w * scale * np.array([Q2, Q3, Q1])
+    else:
+        magnitude = 0
+        tr_3 = tr - 3.0
+        if (tr_3 < -1e-6):
+            # this is the normal case -1 < trace < 3
+            theta = np.arccos((tr - 1.0) / 2.0)
+            magnitude = theta / (2.0 * np.sin(theta))
+        else:
+            #when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
+            #use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
+            #see https://github.com/borglab/gtsam/issues/746 for details
+            magnitude = 0.5 - tr_3 / 12.0 + tr_3*tr_3/60.0
+        omega = magnitude * np.array([R32 - R23, R13 - R31, R21 - R12])
     return omega
 
 def transform2d(x,p, x2T = v2m):
