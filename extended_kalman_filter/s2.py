@@ -11,13 +11,26 @@ class S2:
     def __init__(self, vec):
         self.vec = vec
         self.len = np.linalg.norm(vec)
+        self.shape = [2]
 
     def boxplus(self, delta):
         Bx = self.S2_Bx()
         Bu = Bx.dot(delta)
         R = expSO3(Bu)
-        return R.dot(self.vec)
+        return S2(R.dot(self.vec))
 
+    def boxminus(self, other):
+        v_sin = np.linalg.norm(skew(self.vec) @ other.vec)
+        v_cos = self.vec.T @ other.vec
+        theta = np.arctan2(v_sin, v_cos)
+        if(v_sin < tolerance):
+            if(np.abs(theta) > tolerance):
+                return np.array([3.1415926, 0])
+            else:
+                return np.array([0, 0])
+        else:
+            Bx = other.S2_Bx()
+            return theta/v_sin * Bx.transpose() @ skew(other.vec) @ self.vec
 
     def S2_Bx(self):
         if(self.vec[0] + self.len > tolerance):
@@ -31,8 +44,23 @@ class S2:
             res[1, 1] = -1
             res[2, 0] = 1
         return res
+if __name__ == '__main__':
+    def func(v, grav):
+        return v + grav.vec
 
-a = S2(np.array([0,0,9.8]))
-b = S2(np.array([0,0,9.8]))
+    def plus(g, delta):
+        return g.boxplus(delta)
+    
+    g = S2(expSO3(np.array([0.1,0.0,0.0])) @ np.array([0,0,-9.8]))
 
-a.boxplus(np.array([0.1,0.1]))
+    v = np.array([0,0,0.8])
+
+    Jg = numericalDerivative(func, [v, g], 1, plus)
+    Jg_prime = -skew(g.vec) @ g.S2_Bx() 
+
+    delta = S2(np.array([0.1,0.1]))
+
+    g_prime = g.boxplus(np.array([0.1,0.1]))
+    delta_prime = g_prime.boxminus(g)
+    print(delta_prime)
+
