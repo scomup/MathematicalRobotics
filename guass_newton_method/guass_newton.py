@@ -54,16 +54,15 @@ class guassNewton:
         return x_cur
 
 
-def residual(x, param):
-    a, b = param
-    r = transform3d(x, a).flatten() - b
-    j = np.array([[1, 0, 0, 0, a[2], -a[1]],
-                  [0, 1, 0, -a[2], 0, a[0]],
-                  [0, 0, 1, a[1], -a[0], 0]])
-    return r, j
-
-
 if __name__ == '__main__':
+    def residual(x, param):
+        a, b = param
+        r = transform3d(x, a).flatten() - b
+        j = np.array([[1, 0, 0, 0, a[2], -a[1]],
+                      [0, 1, 0, -a[2], 0, a[0]],
+                      [0, 0, 1, a[1], -a[0], 0]])
+        return r, j
+
     import sys, os
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from utilities.math_tools import *
