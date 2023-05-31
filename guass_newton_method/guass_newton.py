@@ -1,5 +1,4 @@
 import numpy as np
-from sympy import reshape
 
 # solve y = f(a,x) - b
 class guassNewton:
