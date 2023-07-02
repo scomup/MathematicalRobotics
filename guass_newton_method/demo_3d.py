@@ -74,9 +74,6 @@ if __name__ == '__main__':
     iter = 0
     while(True):
         plt3d.update(cur_a, b)
-        input("Press Enter to continue...")
-
-        plt3d.update(cur_a, b)
         dx, score = gn.solve_once(x_cur)
         x_cur = gn.plus(x_cur, dx)
         cur_a = transform3d(x_cur, a.T).T
