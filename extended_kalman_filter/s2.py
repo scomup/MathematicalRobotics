@@ -23,8 +23,8 @@ class S2:
         v_sin = np.linalg.norm(skew(self.vec) @ other.vec)
         v_cos = self.vec.T @ other.vec
         theta = np.arctan2(v_sin, v_cos)
-        if(v_sin < tolerance):
-            if(np.abs(theta) > tolerance):
+        if (v_sin < tolerance):
+            if (np.abs(theta) > tolerance):
                 return np.array([3.1415926, 0])
             else:
                 return np.array([0, 0])
@@ -33,14 +33,14 @@ class S2:
             return theta/v_sin * Bx.transpose() @ skew(other.vec) @ self.vec
 
     def S2_Bx(self):
-        if(self.vec[0] + self.len > tolerance):
+        if (self.vec[0] + self.len > tolerance):
             m = self.len+self.vec[0]
             res = np.array([[ -self.vec[1], -self.vec[2] ],
                             [self.len - self.vec[1]*self.vec[1]/m, -self.vec[2]*self.vec[1]/(m)],
                             [ -self.vec[2]*self.vec[1]/m, self.len-self.vec[2]*self.vec[2]/m]])
             res /= self.len
         else:
-            res = np.zeros(3,2)
+            res = np.zeros(3, 2)
             res[1, 1] = -1
             res[2, 0] = 1
         return res
@@ -51,16 +51,16 @@ if __name__ == '__main__':
     def plus(g, delta):
         return g.boxplus(delta)
     
-    g = S2(expSO3(np.array([0.1,0.0,0.0])) @ np.array([0,0,-9.8]))
+    g = S2(expSO3(np.array([0.1, 0.0, 0.0])) @ np.array([0, 0, -9.8]))
 
-    v = np.array([0,0,0.8])
+    v = np.array([0, 0, 0.8])
 
     Jg = numericalDerivative(func, [v, g], 1, plus)
     Jg_prime = -skew(g.vec) @ g.S2_Bx() 
 
-    delta = S2(np.array([0.1,0.1]))
+    delta = S2(np.array([0.1, 0.1]))
 
-    g_prime = g.boxplus(np.array([0.1,0.1]))
+    g_prime = g.boxplus(np.array([0.1, 0.1]))
     delta_prime = g_prime.boxminus(g)
     print(delta_prime)
 

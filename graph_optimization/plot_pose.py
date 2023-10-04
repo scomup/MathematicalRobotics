@@ -22,8 +22,8 @@ def plot_pose2_on_axes(axes,
 
     e1 = patches.Circle(xy=origin, radius=axis_length, fill=False)
     if covariance is not None:
-        #pPp = covariance[0:2, 0:2]
-        #gPp = np.matmul(np.matmul(gRp, pPp), gRp.T)
+        # pPp = covariance[0:2, 0:2]
+        # gPp = np.matmul(np.matmul(gRp, pPp), gRp.T)
 
         lambda_, v = np.linalg.eig(covariance)
         lambda_ = np.sqrt(lambda_)
@@ -102,14 +102,14 @@ def set_axes_equal(fignum: int) -> None:
 
 
 def plot_pose3(
-    fignum,
-    pose,
-    axis_length = 0.1,
-    axis_labels=("X axis", "Y axis", "Z axis")):
-    
+        fignum,
+        pose,
+        axis_length=0.1,
+        axis_labels=("X axis", "Y axis", "Z axis")):
+
     # get figure object
-    fig = plt.figure(fignum,figsize=plt.figaspect(1))
-    #plt.axis('equal')
+    fig = plt.figure(fignum, figsize=plt.figaspect(1))
+    # plt.axis('equal')
     if not fig.axes:
         axes = fig.add_subplot(projection='3d')
     else:
@@ -120,17 +120,17 @@ def plot_pose3(
     axes.set_zlabel(axis_labels[2])
     return fig
 
+
 def plot_pose3_gravity(
-    fignum,
-    pose,
-    gravity,
-    axis_length = 0.1,
-    axis_labels=("X axis", "Y axis", "Z axis")):
-    
+        fignum,
+        pose,
+        gravity,
+        axis_length=0.1,
+        axis_labels=("X axis", "Y axis", "Z axis")):
 
     # get figure object
-    fig = plt.figure(fignum,figsize=plt.figaspect(1))
-    #plt.axis('equal')
+    fig = plt.figure(fignum, figsize=plt.figaspect(1))
+    # plt.axis('equal')
     if not fig.axes:
         axes = fig.add_subplot(projection='3d')
     else:
@@ -162,13 +162,11 @@ if __name__ == '__main__':
         plot_pose2('test plot 2d', cur_pose, 0.05, np.eye(2)*0.01)
     plt.axis('equal')
 
-    #cur_pose = np.eye(4)
-    #odom = expSE3(np.array([0.2, 0, 0.01, 0, 0, 0.5]))
-    #for i in range(12):
+    # cur_pose = np.eye(4)
+    # odom = expSE3(np.array([0.2, 0, 0.01, 0, 0, 0.5]))
+    # for i in range(12):
     #    cur_pose = cur_pose.dot(odom)
     #    plot_pose3('test plot 3d', cur_pose, 0.05)
-    #set_axes_equal('test plot 3d')
-
+    # set_axes_equal('test plot 3d')
 
     plt.show()
-

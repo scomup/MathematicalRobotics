@@ -5,13 +5,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
 
+
 class pose3dEdge:
-    def __init__(self, i, z, omega = None):
+    def __init__(self, i, z, omega=None):
         self.i = i
         self.z = z
         self.type = 'one'
         self.omega = omega
-        if(self.omega is None):
+        if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 
     def residual(self, nodes):
@@ -23,16 +24,15 @@ class pose3dEdge:
 
 
 class pose3dbetweenEdge:
-    def __init__(self, i, j, z, omega = None, color = 'black'):
+    def __init__(self, i, j, z, omega=None, color='black'):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
         self.color = color
         self.omega = omega
-        if(self.omega is None):
+        if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
-
 
     def residual(self, nodes):
         """
@@ -43,20 +43,23 @@ class pose3dbetweenEdge:
 
         T12 = np.linalg.inv(T1).dot(T2)
         T21 = np.linalg.inv(T12)
-        R,t = makeRt(T21)
-        J = np.zeros([6,6])
-        J[0:3,0:3] = R
-        J[0:3,3:6] = skew(t).dot(R)
-        J[3:6,3:6] = R
+        R, t = makeRt(T21)
+        J = np.zeros([6, 6])
+        J[0:3, 0:3] = R
+        J[0:3, 3:6] = skew(t).dot(R)
+        J[3:6, 3:6] = R
         J = -J
         return logSE3(np.linalg.inv(expSE3(self.z)).dot(T12)), J, np.eye(6)
+
 
 class pose3Node:
     def __init__(self, x):
         self.x = x
         self.size = x.size
+
     def update(self, dx):
         self.x = logSE3(expSE3(self.x).dot(expSE3(dx)))
+
 
 def draw(figname, graph):
     for n in graph.nodes:
@@ -64,40 +67,36 @@ def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
     for e in graph.edges:
-        if(e.type=='one'):
+        if (e.type == 'one'):
             continue
         i = e.i
         j = e.j
         _, ti = makeRt(expSE3(graph.nodes[i].x))
         _, tj = makeRt(expSE3(graph.nodes[j].x))
-        x = [ti[0],tj[0]]
-        y = [ti[1],tj[1]]
-        z = [ti[2],tj[2]]
-        axes.plot(x,y,z,c=e.color,linestyle=':')
+        x = [ti[0], tj[0]]
+        y = [ti[1], tj[1]]
+        z = [ti[2], tj[2]]
+        axes.plot(x, y, z, c=e.color, linestyle=':')
     set_axes_equal(figname)
 
 
-
-
 if __name__ == '__main__':
-    
     graph = graphSolver()
 
     n = 12
-    cur_pose = np.array([0,0,0,0,0,0])
+    cur_pose = np.array([0, 0, 0, 0, 0, 0])
     odom = np.array([0.2, 0, 0.00, 0.05, 0, 0.5])
     for i in range(n):
-        graph.addNode(pose3Node(cur_pose)) # add node to graph
+        graph.addNode(pose3Node(cur_pose))  # add node to graph
         cur_pose = logSE3(expSE3(cur_pose).dot(expSE3(odom)))
 
-    graph.addEdge(pose3dEdge(0,np.array([0,0,0,0,0,0]))) # add prior pose to graph
+    graph.addEdge(pose3dEdge(0, np.array([0, 0, 0, 0, 0, 0])))  # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)
-        graph.addEdge(pose3dbetweenEdge(i,j,odom)) # add edge(i,j) to graph
-        
-    graph.addEdge(pose3dbetweenEdge(n-1, 0, odom, color='red'))
+        graph.addEdge(pose3dbetweenEdge(i, j, odom))  # add edge(i, j) to graph
 
+    graph.addEdge(pose3dbetweenEdge(n-1, 0, odom, color='red'))
 
     draw('before loop-closing', graph)
     graph.solve()

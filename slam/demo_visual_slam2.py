@@ -32,7 +32,7 @@ class depthEdge:
         self.type = 'one'
         self.omega = omega
         self.kernel = kernel
-        if(self.omega is None):
+        if (self.omega is None):
             self.omega = np.eye(1)
     def residual(self, nodes):
         depth = nodes[self.i].x
@@ -48,7 +48,7 @@ class reproj2StereoEdge:
         self.type = 'three'
         self.omega = omega
         self.kernel = kernel
-        if(self.omega is None):
+        if (self.omega is None):
             self.omega = np.eye(4)
     def residual(self, nodes):
         x_wbi = nodes[self.i].x
@@ -68,7 +68,7 @@ class reproj2Edge:
         self.type = 'three'
         self.omega = omega
         self.kernel = kernel
-        if(self.omega is None):
+        if (self.omega is None):
             self.omega = np.eye(2)
     def residual(self, nodes):
         x_wbi = nodes[self.i].x
@@ -96,13 +96,13 @@ def draw3d(figname, frames, points, x_bc, R_bi):
 
     fig = plt.figure(figname)
     axes = fig.gca()
-    axes.scatter(pts[:,0],pts[:,1],pts[:,2])
+    axes.scatter(pts[:, 0], pts[:, 1], pts[:, 2])
     set_axes_equal(figname)
 
 
 def initmap(frames, K, baseline, x_bc, scale):
     print('The map is initialing...')
-    focal = K[0,0]
+    focal = K[0, 0]
     Kinv = np.linalg.inv(K)
     points = {}
     for i, frame in enumerate(frames):
@@ -110,19 +110,19 @@ def initmap(frames, K, baseline, x_bc, scale):
             if j in points:
                 points[j]['view'].append(i)
                 continue
-            u,v,disp = frame['points'][j]
+            u, v, disp = frame['points'][j]
             th = 20/scale
-            if(disp < th):
+            if (disp < th):
                 frame['points'].pop(j)
                 continue
-            p3d_c = Kinv.dot(np.array([u,v,1.]))
+            p3d_c = Kinv.dot(np.array([u, v, 1.]))
             depth = (baseline * focal) / (disp)
             points.update({j: {'view':[i],'pc':p3d_c, 'depth': depth}})
     return points
 
 
 
-def draw_frame(frames, points, K, baseline, x_bc,scale):
+def draw_frame(frames, points, K, baseline, x_bc, scale):
     for i, frame in enumerate(frames):
         x_wbi = frame['pose']
         u0s = []
@@ -136,8 +136,8 @@ def draw_frame(frames, points, K, baseline, x_bc,scale):
                 depth = points[n]['depth']
                 j = points[n]['view'][0]
                 x_wbj = frames[j]['pose']
-                #uj_reporj = reproj2(x_wbi, x_wbj, depth, p_cj, np.zeros(2), K, x_bc)
-                r = reproj2_stereo(x_wbi, x_wbj, depth, p_cj, np.zeros(2),np.zeros(2),baseline, K, x_bc)
+                # uj_reporj = reproj2(x_wbi, x_wbj, depth, p_cj, np.zeros(2), K, x_bc)
+                r = reproj2_stereo(x_wbi, x_wbj, depth, p_cj, np.zeros(2), np.zeros(2), baseline, K, x_bc)
                 uj = frame['points'][n][0:2]
                 ujr = uj.copy()
                 ujr[0] -= frame['points'][n][2]
@@ -159,16 +159,16 @@ def draw_frame(frames, points, K, baseline, x_bc,scale):
         fig, axes = plt.subplots(2, 1, tight_layout=True)
         axes[0].plot(*ab_args, c='k')
         axes[1].plot(*abr_args, c='k')
-        axes[0].set_xlim(0,640/scale)
-        axes[0].set_ylim(0,400/scale)
-        axes[1].set_xlim(0,640/scale)
-        axes[1].set_ylim(0,400/scale)
+        axes[0].set_xlim(0, 640/scale)
+        axes[0].set_ylim(0, 400/scale)
+        axes[1].set_xlim(0, 640/scale)
+        axes[1].set_ylim(0, 400/scale)
         axes[0].invert_yaxis()
         axes[1].invert_yaxis()
-        axes[0].scatter(u0s[:,0],u0s[:,1], label = 'reporj')
-        axes[0].scatter(u1s[:,0],u1s[:,1], label = 'observation')
-        axes[1].scatter(u0rs[:,0],u0rs[:,1], label = 'reporj')
-        axes[1].scatter(u1rs[:,0],u1rs[:,1], label = 'observation')
+        axes[0].scatter(u0s[:, 0], u0s[:, 1], label = 'reporj')
+        axes[0].scatter(u1s[:, 0], u1s[:, 1], label = 'observation')
+        axes[1].scatter(u0rs[:, 0], u0rs[:, 1], label = 'reporj')
+        axes[1].scatter(u1rs[:, 0], u1rs[:, 1], label = 'observation')
 
         axes[0].grid()
         axes[1].grid()
@@ -176,17 +176,17 @@ def draw_frame(frames, points, K, baseline, x_bc,scale):
         axes[1].legend()
         plt.show()
 
-def readframes(n,folder, scale):
+def readframes(n, folder, scale):
     frames = []
-    for idx in range(0,n):
+    for idx in range(0, n):
         fn = folder+'/F%04d.yaml'%idx
         print('read %s...'%fn)
         with open(fn) as file:
             node = yaml.safe_load(file)
-            pts = np.array(node['points']['data']).reshape(node['points']['num'],-1)
-            pts_d = pts[:,1:].astype(np.float)/scale
-            pts = dict(zip(pts[:,0].astype(np.int), pts_d))
-            imus = np.array(node['imu']['data']).reshape(node['imu']['num'],-1)
+            pts = np.array(node['points']['data']).reshape(node['points']['num'], -1)
+            pts_d = pts[:, 1:].astype(np.float)/scale
+            pts = dict(zip(pts[:, 0].astype(np.int), pts_d))
+            imus = np.array(node['imu']['data']).reshape(node['imu']['num'], -1)
             frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'vel':np.zeros(3),'bias':np.zeros(6),'points': pts,'imu':imus})
     return frames
 
@@ -197,32 +197,32 @@ def solve(frames, points, K, baseline, x_bc):
     points_idx = {}
     for i, frame in enumerate(frames):
         x_wc = frame['pose']
-        idx = graph.addNode(camposeNode(x_wc, i),i==0) # add node to graph
+        idx = graph.addNode(camposeNode(x_wc, i), i==0) # add node to graph
         frames_idx.update({i: idx})
     for n in points:
-        if(len(points[n]['view'])<2):
+        if (len(points[n]['view'])<2):
             continue
-        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n),False) # add feature to graph
-        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']]),omega=np.eye(1)))      
+        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n), False) # add feature to graph
+        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']]), omega=np.eye(1)))      
 
         points_idx.update({n: depth_idx})
         bj_idx = frames_idx[points[n]['view'][0]]
-        #    reporject a local point in camera j to camera i. #ui
+        #    reporject a local point in camera j to camera i. # ui
         for i in points[n]['view'][1:]:
             bi_idx = frames_idx[i]
             u_il = frames[i]['points'][n][0:2] 
             u_ir = u_il.copy()
             u_ir[0] -= frames[i]['points'][n][2]
             p_cj = points[n]['pc']
-            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc],kernel=HuberKernel(0.1),omega=reporjOmega))
-            #graph.addEdge(reproj2Edge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc],kernel=HuberKernel(0.5),omega=np.eye(2)*0.01))
+            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc], kernel=HuberKernel(0.1), omega=reporjOmega))
+            # graph.addEdge(reproj2Edge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc], kernel=HuberKernel(0.5), omega=np.eye(2)*0.01))
     graph.report()
     graph.solve(min_score_change =0.01, step=0)
     graph.report()
     for n in graph.nodes:
-        if( type(n).__name__ == 'depthNode'):
+        if (type(n).__name__ == 'depthNode'):
             points[n.id]['depth'] = n.x
-        if( type(n).__name__ == 'camposeNode'):
+        if (type(n).__name__ == 'camposeNode'):
             frames[n.id]['pose'] = n.x
 
 def remove_outlier(frames, points, K, baseline, x_bc):
@@ -251,28 +251,28 @@ if __name__ == '__main__':
     baseline = 0.075
     reporjOmega =np.eye(4)*0.01
 
-    x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
-    K = np.array([[fx,0, cx],[0, fy,cy],[0,0,1.]])
-    #from imu frame to body frame (#rosrun tf tf_echo oak-d_frame oak_imu_frame)
-    R_bi = np.zeros([3,3])
+    x_bc = np.array([-1.20919958,  1.20919958, -1.20919958, 0.0, 0, 0])
+    K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1.]])
+    # from imu frame to body frame (# rosrun tf tf_echo oak-d_frame oak_imu_frame)
+    R_bi = np.zeros([3, 3])
     t_bi = np.zeros([3])
-    R_bi[0,2] = 1
-    R_bi[1,1] = 1
-    R_bi[2,0] = -1
+    R_bi[0, 2] = 1
+    R_bi[1, 1] = 1
+    R_bi[2, 0] = -1
 
-    if(False):
-        frames = readframes(30, 'data/slam',scale)
+    if (False):
+        frames = readframes(30, 'data/slam', scale)
         points = initmap(frames, K, baseline, x_bc, scale)
         import pickle
-        pickle.dump( frames, open( "frames.p", "wb" ) )
-        pickle.dump( points, open( "points.p", "wb" ) )
+        pickle.dump(frames, open("frames.p", "wb"))
+        pickle.dump(points, open("points.p", "wb"))
     else:
         import pickle
-        frames = pickle.load( open( "frames.p", "rb" ) )
-        points = pickle.load( open( "points.p", "rb" ) )
+        frames = pickle.load(open("frames.p", "rb"))
+        points = pickle.load(open("points.p", "rb"))
 
     solve(frames, points, K, baseline, x_bc)
-    #remove_outlier(frames, points, K, baseline, x_bc)
-    draw3d('view',frames, points, x_bc)
-    #draw_frame(frames, points, K, baseline, x_bc,scale)
+    # remove_outlier(frames, points, K, baseline, x_bc)
+    draw3d('view', frames, points, x_bc)
+    # draw_frame(frames, points, K, baseline, x_bc, scale)
     plt.show()

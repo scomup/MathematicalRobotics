@@ -15,8 +15,8 @@ from slam.demo_visual_slam import *
 from visualization_msgs.msg import Marker
 import quaternion
 
-def opticalFlowTrack(img0,img1, pts0, back_check, horizontal_check):
-    param = dict(winSize = (15,15), maxLevel = 2, criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+def opticalFlowTrack(img0, img1, pts0, back_check, horizontal_check):
+    param = dict(winSize = (15, 15), maxLevel = 2, criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
     pts1, status, error = cv2.calcOpticalFlowPyrLK(img0, img1, pts0, (21, 21), 3)
     if back_check is True:
         reverse_pts0, reverse_status, err = cv2.calcOpticalFlowPyrLK(img1, img0, pts1, (21, 21), 1, criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
@@ -27,7 +27,7 @@ def opticalFlowTrack(img0,img1, pts0, back_check, horizontal_check):
                 status[i] = 0
     if horizontal_check is True:
         for i in range(pts0.shape[0]): 
-            if(status[i][0]==0):
+            if (status[i][0]==0):
                 continue
             diff = pts0[i][0][1] - pts1[i][0][1]
             horizontal_err = np.sqrt(diff*diff)
@@ -48,16 +48,16 @@ class testNode():
         ts = message_filters.ApproximateTimeSynchronizer([image_l_sub, image_r_sub], 10, 1/30.)
         self.img0 = None
         self.img1 = None
-        #self.pts = []
+        # self.pts = []
         self.pts0 = []
         self.points = None
         fx = 403.5362854003906
         fy = 403.4488830566406
         cx = 323.534423828125
         cy = 203.87405395507812
-        self.x_c1c2 = np.array([0,0,0,0.075,0,0])
-        self.x_bc = np.array([-1.20919958,  1.20919958, -1.20919958,0.0,0,0])
-        self.K = np.array([[fx,0, cx],[0, fy,cy],[0,0,1.]])
+        self.x_c1c2 = np.array([0, 0, 0, 0.075, 0, 0])
+        self.x_bc = np.array([-1.20919958,  1.20919958, -1.20919958, 0.0, 0, 0])
+        self.K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1.]])
         self.lock = threading.Lock()
         self.pub = rospy.Publisher("arrow_pub", Marker, queue_size = 10)
         self.new_img = False
@@ -94,22 +94,22 @@ class testNode():
         self.pub.publish(marker_data)
 
 
-    def initmap(self,image_r, image_l):
+    def initmap(self, image_r, image_l):
         new_pts = cv2.goodFeaturesToTrack(image_r, 200, 0.01, 20)
-        right_pts, status = opticalFlowTrack(image_r, image_l,new_pts, False, True)
+        right_pts, status = opticalFlowTrack(image_r, image_l, new_pts, False, True)
         self.pts0 = new_pts[np.where(status.flatten())]
         
         right_pts = right_pts[np.where(status.flatten())]
 
         Kinv = np.linalg.inv(self.K)
         baseline = 0.075
-        focal = self.K[0,0]
+        focal = self.K[0, 0]
         points = {}
         for i in range(self.pts0.shape[0]):
             u = self.pts0[i][0][0]
             v = self.pts0[i][0][1]
             disp = self.pts0[i][0][0] - right_pts[i][0][0]
-            p3d_c = Kinv.dot(np.array([u,v,1.]))
+            p3d_c = Kinv.dot(np.array([u, v, 1.]))
             depth = (baseline * focal) / (disp)
             p3d_c *= depth
             p3d_b = transform(self.x_bc, p3d_c)
@@ -126,19 +126,19 @@ class testNode():
         idx = graph.addNode(camposeNode(x_wc)) 
 
         for i in range(self.pts1.shape[0]):
-            if(status0[i][0] == 0 or status1[i][0] == 0):
+            if (status0[i][0] == 0 or status1[i][0] == 0):
                 continue
             u0 = self.pts1[i][0]
             u1 = right_pts[i][0]
             p3d = self.points[i]
-            idx_p = graph.addNode(featureNode(p3d),True) 
-            graph.addEdge(reprojEdge(idx, idx_p, [self.x_c1c2, u0, u1, self.x_bc, self.K],kernel=CauchyKernel(0.5)))
+            idx_p = graph.addNode(featureNode(p3d), True) 
+            graph.addEdge(reprojEdge(idx, idx_p, [self.x_c1c2, u0, u1, self.x_bc, self.K], kernel=CauchyKernel(0.5)))
         graph.solve(False, 0.1)
         return graph.nodes[idx].x
 
 
     def callback(self, image_r_msg, image_l_msg):
-        if(self.new_img == True):
+        if (self.new_img == True):
             return
         image_r = ros_numpy.numpify(image_r_msg)
         image_l = ros_numpy.numpify(image_l_msg)
@@ -149,7 +149,7 @@ class testNode():
         self.new_img = True
 
     def run(self):
-        if(self.new_img == False):
+        if (self.new_img == False):
             return
         self.pts1, status = opticalFlowTrack(self.img0[0], self.img1[0], self.pts0, True, False)
         x = self.calc_camera_pose()
@@ -161,7 +161,7 @@ class testNode():
     def draw(self, img, status):
         image_show = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         for i in range(self.pts1.shape[0]):
-            if(status[i][0] == 0):
+            if (status[i][0] == 0):
                 continue
             cv2.circle(image_show, tuple(self.pts1[i][0].astype(int)), 2, (255, 0, 0), 2)
             cv2.arrowedLine(image_show, tuple(self.pts1[i][0].astype(int)), tuple(self.pts0[i][0].astype(int)), (0, 255, 0), 1, 8, 0, 0.2)
@@ -171,10 +171,10 @@ class testNode():
 
 
 if __name__ == '__main__':
-    m = np.zeros([3,3])
-    m[0,2] = 1.
-    m[1,0] = -1.
-    m[2,1] = -1.
+    m = np.zeros([3, 3])
+    m[0, 2] = 1.
+    m[1, 0] = -1.
+    m[2, 1] = -1.
     v = logSO3(m)
     args = rospy.myargv()
     rospy.init_node('controller_manager', anonymous=True)

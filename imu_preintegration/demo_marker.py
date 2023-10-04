@@ -8,8 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from graph_optimization.plot_pose import *
 from imu_factor import *
-
 import quaternion
+
+
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
 
@@ -18,75 +19,77 @@ def draw(figname, graph, color, label):
     axes = fig.gca()
     pose_trj = []
     for n in graph.nodes:
-        if(not isinstance(n, naviNode)):
+        if (not isinstance(n, naviNode)):
             continue
         pose_trj.append(n.x.p)
     pose_trj = np.array(pose_trj)
-    axes.scatter(pose_trj[:,0],pose_trj[:,1], c=color, s=10, label=label)
+    axes.scatter(pose_trj[:, 0], pose_trj[:, 1], c=color, s=10, label=label)
+
 
 def find_nearest(data, stamp):
-    idx = (np.abs(data[:,0] - stamp)).argmin()
-    return data[idx,:]
+    idx = (np.abs(data[:, 0] - stamp)).argmin()
+    return data[idx, :]
+
 
 def print_error(truth_trj):
     aft_trj = []
     for n in graph.nodes:
-        if(not isinstance(n, naviNode)):
+        if (not isinstance(n, naviNode)):
             continue
         aft_trj.append(n.x.p)
     aft_trj = np.array(aft_trj)
     truth_trj = np.array(truth_trj)
-    err = np.linalg.norm((truth_trj - aft_trj),axis=1)
+    err = np.linalg.norm((truth_trj - aft_trj), axis=1)
     avg_err = np.average(err)
     worst_err = np.max(err)
-    print("avg err:%f"%avg_err)
-    print("worst err:%f"%worst_err)
+    print("avg err:%f" % avg_err)
+    print("worst err:%f" % worst_err)
 
 if __name__ == '__main__':
-    
     pose_file = FILE_PATH+'/data/ndt_pose.npy'
     truth_file = FILE_PATH+'/data/truth_pose.npy'
-    pose_data = np.load(pose_file) 
+    pose_data = np.load(pose_file)
     truth_data = np.load(truth_file)
     graph = graphSolver(True)
-    
+
     state0 = None
     state0_idx = 0
     last_marker = None
 
     omegaOdom = np.linalg.inv(np.diag(np.ones(9)*4e-4))
-    omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-2)) 
+    omegaMaker = np.linalg.inv(np.diag(np.ones(9)*1e-2))
     mark_dist = 1
     truth_trj = []
 
     for p in pose_data:
-        state1 = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])),p[1:4],np.array([0,0,0]))
+        state1 = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])), p[1:4], np.array([0, 0, 0]))
         truth_trj.append(find_nearest(truth_data, p[0])[1:4])
-        if(state0 is None):
+        if (state0 is None):
             state0 = state1
             last_marker = state1
-            state0_idx = graph.addNode(naviNode(state1)) # add node to graph
+            state0_idx = graph.addNode(naviNode(state1))  # add node to graph
             continue
 
         state1_idx = graph.addNode(naviNode(state1))
-        delta = state0.local(state1,False)
+        delta = state0.local(state1, False)
         graph.addEdge(navitransEdge(state0_idx, state1_idx, delta, omegaOdom))
         state0_idx = state1_idx
         state0 = state1
 
-        if( np.linalg.norm(last_marker.local(state1).p)>mark_dist):
+        if (np.linalg.norm(last_marker.local(state1).p) > mark_dist):
             last_marker = state1
             marker = find_nearest(truth_data, p[0])
-            marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])),marker[1:4],np.array([0,0,0]))
+            marker = navState(quaternion.as_rotation_matrix(
+                np.quaternion(*marker[4:8])), marker[1:4], np.array([0, 0, 0]))
             marker.p += np.random.normal(0, 0.01, 3)
-            graph.addEdge(naviEdge(state1_idx, marker, omegaMaker)) # add prior pose to graph
+            graph.addEdge(naviEdge(state1_idx, marker, omegaMaker))  # add prior pose to graph
 
     graph.report()
     print_error(truth_trj)
-    draw(1,graph,'red','ndt pose before')
+    draw(1, graph, 'red', ' ndt pose before')
     graph.solve()
-    draw(1,graph,'blue','ndt pose after')
-    plt.plot(truth_data[:,1],truth_data[:,2],label='truth', color='green')
+    draw(1, graph, 'blue', 'ndt pose after')
+    plt.plot(truth_data[:, 1], truth_data[:, 2], label='truth', color='green')
     plt.legend()
     plt.grid()
     plt.legend()

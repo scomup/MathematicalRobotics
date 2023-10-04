@@ -10,7 +10,7 @@ def approx_euler2mat(euler, order='xyz'):
 
 
 class XPlane(gl.GLGraphicsItem.GLGraphicsItem):
-    def __init__(self, size=10., x = 10., glOptions='translucent'):
+    def __init__(self, size=10., x=10., glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
         self.size = size
         self.x = x
@@ -20,13 +20,14 @@ class XPlane(gl.GLGraphicsItem.GLGraphicsItem):
         s = self.size
         x = self.x
         self.setupGLState()
-        glBegin( GL_QUADS )
+        glBegin(GL_QUADS)
         glColor4f(0, 1, 0, 0.2)  # z is blue
         glVertex3d(x, s, -s)
         glVertex3d(x, s, s)
         glVertex3d(x, -s, s)
         glVertex3d(x, -s, -s)
         glEnd()
+
 
 class Gui3d_sr(Gui3d):
     def __init__(self, static_obj, dynamic_obj):
@@ -49,24 +50,24 @@ class Gui3d_sr(Gui3d):
 if __name__ == '__main__':
     app = QApplication([])
     ball = create_ball(8)
-    org_arrow = GLArrowItem(size=10. , color=[0,0,1,1],  width=5)
-    arrow = GLArrowItem(size=10. , color=[1,0,0,1], width=5)
-    approx_arrow = GLArrowItem(size=10. , color=[1,0,1,1], width=5)
+    org_arrow = GLArrowItem(size=10., color=[0, 0, 1, 1],  width=5)
+    arrow = GLArrowItem(size=10., color=[1, 0, 0, 1], width=5)
+    approx_arrow = GLArrowItem(size=10., color=[1, 0, 1, 1], width=5)
 
     n_x, n_y = 128, 128
-    xy_init  = 1.0, 4.0
-    x_range  = -10, 10
-    y_range  = -10, 10
-    x        = np.linspace(x_range[0], x_range[1], n_x)
-    y        = np.linspace(y_range[0], y_range[1], n_y)
+    xy_init = 1.0, 4.0
+    x_range = -10, 10
+    y_range = -10, 10
+    x = np.linspace(x_range[0], x_range[1], n_x)
+    y = np.linspace(y_range[0], y_range[1], n_y)
 
     rad = 0.5
-    x_grid, y_grid     = np.meshgrid(y, x)
+    x_grid, y_grid = np.meshgrid(y, x)
     z = 3 * np.exp(-((x_grid-xy_init[0])**2.0)*rad**2) \
           * np.exp(-((y_grid-xy_init[1])**2.0)*rad**2)
 
     p = XPlane()
-    window = Gui3d_sr(static_obj = [org_arrow, ball, p],dynamic_obj=[arrow, approx_arrow])
+    window = Gui3d_sr(static_obj=[org_arrow, ball, p], dynamic_obj=[arrow, approx_arrow])
     window.show()
     app.exec_()
 

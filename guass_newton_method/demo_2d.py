@@ -47,7 +47,7 @@ if __name__ == '__main__':
     plt2d = plot2D()
     x_truth = np.array([-0.3, 0.2, np.pi/2])
     elements = 10
-    # a = (np.random.rand(elements,2)-0.5)*2
+    # a = (np.random.rand(elements, 2)-0.5)*2
 
     a = np.array([[0, 0], [0, 0.5], [0, 1], [0.5, 0], [0.5, 1], [1, 0], [1, 0.5], [1, 1]])
     b = transform2d(x_truth, a.T).T
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     for i in range(a.shape[0]):
         params.append([a[i], b[i]])
 
-    # b += np.random.normal(0, 0.03, (elements,2))
+    # b += np.random.normal(0, 0.03, (elements, 2))
     kernel = CauchyKernel(0.1)
     gn = guassNewton(residual, params, plus, kernel)
     x_cur = np.array([0., 0., 0.])
@@ -72,12 +72,12 @@ if __name__ == '__main__':
         cur_a = transform2d(x_cur, a.T).T
         print('iter %d: %f' % (iter, score))
         iter += 1
-        if(last_score is None):
+        if (last_score is None):
             last_score = score
             continue
-        if(last_score < score):
+        if (last_score < score):
             break
-        if(last_score - score < 0.0001):
+        if (last_score - score < 0.0001):
             break
         last_score = score
     plt2d.show()

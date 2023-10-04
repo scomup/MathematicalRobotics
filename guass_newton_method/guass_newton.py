@@ -19,7 +19,7 @@ class guassNewton:
         for i, param in enumerate(self.params):
             r_i, j_i = self.residual(x, param)
             e2 = r_i.T.dot(r_i)
-            if(self.kernel is None):
+            if (self.kernel is None):
                 H += j_i.T.dot(j_i)
                 g += j_i.T.dot(r_i)
                 score += e2
@@ -37,18 +37,18 @@ class guassNewton:
         x_cur = x
         while(True):
             dx, score = self.solve_once(x_cur)
-            if(self.plus is None):
+            if (self.plus is None):
                 x_cur = x_cur + dx
             else:
                 x_cur = self.plus(x_cur, dx)
             print(score)
-            if(last_score is None):
+            if (last_score is None):
                 last_score = score
                 continue
 
-            if(last_score < score):
+            if (last_score < score):
                 break
-            if(last_score - score < 0.0001):
+            if (last_score - score < 0.0001):
                 break
             last_score = score
         return x_cur

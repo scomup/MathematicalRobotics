@@ -46,12 +46,12 @@ if __name__ == '__main__':
         cur_a = transform3d(x_cur, a.T, p2m).T
         print('iter %d: %f' % (iter, score))
         iter += 1
-        if(last_score is None):
+        if (last_score is None):
             last_score = score
             continue
-        if(last_score < score):
+        if (last_score < score):
             break
-        if(last_score - score < 0.0001):
+        if (last_score - score < 0.0001):
             break
         last_score = score
     plt3d.show()

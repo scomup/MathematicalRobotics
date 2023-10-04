@@ -3,24 +3,24 @@ import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QRadioButton, QApplication
 from OpenGL.GL import *
-#from PyQt5 import QtCore, QtGui, QtWidgets
+# from PyQt5 import QtCore, QtGui, QtWidgets
 from scipy.spatial.transform import Rotation   
 
 import numpy as np
 
 class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
-    def __init__(self, size = 1., width = 100, color = [1,0,0,1], glOptions='translucent'):
+    def __init__(self, size = 1., width = 100, color = [1, 0, 0, 1], glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
         self.width = width
         self.color = color
-        self.o = np.array([0,0,0,1])
-        self.a = np.array([size,0,0,1])
-        self.b = np.array([0.9*size,0,size*0.1,1])
+        self.o = np.array([0, 0, 0, 1])
+        self.a = np.array([size, 0, 0, 1])
+        self.b = np.array([0.9*size, 0, size*0.1, 1])
         self.setGLOptions(glOptions)
         self.T = np.eye(4)
 
     def setTransform(self, T):
-        #print(T)
+        # print(T)
         self.T = T
 
     def paint(self):
@@ -28,7 +28,7 @@ class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
         a = self.T.dot(self.a) 
         b = self.T.dot(self.b) 
         glLineWidth(self.width)
-        glBegin( GL_LINES )
+        glBegin(GL_LINES)
         glColor4f(self.color[0], self.color[1], self.color[2], self.color[3])  # z is blue
         glVertex3f(o[0], o[1], o[2])
         glVertex3f(a[0], a[1], a[2])
@@ -38,13 +38,13 @@ class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
 
 
 class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
-    def __init__(self, size = [1,1,1], width = 100, glOptions='translucent'):
+    def __init__(self, size = [1, 1, 1], width = 100, glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
-        x,y,z = size
+        x, y, z = size
         self.width = width
-        self.axis_x = np.array([x,0,0,1])
-        self.axis_y = np.array([0,y,0,1])
-        self.axis_z = np.array([0,0,z,1])
+        self.axis_x = np.array([x, 0, 0, 1])
+        self.axis_y = np.array([0, y, 0, 1])
+        self.axis_z = np.array([0, 0, z, 1])
         self.setGLOptions(glOptions)
         self.T = np.eye(4)
 
@@ -57,7 +57,7 @@ class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
         axis_z = self.T.dot(self.axis_z) 
         self.setupGLState()
         glLineWidth(self.width)
-        glBegin( GL_LINES )
+        glBegin(GL_LINES)
         glColor4f(0, 0, 1, 1)  # z is blue
         glVertex3f(0, 0, 0)
         glVertex3f(axis_z[0], axis_z[1], axis_z[2])
@@ -69,79 +69,80 @@ class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
         glVertex3f(axis_x[0], axis_x[1], axis_x[2])
         glEnd()
 
+
 def euler2mat(euler, order='xyz'):
     roll, pitch, yaw = euler
-    Rx =  np.array([[ 1, 0           , 0           ],
-                   [ 0, np.cos(roll),-np.sin(roll)],
-                   [ 0, np.sin(roll), np.cos(roll)]])
-    Ry = np.array([[ np.cos(pitch), 0, np.sin(pitch)],
-                   [ 0           , 1, 0           ],
+    Rx = np.array([[1, 0, 0],
+                   [0, np.cos(roll), -np.sin(roll)],
+                   [0, np.sin(roll), np.cos(roll)]])
+    Ry = np.array([[np.cos(pitch), 0, np.sin(pitch)],
+                   [0, 1, 0],
                    [-np.sin(pitch), 0, np.cos(pitch)]])
-    Rz = np.array([[ np.cos(yaw), -np.sin(yaw), 0 ],
-                   [ np.sin(yaw), np.cos(yaw) , 0 ],
-                   [ 0           , 0            , 1 ]])
+    Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0],
+                   [np.sin(yaw), np.cos(yaw), 0],
+                   [0, 0, 1]])
     R = None
-    #print(order)
-    if(order=='xyz'):
+    # print(order)
+    if (order == 'xyz'):
         R = Rz.dot(Ry.dot(Rx))
-        #r = Rotation.from_euler("xyz",euler,degrees=False)
-        #print(R)
-        #print("-------")
-        #print(r.as_matrix())
-        #print("=======")
-    elif(order=='yzx'):
+        # r = Rotation.from_euler("xyz", euler, degrees=False)
+        # print(R)
+        # print("-------")
+        # print(r.as_matrix())
+        # print("=======")
+    elif (order == 'yzx'):
         R = Rx.dot(Rz.dot(Ry))
-    elif(order=='zxy'):
+    elif (order == 'zxy'):
         R = Ry.dot(Rx.dot(Rz))
-    elif(order=='xzy'):
+    elif (order == 'xzy'):
         R = Ry.dot(Rz.dot(Rx))
-    elif(order=='zyx'):
+    elif (order == 'zyx'):
         R = Rx.dot(Ry.dot(Rz))
-    elif(order=='yxz'):
+    elif (order=='yxz'):
         R = Rz.dot(Rx.dot(Ry))
     return R
 
-def create_cube(size = 2):
-    vertexes = np.array([[1, 0, 0], #0
-                     [0, 0, 0], #1
-                     [0, 1, 0], #2
-                     [0, 0, 1], #3
-                     [1, 1, 0], #4
-                     [1, 1, 1], #5
-                     [0, 1, 1], #6
-                     [1, 0, 1]])#7
+def create_cube(size=2):
+    vertexes = np.array([[1, 0, 0],   # 0
+                         [0, 0, 0],   # 1
+                         [0, 1, 0],   # 2
+                         [0, 0, 1],   # 3
+                         [1, 1, 0],   # 4
+                         [1, 1, 1],   # 5
+                         [0, 1, 1],   # 6
+                         [1, 0, 1]])  # 7
     vertexes *= size
-    faces = np.array([[1,0,7], [7,3,1],
-                      [1,2,4], [4,0,1],
-                      [1,2,6], [6,3,1],
-                      [0,4,5], [5,7,0],
-                      [2,4,5], [5,6,2],
-                      [3,6,5], [5,7,3]])
-    colors = np.array([
-                       [1,1,0,1],[1,1,0,1],
-                       [0,1,1,1],[0,1,1,1],
-                       [1,0,1,1],[1,0,1,1],
-                       [1,0,0,1],[1,0,0,1],
-                       [0,1,0,1],[0,1,0,1],
-                       [0,0,1,1],[0,0,1,1]])
+    faces = np.array([[1, 0, 7], [7, 3, 1],
+                      [1, 2, 4], [4, 0, 1],
+                      [1, 2, 6], [6, 3, 1],
+                      [0, 4, 5], [5, 7, 0],
+                      [2, 4, 5], [5, 6, 2],
+                      [3, 6, 5], [5, 7, 3]])
+    colors = np.array([[1, 1, 0, 1], [1, 1, 0, 1],
+                       [0, 1, 1, 1], [0, 1, 1, 1],
+                       [1, 0, 1, 1], [1, 0, 1, 1],
+                       [1, 0, 0, 1], [1, 0, 0, 1],
+                       [0, 1, 0, 1], [0, 1, 0, 1],
+                       [0, 0, 1, 1], [0, 0, 1, 1]])
     obj = gl.GLMeshItem(vertexes=vertexes, faces=faces, faceColors=colors, smooth=False)
     return obj
 
-def create_ball(size = 2):
+
+def create_ball(size=2):
     md = gl.MeshData.sphere(rows=100, cols=100, radius=10)
     obj = gl.GLMeshItem(meshdata=md, smooth=True, color=(0, 1, 0, 0.05), shader='balloon', glOptions='additive')
     return obj
 
 
 class Gui3d(QMainWindow):
-    def __init__(self, static_obj = [], dynamic_obj = []):
+    def __init__(self, static_obj=[], dynamic_obj=[]):
         self.roll = 0.0
         self.pitch = 0.0
         self.yaw = 0.0
         self.static_obj = static_obj
         self.dynamic_obj = dynamic_obj
         super(Gui3d, self).__init__()
-        self.setGeometry(0, 0, 700, 900) 
+        self.setGeometry(0, 0, 700, 900)
         self.initUI()
 
     def initUI(self):
@@ -180,13 +181,12 @@ class Gui3d(QMainWindow):
         rb_layout.addWidget(self.rb_yxz)
         layout.addLayout(rb_layout)
 
-
         self.label_roll = QLabel()
-        self.label_roll.setText("roll:  %3.2f dgree"%self.roll)
+        self.label_roll.setText("roll:  %3.2f dgree" % self.roll)
         self.label_pitch = QLabel()
-        self.label_pitch.setText("pitch: %3.2f dgree"%self.pitch)
+        self.label_pitch.setText("pitch: %3.2f dgree" % self.pitch)
         self.label_yaw = QLabel()
-        self.label_yaw.setText("yaw:   %3.2f dgree"%self.yaw)
+        self.label_yaw.setText("yaw: %3.2f dgree" % self.yaw)
 
         slider_roll = QSlider(QtCore.Qt.Horizontal)
         slider_roll.setMinimum(0)
@@ -212,7 +212,7 @@ class Gui3d(QMainWindow):
         timer = QtCore.QTimer(self)
         timer.setInterval(20)  # period, in milliseconds
         timer.timeout.connect(self.update)
-    
+
         self.viewer.setWindowTitle('Euler rotation')
         self.viewer.setCameraPosition(distance=40)
 
@@ -230,28 +230,28 @@ class Gui3d(QMainWindow):
 
     def setRotX(self, val):
         self.roll = float(val/100.)
-        self.label_roll.setText("roll:   %3.2f dgree"%self.roll)
+        self.label_roll.setText("roll: %3.2f dgree" % self.roll)
 
     def setRotY(self, val):
         self.pitch = float(val/100.)
-        self.label_pitch.setText("pitch: %3.2f dgree"%self.pitch)
+        self.label_pitch.setText("pitch: %3.2f dgree" % self.pitch)
 
     def setRotZ(self, val):
         self.yaw = float(val/100.)
-        self.label_yaw.setText("yaw:   %3.2f dgree"%self.yaw)
+        self.label_yaw.setText("yaw: %3.2f dgree" % self.yaw)
 
     def rbcheck(self):
-        if(self.rb_xyz.isChecked()):
+        if (self.rb_xyz.isChecked()):
             self.rotate_mode = 'xyz'
-        elif(self.rb_yzx.isChecked()):
+        elif (self.rb_yzx.isChecked()):
             self.rotate_mode = 'yzx'
-        elif(self.rb_zxy.isChecked()):
+        elif (self.rb_zxy.isChecked()):
             self.rotate_mode = 'zxy'
-        elif(self.rb_xzy.isChecked()):
+        elif (self.rb_xzy.isChecked()):
             self.rotate_mode = 'xzy'
-        elif(self.rb_zyx.isChecked()):
+        elif (self.rb_zyx.isChecked()):
             self.rotate_mode = 'zyx'
-        elif(self.rb_yxz.isChecked()):
+        elif (self.rb_yxz.isChecked()):
             self.rotate_mode = 'yxz'
 
     def update(self):
@@ -267,7 +267,7 @@ class Gui3d(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication([])
-    axis = GLAxisItem(size=[10,10,10] , width=100)
-    window = Gui3d(static_obj = [axis],dynamic_obj=[])
+    axis = GLAxisItem(size=[10, 10, 10], width=100)
+    window = Gui3d(static_obj=[axis], dynamic_obj=[])
     window.show()
     app.exec_()

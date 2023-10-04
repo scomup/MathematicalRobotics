@@ -27,18 +27,19 @@ if __name__ == '__main__':
         g = ro[1]*x
         H = ro[1]
         plt.cla()
-        plt.plot(a,rho[0],label='rho0(f)')
-        plt.plot(a,dr,label='d_rho/d_x')
-        plt.plot(a,d2r,label='d2_rho/dxdx')
-        plt.plot(a,-dr/d2r,label='step')
-        plt.plot(a,-dr/(rho[1]),label='step2')
-        plt.scatter(x,ro[0],c='red',s=100)
+        plt.plot(a, rho[0], label='rho0(f)')
+        plt.plot(a, dr, label='d_rho/d_x')
+        plt.plot(a, d2r, label='d2_rho/dxdx')
+        plt.plot(a, -dr/d2r, label='step')
+        plt.plot(a, -dr/(rho[1]), label='step2')
+        plt.scatter(x, ro[0], c='red', s=100)
         plt.legend()
-        plt.ylim(-1,10)
+        plt.ylim(-1, 10)
         plt.pause(1)
-        if(H == 0):
+        if (H == 0):
             break
         dx = -g/H
         x += dx
         print(x)
     plt.show()
+    

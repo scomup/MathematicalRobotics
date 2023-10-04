@@ -285,7 +285,7 @@ def HSO3(omega):
     theta = np.sqrt(theta2)
     near_zero = theta2 <= epsilon
     W = skew(omega)
-    if(near_zero):
+    if (near_zero):
         dexp = np.eye(3) - 0.5 * W
     else:
         K = W / theta
@@ -310,7 +310,7 @@ def dHinvSO3(omega, v):
     theta2 = omega.dot(omega)
     theta = np.sqrt(theta2)
     near_zero = theta2 <= epsilon
-    if(near_zero):
+    if (near_zero):
         dHinv = skew(c) * 0.5
     else:
         sin_theta = np.sin(theta)
@@ -358,7 +358,7 @@ def quaternion_matrix(quaternion):
 
 
 def check(a, b):
-    if(np.linalg.norm(a - b) < 0.0001):
+    if (np.linalg.norm(a - b) < 0.0001):
         print('OK')
     else:
         print('NG')
