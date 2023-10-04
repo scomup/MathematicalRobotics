@@ -14,7 +14,8 @@ def m2v(m):
 
 
 def expSO2(v):
-    return np.array([[np.cos(v), -np.sin(v)], [np.sin(v), np.cos(v)]])
+    v = np.atleast_1d(v)
+    return np.array([[np.cos(v[0]), -np.sin(v[0])], [np.sin(v[0]), np.cos(v[0])]])
 
 
 def logSO2(m):
