@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLabel, 
 from OpenGL.GL import *
 from PyQt5 import QtCore, QtGui
 import numpy as np
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from utilities.gl_objects import *
@@ -69,7 +70,7 @@ class Gui3d(QMainWindow):
 
 
         self.label_text = QLabel()
-        self.label_text.setText("time: %3.3f"%(self.time))
+        self.label_text.setText("time: %3.3f" % (self.time))
 
         slider_x = QSlider(QtCore.Qt.Horizontal)
         slider_x.setMinimum(0)
@@ -105,7 +106,7 @@ class Gui3d(QMainWindow):
 
     def setX(self, vel):
         self.time = float(vel/100.)
-        self.label_text.setText("time: %3.3f "%(self.time))
+        self.label_text.setText("time: %3.3f " % (self.time))
 
     def button_cb(self):
         self.start = not self.start 
@@ -129,12 +130,14 @@ class Gui3d(QMainWindow):
             omega_b = logSO3(Rb)/dt
             v_b = tb/dt
             vb = np.concatenate((v_b, omega_b))
-            self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(va[0], va[1], va[2], va[3], va[4], va[5]))
-            self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]"%(vb[0], vb[1], vb[2], vb[3], vb[4], vb[5]))
+            self.viewer.set_textA("Velocities of A: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]" %
+                                  (va[0], va[1], va[2], va[3], va[4], va[5]))
+            self.viewer.set_textB("Velocities of B: [%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f]" %
+                                  (vb[0], vb[1], vb[2], vb[3], vb[4], vb[5]))
         self.pre_A = A
         self.pre_B = B
         self.pre_time = time
-        self.label_text.setText("time: %3.3f "%(self.time))
+        self.label_text.setText("time: %3.3f " % (self.time))
         if (self.time < 0.1):
             self.traj_A.clear()
             self.traj_B.clear()

@@ -110,8 +110,8 @@ dist, dir = p2surf(x, p, n)
 v = - dist * dir
 ax.scatter(x[0], x[1], c='r')
 ax.scatter(p[0], p[1], c='C0')
-draw_norm('test', x, v,'r')
-draw_norm('test', p, n,'C0')
+draw_norm('test', x, v, 'r')
+draw_norm('test', p, n, 'C0')
 """
 
 ax.scatter(pt[:, 0], pt[:, 1])
@@ -121,7 +121,7 @@ for x in xs:
     dist, dir = p2surf(x, pt, nvec)
     v = - dist * dir
     ax.scatter(x[0], x[1], c='r')
-    draw_norm('test', x, v,'r')
+    draw_norm('test', x, v, 'r')
 
 
 ax.plot(truth[:, 0], truth[:, 1])

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities import *
 from guass_newton_method.guass_newton import *

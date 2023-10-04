@@ -1,5 +1,6 @@
 import numpy as np
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 import yaml
@@ -117,7 +118,7 @@ def initmap(frames, K, baseline, x_bc, scale):
                 continue
             p3d_c = Kinv.dot(np.array([u, v, 1.]))
             depth = (baseline * focal) / (disp)
-            points.update({j: {'view':[i],'pc':p3d_c, 'depth': depth}})
+            points.update({j: {'view':[i], 'pc':p3d_c, 'depth': depth}})
     return points
 
 
@@ -187,7 +188,7 @@ def readframes(n, folder, scale):
             pts_d = pts[:, 1:].astype(np.float)/scale
             pts = dict(zip(pts[:, 0].astype(np.int), pts_d))
             imus = np.array(node['imu']['data']).reshape(node['imu']['num'], -1)
-            frames.append({'stamp':node['stamp'],'pose':np.zeros(6),'vel':np.zeros(3),'bias':np.zeros(6),'points': pts,'imu':imus})
+            frames.append({'stamp':node['stamp'], 'pose':np.zeros(6), 'vel':np.zeros(3), 'bias':np.zeros(6), 'points': pts, 'imu':imus})
     return frames
 
 

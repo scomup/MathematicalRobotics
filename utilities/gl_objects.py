@@ -2,7 +2,8 @@ import pyqtgraph.opengl as gl
 from OpenGL.GL import *
 import numpy as np
 
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 

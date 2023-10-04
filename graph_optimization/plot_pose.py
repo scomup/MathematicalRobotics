@@ -1,5 +1,8 @@
 import numpy as np
-import sys, os
+import sys
+import os
+
+""""""
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from matplotlib import patches
@@ -8,7 +11,7 @@ import matplotlib.pyplot as plt
 
 def plot_pose2_on_axes(axes,
                        pose,
-                       axis_length: float = 0.1, covariance = None):
+                       axis_length: float=0.1, covariance = None):
 
     gRp, origin = makeRt(pose)
 
@@ -151,7 +154,8 @@ def plot_pose3_gravity(
     return fig
 
 if __name__ == '__main__':
-    import sys, os
+    import sys
+    import os
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from utilities.math_tools import *
 

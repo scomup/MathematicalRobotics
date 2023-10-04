@@ -1,6 +1,7 @@
 import numpy as np
 from graph_solver import *
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *

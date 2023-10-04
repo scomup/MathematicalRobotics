@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import csc_matrix
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
 
@@ -59,18 +60,17 @@ class graphSolver:
                 type_score[edge_type_name] += rho[0]
             else:
                 type_score.setdefault(edge_type_name, rho[0])
-                
+
         print("---------------------")
-        print("The number of parameters: %d."%self.psize)
-        print("The number of nodes: %d."%len(self.nodes))
-        print("The number of edges: %d."%len(self.edges))
-        print("Overall error: %f."%error)
+        print("The number of parameters: %d." % self.psize)
+        print("The number of nodes: %d." % len(self.nodes))
+        print("The number of edges: %d." % len(self.edges))
+        print("Overall error: %f." % error)
         type_list = list(type_score)
         for t in type_list:
-            # print("  -> %20s: %5f."%(t, type_score[t]))
+            # print("  -> %20s: %5f." % (t, type_score[t]))
             print(' -> {:<20}: {:<.4f}'.format(t, type_score[t]))
         print("---------------------")
-
 
     def solve_once(self):
         H = np.zeros([self.psize, self.psize])

@@ -63,7 +63,8 @@ if __name__ == '__main__':
                       [0, 0, 1, a[1], -a[0], 0]])
         return r, j
 
-    import sys, os
+    import sys
+    import os
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from utilities.math_tools import *
 

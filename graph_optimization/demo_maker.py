@@ -1,6 +1,7 @@
 import numpy as np
 from graph_solver import *
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
@@ -137,8 +138,8 @@ if __name__ == '__main__':
     err = np.linalg.norm((truth_trj - aft_trj), axis=1)
     avg_err = np.average(err)
     worst_err = np.max(err)
-    print("err%f"%avg_err)
-    print("worst err%f"%worst_err)
+    print("err%f" % avg_err)
+    print("worst err%f" % worst_err)
     # plt.scatter(aft_trj[:, 0], aft_trj[:, 1], label='aft_trj', color='m', s=5)
     # plt.scatter(truth_trj[:, 0], truth_trj[:, 1], label='truth_trj', color='cyan', s=5)
 

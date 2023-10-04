@@ -6,7 +6,8 @@ from OpenGL.GL import *
 # from PyQt5 import QtCore, QtGui, QtWidgets
 from scipy.spatial.transform import Rotation   
 import numpy as np
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from utilities.gl_objects import *

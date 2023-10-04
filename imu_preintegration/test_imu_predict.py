@@ -1,4 +1,4 @@
-import preintegration 
+import preintegration
 # import preintegration1
 import numpy as np
 import matplotlib.pyplot as plt

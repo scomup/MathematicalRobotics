@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from graph_optimization.graph_solver import *
 from utilities.math_tools import *
@@ -116,7 +117,6 @@ if __name__ == '__main__':
     imupreintOmega = np.linalg.inv(np.diag(np.ones(9)*1e-4))
     posvelOmega = np.linalg.inv(np.diag(np.ones(3)*1e1))
 
-
     pose_data = np.load(pose_file)
     imu_data = np.load(imu_file)
     truth_data = np.load(truth_file)
@@ -163,7 +163,8 @@ if __name__ == '__main__':
         if (np.linalg.norm(last_pose - n.x.p) > mark_dist or idx == 0 or idx >= len(graph.nodes)-2):
             last_pose = n.x.p
             marker = find_nearest(truth_data, n.stamp)
-            marker = navState(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])), marker[1:4], np.array([0, 0, 0]))
+            marker = navState(
+                quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])), marker[1:4], np.array([0, 0, 0]))
             # marker.p += np.random.normal(0, 0.01, 3)
             graph.addEdge(naviEdge(idx, marker, makeromega))
             marker_list.append(marker.p)
@@ -173,11 +174,11 @@ if __name__ == '__main__':
     fig = plt.figure('imu pose')
     axes = fig.gca()
     # err = print_error(graph, truth_data)
-    draw(axes, graph,'blue','before')
+    draw(axes, graph, 'blue', 'before')
     graph.report()
     graph.solve()
     graph.report()
-    draw(axes, graph,'green','after')
+    draw(axes, graph, 'green', 'after')
     axes.plot(truth_data[:, 1], truth_data[:, 2], label='truth', color='red')
     axes.scatter(marker_list[:, 0], marker_list[:, 1], label='marker', s=50, color='black')
     axes.grid()
@@ -186,8 +187,8 @@ if __name__ == '__main__':
     fig = plt.figure('error ')
     axes = fig.gca()
     axes.plot(err)
-    axes.axhline(0.012, color='red', lw=1, alpha=0.7) #
-    axes.axhline(0.036, color='red', lw=1, alpha=0.7) #
+    axes.axhline(0.012, color='red', lw=1, alpha=0.7)
+    axes.axhline(0.036, color='red', lw=1, alpha=0.7)
     draw_bias('bias', graph)
     draw_vel('vel', graph)
     plt.grid()
