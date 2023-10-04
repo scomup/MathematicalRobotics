@@ -14,6 +14,9 @@ class plot3D:
         self.ax.set_xlabel("X")
         self.ax.set_ylabel("Y")
         self.ax.set_zlabel("Z")
+        # elev = -107.
+        # azim = 0
+        # self.ax.view_init(elev, azim)
 
     def update(self, a, b):
         plt.cla()
@@ -31,10 +34,14 @@ def residual(x, param):
     The proof of Jocabian of 3d point matching is given in a guass_newton_method.md (12)
     """
     a, b = param
-    R, t = makeRt(expSE3(x))
+    T0 = expSE3(x)
+    R, t = makeRt(T0)
     r = R.dot(a) + t - b
-    M = R.dot(skew(-a))
-    j = np.hstack([R, M])
+    I = np.eye(3)
+    j = np.zeros([4, 6])
+    j[0:3, 0:3] = I
+    j[0:3, 3:6] = skew(-a)
+    j = (T0 @ j)[0:3]
     return r.flatten(), j
 
 
@@ -48,11 +55,13 @@ def plus(x1, x2):
 if __name__ == '__main__':
 
     plt3d = plot3D()
+
     x_truth = np.array([1000, -0.1, 0.1, 2.1, 2.2, -1.3])
-    elements = 100
-    a = (np.random.rand(elements, 3)-0.5)*2
+    a = np.loadtxt("data/bunny.txt")
+    # a = (np.random.rand(elements, 3)-0.5)*2
     b = transform3d(x_truth, a.T).T
-    b += np.random.normal(0, 0.03, (elements, 3))
+    elements = a.shape[0]
+    b += np.random.normal(0, 0.001, (elements, 3))
 
     params = []
     for i in range(a.shape[0]):
