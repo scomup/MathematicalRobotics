@@ -29,6 +29,7 @@ def order_points_clockwise(points):
         dot_product = np.dot(normal, cross_product)
         return dot_product
 
+    # use bubble sort.
     n = points.shape[0]
     for i in range(n):
         for j in range(0, n-i-1):

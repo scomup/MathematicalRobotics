@@ -97,9 +97,48 @@ def draw_line(ax, org, direction, name='', length=5):
     ax.annotate3D(name, org, xytext=(3, 3), textcoords='offset points')
 
 
-def draw_plane(ax, plane, center=np.array([0, 0]), size=[5, 5]):
-    xx, yy = np.meshgrid(np.arange(center[0] - size[0], center[0] + size[0]),
-                         np.arange(center[1] - size[1], center[1] + size[1]))
+def get_R_by_norm(norm):
+    z = np.array([0, 0, 1])
+    angle = np.arccos(np.dot(norm, z))
+
+    if np.abs(angle) > 0.05:
+        axis = np.cross(z, norm)
+        axis /= np.linalg.norm(axis)
+
+        c = np.cos(angle)
+        s = np.sin(angle)
+        t = 1 - c
+        R = np.array([[t * axis[0] * axis[0] + c,
+                       t * axis[0] * axis[1] - s * axis[2],
+                       t * axis[0] * axis[2] + s * axis[1]],
+                      [t * axis[0] * axis[1] + s * axis[2],
+                       t * axis[1] * axis[1] + c,
+                       t * axis[1] * axis[2] - s * axis[0]],
+                      [t * axis[0] * axis[2] - s * axis[1],
+                       t * axis[1] * axis[2] + s * axis[0],
+                       t * axis[2] * axis[2] + c]])
+        return R
+    else:
+        R = np.array([[1, 0, norm[1]],
+                      [0, 1, -norm[0]],
+                      [norm[1], norm[0], 1]])
+        return R
+
+
+def draw_plane2(ax, center=np.array([0, 0, 0]), R=np.eye(3), size=[5, 5], res=0.5):
+    xx, yy = np.meshgrid(np.arange(-size[0], size[0], res),
+                         np.arange(-size[1], size[1], res))
+    zz = np.zeros_like(xx)
+    xyz = np.stack([xx, yy, zz], axis=2)
+    R_xyz = np.matmul(R.reshape((1, 1, 3, 3)), xyz[..., np.newaxis])
+    ax.plot_surface(R_xyz[:, :, 0].squeeze() + center[0],
+                    R_xyz[:, :, 1].squeeze() + center[1],
+                    R_xyz[:, :, 2].squeeze() + center[2], alpha=0.2)
+
+
+def draw_plane(ax, plane, center=np.array([0, 0]), size=[5, 5], res=0.5):
+    xx, yy = np.meshgrid(np.arange(center[0] - size[0], center[0] + size[0], res),
+                         np.arange(center[1] - size[1], center[1] + size[1], res))
     a, b, c, d = plane
     z = -(a*xx+b*yy+d)/c
     ax.plot_surface(xx, yy, z, alpha=0.5)
