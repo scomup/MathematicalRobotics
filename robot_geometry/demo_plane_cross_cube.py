@@ -29,14 +29,20 @@ def order_points_clockwise(points):
         dot_product = np.dot(normal, cross_product)
         return dot_product
 
-    # use bubble sort.
     n = points.shape[0]
-    for i in range(n):
-        for j in range(0, n-i-1):
-            if clockwise_check(points[j], points[j+1]) < 0:
-                tmp = np.copy(points[j])
-                points[j] = points[j+1]
-                points[j+1] = tmp
+    for i in range(n-1):
+        min_dist = np.inf
+        idx = i+1
+        for j in range(i+1, n):
+            dist = np.linalg.norm(points[i] - points[j])
+            if clockwise_check(points[i], points[j]) > 0 and dist < min_dist:
+                min_dist = dist
+                idx = j
+        if idx == i+1:
+            continue
+        tmp = np.copy(points[i+1])
+        points[i+1] = points[idx]
+        points[idx] = tmp
     return points
 
 
@@ -86,8 +92,8 @@ def draw_lines(ax, points):
 if __name__ == '__main__':
     fig = plt.figure("plane", figsize=plt.figaspect(1))
     ax = fig.add_subplot(projection='3d')
-    p = np.array([0.2, 0.3, 0.1])
-    norm = np.array([0.2, 0.1, 0.9])
+    p = np.array([0.8, -0.8, 0.8])
+    norm = np.array([1, -3, 0.5])
     norm = norm/np.linalg.norm(norm)
     plane = np.zeros(4)
     plane[0:3] = norm
