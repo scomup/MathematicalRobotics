@@ -338,7 +338,7 @@ def dLogSO3(omega):
         return np.eye(3) + 0.5 * W + (1 / (theta * theta) - (1 + np.cos(theta)) / (2 * theta * np.sin(theta))) * WW
 
 
-def quaternion_matrix(quaternion):
+def quaternion_to_matrix(quaternion):
     q = np.array(quaternion[:4], dtype=np.float64, copy=True)
     n = np.linalg.norm(q)
     if np.any(n == 0.0):
@@ -355,6 +355,36 @@ def quaternion_matrix(quaternion):
         m[2, 1] = 2*(q[2]*q[3] + q[1]*q[0])/n
         m[2, 2] = 1.0 - 2*(q[1]**2 + q[2]**2)/n
         return m
+
+
+def matrix_to_quaternion(matrix):
+    trace = matrix[0, 0] + matrix[1, 1] + matrix[2, 2]
+    if trace > 0:
+        s = 0.5 / np.sqrt(trace + 1.0)
+        w = 0.25 / s
+        x = (matrix[2, 1] - matrix[1, 2]) * s
+        y = (matrix[0, 2] - matrix[2, 0]) * s
+        z = (matrix[1, 0] - matrix[0, 1]) * s
+    else:
+        if matrix[0, 0] > matrix[1, 1] and matrix[0, 0] > matrix[2, 2]:
+            s = 2.0 * np.sqrt(1.0 + matrix[0, 0] - matrix[1, 1] - matrix[2, 2])
+            w = (matrix[2, 1] - matrix[1, 2]) / s
+            x = 0.25 * s
+            y = (matrix[0, 1] + matrix[1, 0]) / s
+            z = (matrix[0, 2] + matrix[2, 0]) / s
+        elif matrix[1, 1] > matrix[2, 2]:
+            s = 2.0 * np.sqrt(1.0 + matrix[1, 1] - matrix[0, 0] - matrix[2, 2])
+            w = (matrix[0, 2] - matrix[2, 0]) / s
+            x = (matrix[0, 1] + matrix[1, 0]) / s
+            y = 0.25 * s
+            z = (matrix[1, 2] + matrix[2, 1]) / s
+        else:
+            s = 2.0 * np.sqrt(1.0 + matrix[2, 2] - matrix[0, 0] - matrix[1, 1])
+            w = (matrix[1, 0] - matrix[0, 1]) / s
+            x = (matrix[0, 2] + matrix[2, 0]) / s
+            y = (matrix[1, 2] + matrix[2, 1]) / s
+            z = 0.25 * s
+    return np.array([x, y, z, w])
 
 
 def check(a, b):

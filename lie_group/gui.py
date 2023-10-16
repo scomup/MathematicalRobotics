@@ -98,7 +98,7 @@ def euler2mat(euler, order='xyz'):
         R = Ry.dot(Rz.dot(Rx))
     elif (order == 'zyx'):
         R = Rx.dot(Ry.dot(Rz))
-    elif (order=='yxz'):
+    elif (order == 'yxz'):
         R = Rz.dot(Rx.dot(Ry))
     return R
 
