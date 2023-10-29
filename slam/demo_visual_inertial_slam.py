@@ -25,8 +25,8 @@ class gravityEdge:
         if (self.omega is None):
             self.omega = np.eye(3)
 
-    def residual(self, nodes):
-        x_wb = nodes[self.i].x.vec()[0:6]
+    def residual(self, vertices):
+        x_wb = vertices[self.i].x.vec()[0:6]
         pim = self.z
         acc_b = pim.acc_buf[0]
         acc_w, J, _ = transform(x_wb, acc_b, True)
@@ -45,9 +45,9 @@ class gravityBiasEdge:
         if (self.omega is None):
             self.omega = np.eye(3)
 
-    def residual(self, nodes):
-        x_wb = nodes[self.i].x.vec()[0:6]
-        bias = nodes[self.j].x[0:3]
+    def residual(self, vertices):
+        x_wb = vertices[self.i].x.vec()[0:6]
+        bias = vertices[self.j].x[0:3]
         pim = self.z
         acc_b = pim.acc_buf[0]
         acc_w, J1, J2 = transform(x_wb, acc_b - bias, True)
@@ -58,7 +58,7 @@ class gravityBiasEdge:
         return acc_w - np.array([0, 0, 9.81]), J1t, J2t
 
 
-class reproj2StereoEdge:
+class Reproj2StereoEdge:
     def __init__(self, i, j, k, z, omega=None, kernel=None):
         self.i = i
         self.j = j
@@ -70,10 +70,10 @@ class reproj2StereoEdge:
         if (self.omega is None):
             self.omega = np.eye(4)
 
-    def residual(self, nodes):
-        x_wbi = nodes[self.i].x.vec()[0:6]
-        x_wbj = nodes[self.j].x.vec()[0:6]
-        depth = nodes[self.k].x
+    def residual(self, vertices):
+        x_wbi = vertices[self.i].x.vec()[0:6]
+        x_wbj = vertices[self.j].x.vec()[0:6]
+        depth = vertices[self.k].x
         p_cj, u_il, u_ir, baseline, K, x_bc = self.z
         rl, J1, J2, J3 = reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, baseline, K, x_bc, True)
         J1t = np.zeros([4, 9])
@@ -83,7 +83,7 @@ class reproj2StereoEdge:
         return rl, J1t, J2t, J3
 
 
-class reproj2Edge:
+class Reproj2Edge:
     def __init__(self, i, j, k, z, omega=None, kernel=None):
         self.i = i
         self.j = j
@@ -95,10 +95,10 @@ class reproj2Edge:
         if (self.omega is None):
             self.omega = np.eye(2)
 
-    def residual(self, nodes):
-        x_wbi = nodes[self.i].x.vec()[0:6]
-        x_wbj = nodes[self.j].x.vec()[0:6]
-        depth = nodes[self.k].x
+    def residual(self, vertices):
+        x_wbi = vertices[self.i].x.vec()[0:6]
+        x_wbj = vertices[self.j].x.vec()[0:6]
+        depth = vertices[self.k].x
         p_cj, u_il, u_ir, baseline, K, x_bc = self.z
         rl, J1, J2, J3 = reproj2(x_wbi, x_wbj, depth, p_cj, u_il, K, x_bc, True)
         J1t = np.zeros([2, 9])
@@ -110,16 +110,16 @@ class reproj2Edge:
 
 
 def getPIM(frame, R_bi, t_bi):
-    imuIntegrator = imuIntegration(G, Rbi=R_bi, tbi=t_bi)
+    imuIntegrator = ImuIntegration(G, Rbi=R_bi, tbi=t_bi)
     for imu_data in frame['imu']:
         imuIntegrator.update(imu_data[4:7], imu_data[1:4], 1/400.)
     return imuIntegrator
 
 def solve(frames, points, K, baseline, x_bc, use_imu=True):
-    graph = graphSolver()
+    graph = GraphSolver()
     frames_idx = {}
     """
-    Add frame and bias nodes
+    Add frame and bias vertices
     """
     bias_idx = {}
     for i, frame in enumerate(frames):
@@ -127,16 +127,16 @@ def solve(frames, points, K, baseline, x_bc, use_imu=True):
         vel = frame['vel']
         bias = frame['bias']
         state = navState.set(np.hstack([x_wb, vel]))
-        # add node to graph
-        idx = graph.addNode(naviNode(state, frame['stamp'], i))
+        # add vertex to graph
+        idx = graph.add_vertex(NaviVertex(state, frame['stamp'], i))
         frames_idx.update({i: idx})
-        idxb = graph.addNode(biasNode(bias, i))
+        idxb = graph.add_vertex(BiasVertex(bias, i))
         bias_idx.update({i: idxb})
     """
-    Add frame and bias nodes
+    Add frame and bias vertices
     """
-    graph.addEdge(biasEdge(bias_idx[0], np.zeros(6), biasOmega))
-    graph.addEdge(naviEdge(frames_idx[0], graph.nodes[frames_idx[0]].x, prirOmega))
+    graph.add_edge(BiasEdge(bias_idx[0], np.zeros(6), biasOmega))
+    graph.add_edge(NaviEdge(frames_idx[0], graph.vertices[frames_idx[0]].x, prirOmega))
     """
     Add imu edges
     """
@@ -149,13 +149,13 @@ def solve(frames, points, K, baseline, x_bc, use_imu=True):
             idxb_j = bias_idx[j]
             imuIntegrator = getPIM(frames[i], R_bi, t_bi)
             # add imu preintegration to graph
-            graph.addEdge(imupreintEdge(idx_i, idx_j, idxb_i, imuIntegrator, imupreintOmega))
+            graph.add_edge(ImupreintEdge(idx_i, idx_j, idxb_i, imuIntegrator, imupreintOmega))
             # add the relationship between velocity and position to graph
-            graph.addEdge(posvelEdge(idx_i, idx_j, imuIntegrator.d_tij, posvelOmega))
+            graph.add_edge(PosvelEdge(idx_i, idx_j, imuIntegrator.d_tij, posvelOmega))
             # add the bias change error to graph
-            graph.addEdge(biaschangeEdge(idxb_i, idxb_j, biaschangeOmega))
-            graph.addEdge(gravityEdge(idx_i, imuIntegrator, gravityOmega))
-            # graph.addEdge(gravityBiasEdge(idx_i, idxb_i, imuIntegrator, np.eye(3)*0.1))
+            graph.add_edge(BiasChangeEdge(idxb_i, idxb_j, biaschangeOmega))
+            graph.add_edge(gravityEdge(idx_i, imuIntegrator, gravityOmega))
+            # graph.add_edge(gravityBiasEdge(idx_i, idxb_i, imuIntegrator, np.eye(3)*0.1))
     """
     Add reproj edges
     """
@@ -163,8 +163,8 @@ def solve(frames, points, K, baseline, x_bc, use_imu=True):
     for n in points:
         if (len(points[n]['view']) < 2):
             continue
-        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n), False)
-        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']]), omega=np.eye(1)))
+        depth_idx = graph.add_vertex(DepthVertex(np.array([points[n]['depth']]), n), False)
+        graph.add_edge(DepthEdge(depth_idx, np.array([points[n]['depth']]), omega=np.eye(1)))
         points_idx.update({n: depth_idx})
         bj_idx = frames_idx[points[n]['view'][0]]
         for i in points[n]['view'][1:]:
@@ -173,21 +173,21 @@ def solve(frames, points, K, baseline, x_bc, use_imu=True):
             u_ir = u_il.copy()
             u_ir[0] -= frames[i]['points'][n][2]
             p_cj = points[n]['pc']
-            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx,
+            graph.add_edge(Reproj2StereoEdge(bi_idx, bj_idx, depth_idx,
                                             [p_cj, u_il, u_ir, baseline, K, x_bc],
                                             kernel=CauchyKernel(0.1), omega=reporjOmega))
 
     graph.report()
     graph.solve(min_score_change=0.01, step=0)
     graph.report()
-    for n in graph.nodes:
-        if (type(n).__name__ == 'depthNode'):
+    for n in graph.vertices:
+        if (type(n).__name__ == 'DepthVertex'):
             points[n.id]['depth'] = n.x
-        if (type(n).__name__ == 'naviNode'):
+        if (type(n).__name__ == 'NaviVertex'):
             v = n.x.vec()
             frames[n.id]['pose'] = v[0:6]
             frames[n.id]['vel'] = v[6:9]
-        if (type(n).__name__ == 'biasNode'):
+        if (type(n).__name__ == 'BiasVertex'):
             frames[n.id]['bias'] = n.x
 
 

@@ -7,7 +7,7 @@ from utilities import *
 from guass_newton import *
 
 
-class plot2D:
+class Plot2D:
     def __init__(self):
         # self.fig = plt.figure()
         self.fig, self.ax = plt.subplots()
@@ -44,7 +44,7 @@ def plus(x1, x2):
 
 if __name__ == '__main__':
 
-    plt2d = plot2D()
+    plt2d = Plot2D()
     x_truth = np.array([-0.3, 0.2, np.pi/2])
     elements = 10
     # a = (np.random.rand(elements, 2)-0.5)*2

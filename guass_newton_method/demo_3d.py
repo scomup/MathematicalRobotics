@@ -5,9 +5,9 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from guass_newton import *
+from mpl_toolkits.mplot3d import axes3d, Axes3D
 
-
-class plot3D:
+class Plot3D:
     def __init__(self):
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(projection='3d')
@@ -54,7 +54,7 @@ def plus(x1, x2):
 
 if __name__ == '__main__':
 
-    plt3d = plot3D()
+    plt3d = Plot3D()
 
     x_truth = np.array([1000, -0.1, 0.1, 2.1, 2.2, -1.3])
     a = np.loadtxt("data/bunny.txt")

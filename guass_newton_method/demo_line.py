@@ -32,7 +32,7 @@ if __name__ == '__main__':
     x2 = gn.solve(x)
     gn = guassNewton(residual, params, None, HuberKernel(1))
     x3 = gn.solve(x)
-    gn = guassNewton(residual, params, None, gaussianKernel(0.01))
+    gn = guassNewton(residual, params, None, GaussianKernel(0.01))
     x4 = gn.solve(x)
     plt.plot(a, a*x1[0] + x1[1], label='None')
     plt.plot(a, a*x2[0] + x2[1], label='Cauchy')

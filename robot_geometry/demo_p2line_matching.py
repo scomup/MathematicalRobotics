@@ -13,7 +13,7 @@ from slam.reprojection import *
 from utilities.robust_kernel import *
 
 
-class p2lineEdge:
+class P2lineEdge:
     def __init__(self, i, z, omega=None, kernel=None):
         self.i = i
         self.z = z
@@ -23,7 +23,7 @@ class p2lineEdge:
         if (self.omega is None):
             self.omega = np.eye(1)
 
-    def residual(self, nodes):
+    def residual(self, vertices):
         """
         r = P(T(x)*a, c, dir)
         a: target point
@@ -32,7 +32,7 @@ class p2lineEdge:
         dir: direction of line
         P: point to line
         """
-        x = nodes[self.i].x
+        x = vertices[self.i].x
         a, c, dir = self.z
         a_star, dTdx, _ = transform(x, a, True)
         r, dPdT = point2line(a_star, c, dir, True)
@@ -41,7 +41,7 @@ class p2lineEdge:
         return r*np.ones(1), J.reshape([1, 6])
 
 
-class pose3Node:
+class Pose3Vertex:
     def __init__(self, x):
         self.x = x
         self.size = x.size
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     fig = plt.figure("plane", figsize=plt.figaspect(1))
     ax = fig.add_subplot(projection='3d')
 
-    graph = graphSolver()
+    graph = GraphSolver()
     cur_pose = np.array([0, 0, 0, 0, 0, 0])
 
     # ref = np.array([[0.1, 0.2, -0.2], [1, 1.02, 0.1], [2.1, 2.5, 0.4], [2.8, 3.0, 0.5], [4.2, 3.9, 1.2]])
@@ -67,11 +67,11 @@ if __name__ == '__main__':
     s, center, direction = find_line(ref)
     # tar = np.array([[0.1, 0.2, -0], [1, 1.02, 0], [2.1, 2.5, 0], [2.8, 3.0, 0], [4.2, 3.9, 0], [5, 5, 0], [5, 5, 0]])
 
-    graph.addNode(pose3Node(cur_pose))  # add node to graph
+    graph.add_vertex(Pose3Vertex(cur_pose))  # add vertex to graph
     draw_line(ax, center, direction)
 
     for p in tar:
-        graph.addEdge(p2lineEdge(0, [p, center, direction], kernel=HuberKernel(0.5)))  # add prior pose to graph
+        graph.add_edge(P2lineEdge(0, [p, center, direction], kernel=HuberKernel(0.5)))  # add prior pose to graph
         r, j = point2line(p, center, direction, True)
         g = -j*r
         draw_arrow(ax, p, g)
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     ax.scatter(ref[:, 0], ref[:, 1], ref[:, 2], label='ref')
     ax.scatter(tar[:, 0], tar[:, 1], tar[:, 2], label='tar')
     graph.solve(min_score_change=0.00001, step=0.1)
-    x = graph.nodes[0].x
+    x = graph.vertices[0].x
 
     # R = expSO3(x[0:3])
     # t = x[3:6]

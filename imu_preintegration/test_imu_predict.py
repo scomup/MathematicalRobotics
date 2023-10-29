@@ -19,8 +19,8 @@ if __name__ == '__main__':
     imuIntegratorGT = gtsam.PreintegratedImuMeasurements(
         imu_params, gtsam.imuBias.ConstantBias(np.array([0.0, -0.0, -0.0]), np.array([0., 0., 0.])))
 
-    imuIntegrator0 = preintegration.imuIntegration(G)
-    # imuIntegrator1 = preintegration1.imuIntegration(G)
+    imuIntegrator0 = preintegration.ImuIntegration(G)
+    # imuIntegrator1 = preintegration1.ImuIntegration(G)
     lastImuTime = -1
     stateGT = gtsam.NavState(gtsam.Pose3(gtsam.Rot3.Quaternion(1, 0, 0, 0), gtsam.Point3(0, 0, 0)), np.array([0, 0, 0]))
     state0 = preintegration.navState(np.eye(3), np.array([0, 0, 0]), np.array([0, 0, 0]))

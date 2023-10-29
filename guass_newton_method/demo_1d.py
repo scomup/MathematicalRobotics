@@ -9,7 +9,7 @@ from utilities.robust_kernel import *
 
 a = np.arange(-10, 10, 0.1)
 
-# kernel = gaussianKernel(0.01)
+# kernel = GaussianKernel(0.01)
 kernel = PseudoHuberKernel(2)
 # kernel = CauchyKernel(2)
 # kernel = HuberKernel(2)

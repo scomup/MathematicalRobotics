@@ -9,7 +9,7 @@ from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
 from graph_optimization.plot_pose import *
 
-class camposeNode:
+class CamposeVertex:
     def __init__(self, x, id=0):
         self.x = x
         self.size = x.size
@@ -18,7 +18,7 @@ class camposeNode:
         self.x = pose_plus(self.x, dx)
 
 
-class depthNode:
+class DepthVertex:
     def __init__(self, x, id=0):
         self.x = float(x)
         self.size = 1
@@ -26,7 +26,7 @@ class depthNode:
     def update(self, dx):
         self.x = float(self.x + dx)
 
-class depthEdge:
+class DepthEdge:
     def __init__(self, i, z, omega = None, kernel=None):
         self.i = i
         self.z = z
@@ -35,12 +35,12 @@ class depthEdge:
         self.kernel = kernel
         if (self.omega is None):
             self.omega = np.eye(1)
-    def residual(self, nodes):
-        depth = nodes[self.i].x
+    def residual(self, vertices):
+        depth = vertices[self.i].x
         init_depth = self.z
         return depth - init_depth, np.eye(1)
 
-class reproj2StereoEdge:
+class Reproj2StereoEdge:
     def __init__(self, i, j, k, z, omega = None, kernel=None):
         self.i = i
         self.j = j
@@ -51,16 +51,16 @@ class reproj2StereoEdge:
         self.kernel = kernel
         if (self.omega is None):
             self.omega = np.eye(4)
-    def residual(self, nodes):
-        x_wbi = nodes[self.i].x
-        x_wbj = nodes[self.j].x
-        depth = nodes[self.k].x
+    def residual(self, vertices):
+        x_wbi = vertices[self.i].x
+        x_wbj = vertices[self.j].x
+        depth = vertices[self.k].x
         p_cj, u_il, u_ir, baseline, K, x_bc = self.z
         rl, Jl1, Jl2, Jl3 = reproj2_stereo(x_wbi, x_wbj, depth, p_cj, u_il, u_ir, baseline, K, x_bc, True)
         return rl, Jl1, Jl2, Jl3
 
 
-class reproj2Edge:
+class Reproj2Edge:
     def __init__(self, i, j, k, z, omega = None, kernel=None):
         self.i = i
         self.j = j
@@ -71,10 +71,10 @@ class reproj2Edge:
         self.kernel = kernel
         if (self.omega is None):
             self.omega = np.eye(2)
-    def residual(self, nodes):
-        x_wbi = nodes[self.i].x
-        x_wbj = nodes[self.j].x
-        depth = nodes[self.k].x
+    def residual(self, vertices):
+        x_wbi = vertices[self.i].x
+        x_wbj = vertices[self.j].x
+        depth = vertices[self.k].x
         p_cj, u_il, u_ir, baseline, K, x_bc = self.z        
         rl, Jl1, Jl2, Jl3 = reproj2(x_wbi, x_wbj, depth, p_cj, u_il, K, x_bc, True)
         return rl, Jl1, Jl2, Jl3
@@ -183,28 +183,28 @@ def readframes(n, folder, scale):
         fn = folder+'/F%04d.yaml'%idx
         print('read %s...'%fn)
         with open(fn) as file:
-            node = yaml.safe_load(file)
-            pts = np.array(node['points']['data']).reshape(node['points']['num'], -1)
-            pts_d = pts[:, 1:].astype(np.float)/scale
+            vertex = yaml.safe_load(file)
+            pts = np.array(vertex['points']['data']).reshape(vertex['points']['num'], -1)
+            pts_d = pts[:, 1:].astype(np.float64)/scale
             pts = dict(zip(pts[:, 0].astype(np.int), pts_d))
-            imus = np.array(node['imu']['data']).reshape(node['imu']['num'], -1)
-            frames.append({'stamp':node['stamp'], 'pose':np.zeros(6), 'vel':np.zeros(3), 'bias':np.zeros(6), 'points': pts, 'imu':imus})
+            imus = np.array(vertex['imu']['data']).reshape(vertex['imu']['num'], -1)
+            frames.append({'stamp':vertex['stamp'], 'pose':np.zeros(6), 'vel':np.zeros(3), 'bias':np.zeros(6), 'points': pts, 'imu':imus})
     return frames
 
 
 def solve(frames, points, K, baseline, x_bc):
-    graph = graphSolver()
+    graph = GraphSolver()
     frames_idx = {}
     points_idx = {}
     for i, frame in enumerate(frames):
         x_wc = frame['pose']
-        idx = graph.addNode(camposeNode(x_wc, i), i==0) # add node to graph
+        idx = graph.add_vertex(CamposeVertex(x_wc, i), i==0) # add vertex to graph
         frames_idx.update({i: idx})
     for n in points:
         if (len(points[n]['view'])<2):
             continue
-        depth_idx = graph.addNode(depthNode(np.array([points[n]['depth']]), n), False) # add feature to graph
-        graph.addEdge(depthEdge(depth_idx, np.array([points[n]['depth']]), omega=np.eye(1)))      
+        depth_idx = graph.add_vertex(DepthVertex(np.array([points[n]['depth']]), n), False) # add feature to graph
+        graph.add_edge(DepthEdge(depth_idx, np.array([points[n]['depth']]), omega=np.eye(1)))      
 
         points_idx.update({n: depth_idx})
         bj_idx = frames_idx[points[n]['view'][0]]
@@ -215,15 +215,15 @@ def solve(frames, points, K, baseline, x_bc):
             u_ir = u_il.copy()
             u_ir[0] -= frames[i]['points'][n][2]
             p_cj = points[n]['pc']
-            graph.addEdge(reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc], kernel=HuberKernel(0.1), omega=reporjOmega))
-            # graph.addEdge(reproj2Edge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc], kernel=HuberKernel(0.5), omega=np.eye(2)*0.01))
+            graph.add_edge(Reproj2StereoEdge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc], kernel=HuberKernel(0.1), omega=reporjOmega))
+            # graph.add_edge(Reproj2Edge(bi_idx, bj_idx, depth_idx, [p_cj, u_il, u_ir, baseline, K, x_bc], kernel=HuberKernel(0.5), omega=np.eye(2)*0.01))
     graph.report()
     graph.solve(min_score_change =0.01, step=0)
     graph.report()
-    for n in graph.nodes:
-        if (type(n).__name__ == 'depthNode'):
+    for n in graph.vertices:
+        if (type(n).__name__ == 'DepthVertex'):
             points[n.id]['depth'] = n.x
-        if (type(n).__name__ == 'camposeNode'):
+        if (type(n).__name__ == 'CamposeVertex'):
             frames[n.id]['pose'] = n.x
 
 def remove_outlier(frames, points, K, baseline, x_bc):

@@ -15,15 +15,15 @@ class pose2dEdge:
         if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 
-    def residual(self, nodes):
+    def residual(self, vertices):
         """
         The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
         """
-        Tzx = np.linalg.inv(v2m(self.z)).dot(v2m(nodes[self.i].x))
+        Tzx = np.linalg.inv(v2m(self.z)).dot(v2m(vertices[self.i].x))
         return m2v(Tzx), np.eye(3)
 
 
-class pose2dbetweenEdge:
+class Pose2dbetweenEdge:
     def __init__(self, i, j, z, omega=None, color='black'):
         self.i = i
         self.j = j
@@ -34,11 +34,11 @@ class pose2dbetweenEdge:
         if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 
-    def residual(self, nodes):
+    def residual(self, vertices):
         """
         The proof of Jocabian of SE2 is given in a graph_optimization.md (15)(16)
         """
-        T12 = np.linalg.inv(v2m(nodes[self.i].x)).dot(v2m(nodes[self.j].x))
+        T12 = np.linalg.inv(v2m(vertices[self.i].x)).dot(v2m(vertices[self.j].x))
         T21 = np.linalg.inv(T12)
         R21, t21 = makeRt(T21)
         J = np.eye(3)
@@ -48,7 +48,7 @@ class pose2dbetweenEdge:
         return m2v(np.linalg.inv(v2m(self.z)).dot(T12)), J, np.eye(3)
 
 
-class pose2Node:
+class Pose2Vertex:
     def __init__(self, x):
         self.x = x
         self.size = x.size
@@ -60,15 +60,15 @@ class pose2Node:
 def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
-    for n in graph.nodes:
+    for n in graph.vertices:
         plot_pose2(figname, v2m(n.x), 0.05)
     for e in graph.edges:
         if (e.type == 'one'):
             continue
         i = e.i
         j = e.j
-        _, ti = makeRt(v2m(graph.nodes[i].x))
-        _, tj = makeRt(v2m(graph.nodes[j].x))
+        _, ti = makeRt(v2m(graph.vertices[i].x))
+        _, tj = makeRt(v2m(graph.vertices[j].x))
         x = [ti[0], tj[0]]
         y = [ti[1], tj[1]]
         axes.plot(x, y, c=e.color, linestyle=':')
@@ -76,22 +76,22 @@ def draw(figname, graph):
 
 if __name__ == '__main__':
 
-    graph = graphSolver()
+    graph = GraphSolver()
 
     n = 12
     cur_pose = np.array([0, 0, 0])
     odom = np.array([0.2, 0, 0.45])
     for i in range(n):
-        graph.addNode(pose2Node(cur_pose))  # add node to graph
+        graph.add_vertex(Pose2Vertex(cur_pose))  # add vertex to graph
         cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
 
-    graph.addEdge(pose2dEdge(0, np.array([0, 0, 0])))  # add prior pose to graph
+    graph.add_edge(pose2dEdge(0, np.array([0, 0, 0])))  # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)
-        graph.addEdge(pose2dbetweenEdge(i, j, odom))  # add edge(i, j) to graph
+        graph.add_edge(Pose2dbetweenEdge(i, j, odom))  # add edge(i, j) to graph
 
-    graph.addEdge(pose2dbetweenEdge(n-1, 0, odom, color='red'))
+    graph.add_edge(Pose2dbetweenEdge(n-1, 0, odom, color='red'))
 
     draw('before loop-closing', graph)
     graph.solve()

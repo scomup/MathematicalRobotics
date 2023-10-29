@@ -7,7 +7,7 @@ from utilities.math_tools import *
 from graph_optimization.plot_pose import *
 
 
-class pose3dEdge:
+class Pose3dEdge:
     def __init__(self, i, z, omega=None):
         self.i = i
         self.z = z
@@ -16,15 +16,15 @@ class pose3dEdge:
         if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 
-    def residual(self, nodes):
+    def residual(self, vertices):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
-        Tzx = np.linalg.inv(expSE3(self.z)).dot(expSE3(nodes[self.i].x))
+        Tzx = np.linalg.inv(expSE3(self.z)).dot(expSE3(vertices[self.i].x))
         return logSE3(Tzx), np.eye(6)
 
 
-class pose3dbetweenEdge:
+class Pose3dbetweenEdge:
     def __init__(self, i, j, z, omega=None, color='black'):
         self.i = i
         self.j = j
@@ -35,12 +35,12 @@ class pose3dbetweenEdge:
         if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 
-    def residual(self, nodes):
+    def residual(self, vertices):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
-        T1 = expSE3(nodes[self.i].x)
-        T2 = expSE3(nodes[self.j].x)
+        T1 = expSE3(vertices[self.i].x)
+        T2 = expSE3(vertices[self.j].x)
 
         T12 = np.linalg.inv(T1).dot(T2)
         T21 = np.linalg.inv(T12)
@@ -53,7 +53,7 @@ class pose3dbetweenEdge:
         return logSE3(np.linalg.inv(expSE3(self.z)).dot(T12)), J, np.eye(6)
 
 
-class pose3Node:
+class Pose3Vertex:
     def __init__(self, x):
         self.x = x
         self.size = x.size
@@ -63,7 +63,7 @@ class pose3Node:
 
 
 def draw(figname, graph):
-    for n in graph.nodes:
+    for n in graph.vertices:
         plot_pose3(figname, expSE3(n.x), 0.05)
     fig = plt.figure(figname)
     axes = fig.gca()
@@ -72,8 +72,8 @@ def draw(figname, graph):
             continue
         i = e.i
         j = e.j
-        _, ti = makeRt(expSE3(graph.nodes[i].x))
-        _, tj = makeRt(expSE3(graph.nodes[j].x))
+        _, ti = makeRt(expSE3(graph.vertices[i].x))
+        _, tj = makeRt(expSE3(graph.vertices[j].x))
         x = [ti[0], tj[0]]
         y = [ti[1], tj[1]]
         z = [ti[2], tj[2]]
@@ -82,22 +82,22 @@ def draw(figname, graph):
 
 
 if __name__ == '__main__':
-    graph = graphSolver()
+    graph = GraphSolver()
 
     n = 12
     cur_pose = np.array([0, 0, 0, 0, 0, 0])
     odom = np.array([0.2, 0, 0.00, 0.05, 0, 0.5])
     for i in range(n):
-        graph.addNode(pose3Node(cur_pose))  # add node to graph
+        graph.add_vertex(Pose3Vertex(cur_pose))  # add vertex to graph
         cur_pose = logSE3(expSE3(cur_pose).dot(expSE3(odom)))
 
-    graph.addEdge(pose3dEdge(0, np.array([0, 0, 0, 0, 0, 0])))  # add prior pose to graph
+    graph.add_edge(Pose3dEdge(0, np.array([0, 0, 0, 0, 0, 0])))  # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)
-        graph.addEdge(pose3dbetweenEdge(i, j, odom))  # add edge(i, j) to graph
+        graph.add_edge(Pose3dbetweenEdge(i, j, odom))  # add edge(i, j) to graph
 
-    graph.addEdge(pose3dbetweenEdge(n-1, 0, odom, color='red'))
+    graph.add_edge(Pose3dbetweenEdge(n-1, 0, odom, color='red'))
 
     draw('before loop-closing', graph)
     graph.solve()

@@ -17,8 +17,8 @@ def readimu(n, folder):
         fn = folder+'/F%04d.yaml' % idx
         print('read %s...' % fn)
         with open(fn) as file:
-            node = yaml.safe_load(file)
-            imu = np.array(node['imu']['data']).reshape(node['imu']['num'], -1)
+            vertex = yaml.safe_load(file)
+            imu = np.array(vertex['imu']['data']).reshape(vertex['imu']['num'], -1)
             imus = np.append(imus, imu, axis=0)
     return imus
 
@@ -36,8 +36,8 @@ if __name__ == '__main__':
                                                          gtsam.imuBias.ConstantBias(np.array([0.0, -0.0, -0.0]),
                                                                                     np.array([0., 0., 0.])))
 
-    imuIntegrator0 = imuIntegration(G)
-    # imuIntegrator1 = preintegration1.imuIntegration(G)
+    imuIntegrator0 = ImuIntegration(G)
+    # imuIntegrator1 = preintegration1.ImuIntegration(G)
     lastImuTime = -1
     stateGT = gtsam.NavState(gtsam.Pose3(gtsam.Rot3.Quaternion(1, 0, 0, 0), gtsam.Point3(0, 0, 0)), np.array([0, 0, 0]))
     state0 = navState(np.eye(3), np.array([0, 0, 0]), np.array([0, 0, 0]))

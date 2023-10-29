@@ -18,8 +18,8 @@ def draw(figname, graph, color, label):
     fig = plt.figure(figname)
     axes = fig.gca()
     pose_trj = []
-    for n in graph.nodes:
-        if (not isinstance(n, naviNode)):
+    for n in graph.vertices:
+        if (not isinstance(n, NaviVertex)):
             continue
         pose_trj.append(n.x.p)
     pose_trj = np.array(pose_trj)
@@ -33,8 +33,8 @@ def find_nearest(data, stamp):
 
 def print_error(truth_trj):
     aft_trj = []
-    for n in graph.nodes:
-        if (not isinstance(n, naviNode)):
+    for n in graph.vertices:
+        if (not isinstance(n, NaviVertex)):
             continue
         aft_trj.append(n.x.p)
     aft_trj = np.array(aft_trj)
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     truth_file = FILE_PATH+'/data/truth_pose.npy'
     pose_data = np.load(pose_file)
     truth_data = np.load(truth_file)
-    graph = graphSolver(True)
+    graph = GraphSolver(True)
 
     state0 = None
     state0_idx = 0
@@ -67,12 +67,12 @@ if __name__ == '__main__':
         if (state0 is None):
             state0 = state1
             last_marker = state1
-            state0_idx = graph.addNode(naviNode(state1))  # add node to graph
+            state0_idx = graph.add_vertex(NaviVertex(state1))  # add vertex to graph
             continue
 
-        state1_idx = graph.addNode(naviNode(state1))
+        state1_idx = graph.add_vertex(NaviVertex(state1))
         delta = state0.local(state1, False)
-        graph.addEdge(navitransEdge(state0_idx, state1_idx, delta, omegaOdom))
+        graph.add_edge(NavitransEdge(state0_idx, state1_idx, delta, omegaOdom))
         state0_idx = state1_idx
         state0 = state1
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             marker = find_nearest(truth_data, p[0])
             marker = navState(quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
             marker.p += np.random.normal(0, 0.01, 3)
-            graph.addEdge(naviEdge(state1_idx, marker, omegaMaker))  # add prior pose to graph
+            graph.add_edge(NaviEdge(state1_idx, marker, omegaMaker))  # add prior pose to graph
 
     graph.report()
     print_error(truth_trj)

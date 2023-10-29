@@ -7,44 +7,44 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
 
 
-class graphSolver:
+class GraphSolver:
     """
     A graph optimization solver.
     more information is written in graph_optimization.md
     """
     def __init__(self, use_sparse = False):
-        self.nodes = []
+        self.vertices = []
         self.is_no_constant = []
         self.edges = []
         self.loc = []
         self.psize = 0
         self.use_sparse = use_sparse
 
-    def addNode(self, node, is_constant = False):
-        self.nodes.append(node)
+    def add_vertex(self, vertex, is_constant = False):
+        self.vertices.append(vertex)
         if (not is_constant):
             self.loc.append(self.psize)
-            self.psize += node.size
+            self.psize += vertex.size
         else:
             self.loc.append(np.nan)
         self.is_no_constant.append(not is_constant)
-        return len(self.nodes) - 1
+        return len(self.vertices) - 1
     
-    def setConstant(self, idx):
-        self.psize -= self.nodes[idx].size
+    def set_constant(self, idx):
+        self.psize -= self.vertices[idx].size
         self.loc[idx] = np.nan
         self.is_no_constant[idx] = False
         for i in range(idx, len(self.loc)):
-            self.loc[i] -= self.nodes[idx].size
+            self.loc[i] -= self.vertices[idx].size
 
-    def addEdge(self, edge):
+    def add_edge(self, edge):
         self.edges.append(edge)
 
     def report(self):
         error = 0
         type_score = {}
         for edge in self.edges:
-            r = edge.residual(self.nodes)[0]
+            r = edge.residual(self.vertices)[0]
             omega = edge.omega
             try:
                 kernel = edge.kernel
@@ -63,7 +63,7 @@ class graphSolver:
 
         print("---------------------")
         print("The number of parameters: %d." % self.psize)
-        print("The number of nodes: %d." % len(self.nodes))
+        print("The number of vertices: %d." % len(self.vertices))
         print("The number of edges: %d." % len(self.edges))
         print("Overall error: %f." % error)
         type_list = list(type_score)
@@ -77,7 +77,7 @@ class graphSolver:
         g = np.zeros([self.psize])
         score = 0
         for edge in self.edges:
-            # self.nodes[edge.i]
+            # self.vertices[edge.i]
             omega = edge.omega
             try:
                 kernel = edge.kernel
@@ -86,25 +86,25 @@ class graphSolver:
             except:
                 kernel = L2Kernel()
             if (edge.type == 'one'):
-                node_i = self.nodes[edge.i]
-                r, jacobian_i = edge.residual(self.nodes)
+                vertex_i = self.vertices[edge.i]
+                r, jacobian_i = edge.residual(self.vertices)
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
                 s_i = self.loc[edge.i]
-                e_i = s_i + node_i.size
+                e_i = s_i + vertex_i.size
                 if (self.is_no_constant[edge.i]):
                     H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
             elif (edge.type == 'two'):
-                r, jacobian_i, jacobian_j = edge.residual(self.nodes)
+                r, jacobian_i, jacobian_j = edge.residual(self.vertices)
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
-                node_i = self.nodes[edge.i]
-                node_j = self.nodes[edge.j]
+                vertex_i = self.vertices[edge.i]
+                vertex_j = self.vertices[edge.j]
                 s_i = self.loc[edge.i]
                 s_j = self.loc[edge.j]
-                e_i = s_i + node_i.size
-                e_j = s_j + node_j.size
+                e_i = s_i + vertex_i.size
+                e_j = s_j + vertex_j.size
                 if (self.is_no_constant[edge.i]):
                     H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T @ omega @ jacobian_i
                     g[s_i:e_i] += rho[1]*jacobian_i.T @ omega @ r
@@ -115,16 +115,16 @@ class graphSolver:
                     H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T @ omega @ jacobian_j
                     H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T @ omega @ jacobian_i
             elif (edge.type == 'three'):
-                node_i = self.nodes[edge.i]
-                node_j = self.nodes[edge.j]
-                node_k = self.nodes[edge.k]
+                vertex_i = self.vertices[edge.i]
+                vertex_j = self.vertices[edge.j]
+                vertex_k = self.vertices[edge.k]
                 s_i = self.loc[edge.i]
                 s_j = self.loc[edge.j]
                 s_k = self.loc[edge.k]
-                e_i = s_i + node_i.size
-                e_j = s_j + node_j.size
-                e_k = s_k + node_k.size
-                r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.nodes)
+                e_i = s_i + vertex_i.size
+                e_j = s_j + vertex_j.size
+                e_k = s_k + vertex_k.size
+                r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.vertices)
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
                 if (self.is_no_constant[edge.i]):
@@ -183,8 +183,8 @@ class graphSolver:
             last_score = score
 
     def update(self, dx):
-        for i, node in enumerate(self.nodes):
+        for i, vertex in enumerate(self.vertices):
             if self.is_no_constant[i]:
                 s_i = self.loc[i]
-                e_i = s_i + node.size
-                node.update(dx[s_i:e_i])
+                e_i = s_i + vertex.size
+                vertex.update(dx[s_i:e_i])

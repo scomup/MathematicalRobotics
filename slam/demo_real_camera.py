@@ -43,7 +43,7 @@ def opticalFlowTrack(img0, img1, pts0, back_check, horizontal_check):
     return pts1, status
 
 
-class testNode():
+class testvertex():
     def __init__(self):
         image_l_sub = message_filters.Subscriber('/oak_camera/left/image_rect', Image)
         image_r_sub = message_filters.Subscriber('/oak_camera/right/image_rect', Image)
@@ -121,8 +121,8 @@ class testNode():
         x_wc = np.zeros(6)
         self.pts1, status0 = opticalFlowTrack(self.img0[0], self.img1[0], self.pts0, True, False)
         right_pts, status1 = opticalFlowTrack(self.img1[0], self.img1[1], self.pts1, False, True)
-        graph = graphSolver()
-        idx = graph.addNode(camposeNode(x_wc))
+        graph = GraphSolver()
+        idx = graph.add_vertex(CamposeVertex(x_wc))
 
         for i in range(self.pts1.shape[0]):
             if (status0[i][0] == 0 or status1[i][0] == 0):
@@ -130,10 +130,10 @@ class testNode():
             u0 = self.pts1[i][0]
             u1 = right_pts[i][0]
             p3d = self.points[i]
-            idx_p = graph.addNode(featureNode(p3d), True)
-            graph.addEdge(reprojEdge(idx, idx_p, [self.x_c1c2, u0, u1, self.x_bc, self.K], kernel=CauchyKernel(0.5)))
+            idx_p = graph.add_vertex(featurevertex(p3d), True)
+            graph.add_edge(reprojEdge(idx, idx_p, [self.x_c1c2, u0, u1, self.x_bc, self.K], kernel=CauchyKernel(0.5)))
         graph.solve(False, 0.1)
-        return graph.nodes[idx].x
+        return graph.vertices[idx].x
 
     def callback(self, image_r_msg, image_l_msg):
         if (self.new_img is True):
@@ -176,8 +176,8 @@ if __name__ == '__main__':
     m[2, 1] = -1.
     v = logSO3(m)
     args = rospy.myargv()
-    rospy.init_node('controller_manager', anonymous=True)
-    n = testNode()
+    rospy.init_vertex('controller_manager', anonymous=True)
+    n = testvertex()
     r = rospy.Rate(10)  # 10hz
     while not rospy.is_shutdown():
         n.run()

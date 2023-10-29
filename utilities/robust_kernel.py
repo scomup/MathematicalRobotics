@@ -2,7 +2,7 @@ import numpy as np
 # Christopher Zach. “Robust bundle adjustment revisited” (11)(12)
 
 
-class gaussianKernel:
+class GaussianKernel:
     def __init__(self, d):
         self.d = d
 
@@ -108,7 +108,7 @@ def drawKernel():
     # eHuber = HuberKernel(1).apply(e2)
     eCauchy = CauchyKernel(1).apply(e2)
     # eL1 = L1Kernel().apply(e2)
-    eGaussian = gaussianKernel(1).apply(e2)
+    eGaussian = GaussianKernel(1).apply(e2)
     # plt.plot(e, eHuber[0], label='Huber')
     plt.plot(e, ePHuber[0], label='PseudoHuber')
     plt.plot(e, eCauchy[0], label='Cauchy')

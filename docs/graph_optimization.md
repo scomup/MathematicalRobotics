@@ -1,18 +1,18 @@
 ## Graph Optimization  
 ### What is graph?  
 A graph is a pair $G = (V, E)$,
-where $V$ is a set of nodes, each of which contains some parameters to be optimized.  $E$ is a set of connected information, whose elements are denotes the constraint relationship between two nodes.  
+where $V$ is a set of vertices, each of which contains some parameters to be optimized.  $E$ is a set of connected information, whose elements are denotes the constraint relationship between two vertices.  
 Many robotics and computer vision problems can be represented by a graph problem.
 
 ### How to solve graph problem?
 A graph problem can be defined as a nonlinear least squares problems.
-$f_{ij}(v_i, v_j; e_{ij})$ shows the constraint relationship between node $v_i$ and $v_j$
+$f_{ij}(v_i, v_j; e_{ij})$ shows the constraint relationship between vertex $v_i$ and $v_j$
 $e_{ij}$ is the prior error of $v_i$ and $v_j$.  
 $$ 
 F(V) = \sum_{\{i,j\} \in E}f_{ij}(v_i, v_j; e_{ij})^2 \quad \tag{1}
 $$
 
-We need to find a optimal set of nodes (i.e. $V$) to minimize the overall cost. 
+We need to find a optimal set of vertices (i.e. $V$) to minimize the overall cost. 
 According to [guass_newton_method.md](./guass_newton_method.md), 
 as soon as we can compute the hessian matrix $H$ and gradient $g$, we can solve this graph optimization problem.
 
@@ -74,7 +74,7 @@ $$
     \varphi(A,B) = Z^{-1}A^{{-1}}B \tag{7}
 $$
 
-Where $A$ and $B$ are the two lie groups, which represent the poses of two nodes. The $Z$ represents the relative pose of $A$ nad $B$, which usually measured by odometry or loop-closing.
+Where $A$ and $B$ are the two lie groups, which represent the poses of two vertices. The $Z$ represents the relative pose of $A$ nad $B$, which usually measured by odometry or loop-closing.
 
 ### If A and B are SO3
 

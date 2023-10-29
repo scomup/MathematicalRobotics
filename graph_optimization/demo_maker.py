@@ -5,13 +5,13 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
-from graph_optimization.demo_pose3d_graph import pose3dEdge, pose3dbetweenEdge, pose3Node
+from graph_optimization.demo_pose3d_graph import Pose3dEdge, Pose3dbetweenEdge, Pose3Vertex
 
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
 
 def draw(figname, graph):
-    for n in graph.nodes:
+    for n in graph.vertices:
         plot_pose3(figname, expSE3(n.x), 0.05)
     fig = plt.figure(figname)
     axes = fig.gca()
@@ -20,8 +20,8 @@ def draw(figname, graph):
             continue
         i = e.i
         j = e.j
-        _, ti = makeRt(expSE3(graph.nodes[i].x))
-        _, tj = makeRt(expSE3(graph.nodes[j].x))
+        _, ti = makeRt(expSE3(graph.vertices[i].x))
+        _, tj = makeRt(expSE3(graph.vertices[j].x))
         x = [ti[0], tj[0]]
         y = [ti[1], tj[1]]
         z = [ti[2], tj[2]]
@@ -42,8 +42,8 @@ def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
     pose_trj = []
-    for n in graph.nodes:
-        if (not isinstance(n, pose3Node)):
+    for n in graph.vertices:
+        if (not isinstance(n, Pose3Vertex)):
             continue
         pose_trj.append(makeRt(expSE3(n.x))[1])
     pose_trj = np.array(pose_trj)
@@ -51,9 +51,9 @@ def draw(figname, graph):
     e1_trj = []
     e2_trj = []
     for e in graph.edges:
-        if (not isinstance(e, pose3dEdge)):
+        if (not isinstance(e, Pose3dEdge)):
             continue
-        t = makeRt(expSE3(graph.nodes[e.i].x))[1]
+        t = makeRt(expSE3(graph.vertices[e.i].x))[1]
         e1_trj.append(t)
         t = makeRt(expSE3(e.z))[1]
         e2_trj.append(t)
@@ -66,8 +66,8 @@ def draw(figname, graph):
 
 def draw_graph_pose(c, l):
     pose_trj = []
-    for n in graph.nodes:
-        if (not isinstance(n, pose3Node)):
+    for n in graph.vertices:
+        if (not isinstance(n, Pose3Vertex)):
             continue
         pose_trj.append(makeRt(expSE3(n.x))[1])
     pose_trj = np.array(pose_trj)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     truth_file = FILE_PATH+'/data/truth_pose.npy'
     pose_data = np.load(pose_file)
     truth_data = np.load(truth_file)
-    graph = graphSolver()
+    graph = GraphSolver()
 
     T0 = None
     T0_idx = 0
@@ -98,15 +98,15 @@ if __name__ == '__main__':
         if (T0 is None):
             T0 = T1
             last_marker_T = T1
-            T0_idx = graph.addNode(pose3Node(logSE3(T0))) # add node to graph
+            T0_idx = graph.add_vertex(Pose3Vertex(logSE3(T0))) # add vertex to graph
             continue
         # pt = find_nearest(truth_data, p[0])
         # T1t = makeT(quaternion_to_matrix(pt[4:8])), pt[1:4])
 
-        T1_idx = graph.addNode(pose3Node(logSE3(T1)))
+        T1_idx = graph.add_vertex(Pose3Vertex(logSE3(T1)))
         delta = np.linalg.inv(T0).dot(T1)
         # print(T0)
-        graph.addEdge(pose3dbetweenEdge(T0_idx, T1_idx, logSE3(delta), omegaOdom))
+        graph.add_edge(Pose3dbetweenEdge(T0_idx, T1_idx, logSE3(delta), omegaOdom))
         T0_idx = T1_idx
         T0 = T1
 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
             marker = find_nearest(truth_data, p[0])
             marker_T = makeT(quaternion_to_matrix(marker[4:8]), marker[1:4])
             # marker_T[0:3, 3] += np.random.normal(0, 0.01, 3)
-            graph.addEdge(pose3dEdge(T1_idx, logSE3(marker_T), omegaMaker)) # add prior pose to graph
+            graph.add_edge(Pose3dEdge(T1_idx, logSE3(marker_T), omegaMaker)) # add prior pose to graph
 
 
 
@@ -128,8 +128,8 @@ if __name__ == '__main__':
     # draw_graph_pose('red', 'after ndt')
 
     aft_trj = []
-    for n in graph.nodes:
-        if (not isinstance(n, pose3Node)):
+    for n in graph.vertices:
+        if (not isinstance(n, Pose3Vertex)):
             continue
         aft_trj.append(makeRt(expSE3(n.x))[1])
     aft_trj = np.array(aft_trj)

@@ -193,7 +193,7 @@ class navDelta:
             return delta, J_local_i, J_local_j
 
 
-class imuIntegration:
+class ImuIntegration:
     def __init__(self, G, bias = np.zeros(6), Rbi = np.eye(3), tbi = np.zeros(3)):
         self.pim = navDelta()
         self.d_tij = 0
@@ -406,7 +406,7 @@ if __name__ == '__main__':
     print('test delta')
     xi = navDelta(expSO3(np.array([0.5, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))
     state_i = navState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))
-    imu = imuIntegration(9.8)
+    imu = ImuIntegration(9.8)
     imu.d_tij = 1
     r, Ja, Jb =  imu.calcDelta(xi, state_i, True)
 
@@ -423,7 +423,7 @@ if __name__ == '__main__':
 
     print('test biasCorrect')
     bias = Vector([0.11, 0.12, 0.01, 0.2, 0.15, 0.16])
-    imu = imuIntegration(9.8, bias)
+    imu = ImuIntegration(9.8, bias)
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)
@@ -438,7 +438,7 @@ if __name__ == '__main__':
 
     print('test predict')
     bias = Vector([0.11, 0.12, 0.01, 0.2, 0.15, 0.16])
-    imu = imuIntegration(9.8, bias)
+    imu = ImuIntegration(9.8, bias)
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)

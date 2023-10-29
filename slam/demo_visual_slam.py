@@ -10,7 +10,7 @@ from utilities.robust_kernel import *
 from graph_optimization.plot_pose import *
 
 
-class camposeNode:
+class CamposeVertex:
     def __init__(self, x, id=0):
         self.x = x
         self.size = x.size
@@ -20,7 +20,7 @@ class camposeNode:
         self.x = pose_plus(self.x, dx)
 
 
-class featureNode:
+class featurevertex:
     def __init__(self, x, id=0):
         self.x = x
         self.size = x.size
@@ -41,9 +41,9 @@ class reprojEdge:
         if (self.omega is None):
             self.omega = np.eye(4)
 
-    def residual(self, nodes):
-        x = nodes[self.i].x
-        p = nodes[self.j].x
+    def residual(self, vertices):
+        x = vertices[self.i].x
+        p = vertices[self.j].x
         xc1c2, u1, u2, xbc, K = self.z
         rl, Jl1, Jl2 = reproj(x, p, u1, K, xbc, True)
         rr, Jr1, Jr2 = reproj(x, p, u2, K, pose_plus(xbc, xc1c2), True)
@@ -72,8 +72,8 @@ def draw3d(figname, frames, points, x_bc):
 
 
 def calc_camera_pose(frame, points, x_wc, K, x_c1c2, x_bc):
-    graph = graphSolver()
-    idx = graph.addNode(camposeNode(x_wc))
+    graph = GraphSolver()
+    idx = graph.add_vertex(CamposeVertex(x_wc))
     for p in frame['points']:
         if p not in points:
             continue
@@ -81,10 +81,10 @@ def calc_camera_pose(frame, points, x_wc, K, x_c1c2, x_bc):
         u1 = u0.copy()
         u1[0] -= frame['points'][p][2]
         p3d = points[p]['p3d']
-        idx_p = graph.addNode(featureNode(p3d), True)
-        graph.addEdge(reprojEdge(idx, idx_p, [x_c1c2, u0, u1, x_bc, K], kernel=HuberKernel(0.5)))
+        idx_p = graph.add_vertex(featurevertex(p3d), True)
+        graph.add_edge(reprojEdge(idx, idx_p, [x_c1c2, u0, u1, x_bc, K], kernel=HuberKernel(0.5)))
     graph.solve(False)
-    return graph.nodes[idx].x
+    return graph.vertices[idx].x
 
 
 def initmap(frames, K, x_c1c2, x_bc):
@@ -169,16 +169,16 @@ def readframes(n, folder, W, H):
         fn = folder+'/F%04d.yaml' % idx
         print('read %s...' % fn)
         with open(fn) as file:
-            node = yaml.safe_load(file)
-            pts = np.array(node['points']['data']).reshape(node['points']['num'], -1)
-            pts_d = pts[:, 1:].astype(np.float)
+            vertex = yaml.safe_load(file)
+            pts = np.array(vertex['points']['data']).reshape(vertex['points']['num'], -1)
+            pts_d = pts[:, 1:].astype(np.float64)
             pts_d[:, 0] /= W
             pts_d[:, 1] /= H
             pts_d[:, 0:2] -= 0.5
             pts_d[:, 2] /= W
-            pts = dict(zip(pts[:, 0].astype(np.int), pts_d))
-            imus = np.array(node['imu']['data']).reshape(node['imu']['num'], -1)
-            frames.append({'stamp': node['stamp'],
+            pts = dict(zip(pts[:, 0].astype(np.int32), pts_d))
+            imus = np.array(vertex['imu']['data']).reshape(vertex['imu']['num'], -1)
+            frames.append({'stamp': vertex['stamp'],
                            'pose': np.zeros(6),
                            'vel': np.zeros(3),
                            'bias': np.zeros(6),
@@ -188,30 +188,30 @@ def readframes(n, folder, W, H):
 
 
 def solve(frames, points, K, x_c1c2, x_bc):
-    graph = graphSolver()
+    graph = GraphSolver()
     frames_idx = {}
     points_idx = {}
     for i, frame in enumerate(frames):
         x_wc = frame['pose']
-        idx = graph.addNode(camposeNode(x_wc, i))  # add node to graph
+        idx = graph.add_vertex(CamposeVertex(x_wc, i))  # add vertex to graph
         frames_idx.update({i: idx})
     for j in points:
-        idx = graph.addNode(featureNode(points[j]['p3d'], j))  # add feature to graph
-        # idx = graph.addNode(featureNode(np.array([1., 0., 0.]), j)) # add feature to graph
+        idx = graph.add_vertex(featurevertex(points[j]['p3d'], j))  # add feature to graph
+        # idx = graph.add_vertex(featurevertex(np.array([1., 0., 0.]), j)) # add feature to graph
         points_idx.update({j: idx})
         for i in points[j]['view']:
             f_idx = frames_idx[i]
             u0 = frames[i]['points'][j][0:2]
             u1 = u0.copy()
             u1[0] -= frames[i]['points'][j][2]
-            graph.addEdge(reprojEdge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], kernel=HuberKernel(0.1)))
+            graph.add_edge(reprojEdge(f_idx, idx, [x_c1c2, u0, u1, x_bc, K], kernel=HuberKernel(0.1)))
     graph.report()
     graph.solve(step=1)
     graph.report()
-    for n in graph.nodes:
-        if (type(n).__name__ == 'featureNode'):
+    for n in graph.vertices:
+        if (type(n).__name__ == 'featurevertex'):
             points[n.id]['p3d'] = n.x
-        if (type(n).__name__ == 'camposeNode'):
+        if (type(n).__name__ == 'CamposeVertex'):
             frames[n.id]['pose'] = n.x
 
 if __name__ == '__main__':

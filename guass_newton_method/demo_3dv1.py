@@ -4,7 +4,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from guass_newton import *
-from demo_3d import plot3D
+from demo_3d import Plot3D
 
 
 def residual(x, param):
@@ -23,7 +23,7 @@ def plus(x1, x2):
 
 
 if __name__ == '__main__':
-    plt3d = plot3D()
+    plt3d = Plot3D()
     x_truth = np.array([1000, -0.1, 0.1, 2.1, 2.2, -1.3])
     elements = 100
     a = (np.random.rand(elements, 3)-0.5)*2
