@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
 
-class pose2dEdge:
+class Pose2dEdge:
     def __init__(self, i, z, omega=None):
         self.i = i
         self.z = z
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         graph.add_vertex(Pose2Vertex(cur_pose))  # add vertex to graph
         cur_pose = m2v(v2m(cur_pose).dot(v2m(odom)))
 
-    graph.add_edge(pose2dEdge(0, np.array([0, 0, 0])))  # add prior pose to graph
+    graph.add_edge(Pose2dEdge(0, np.array([0, 0, 0])))  # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)

@@ -23,7 +23,7 @@ def load_g2o_se2(infile):
             if line.startswith("VERTEX_SE2"):
                 nums = line[10:].split()
                 arr = np.array([float(n) for n in nums[1:]], dtype=np.float64)
-                p = expSE2(arr)
+                p = arr
                 v = [int(nums[0]), p]
                 vertices.append(v)
                 continue
@@ -31,9 +31,9 @@ def load_g2o_se2(infile):
                 nums = line[9:].split()
                 arr = np.array([float(m) for m in nums[2:]], dtype=np.float64)
                 link = [int(nums[0]), int(nums[1])]
-                estimate = expSE2(arr)
+                estimate = arr[:3]
                 information = upper_matrix_to_full(arr[3:], 3)
-                e = [link, information, estimate]
+                e = [link, estimate, information]
                 edges.append(e)
                 continue
     return edges, vertices
