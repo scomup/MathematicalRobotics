@@ -7,7 +7,6 @@ from preintegration import *
 import numpy as np
 import matplotlib.pyplot as plt
 from graph_optimization.plot_pose import *
-import quaternion
 from imu_factor import *
 from scipy.spatial import KDTree
 
@@ -127,7 +126,7 @@ if __name__ == '__main__':
     for i, p in enumerate(pose_data):
         cur_stamp = p[0]
         if (i == 0):
-            state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])), p[1:4], np.array([0, 0, 0]))
+            state = navState(quaternion_to_matrix(p[4:8]), p[1:4], np.array([0, 0, 0]))
             pre_state_idx = graph.addNode(naviNode(state, cur_stamp))
             pre_bias_idx = graph.addNode(biasNode(np.zeros(6)))
             graph.addEdge(biasEdge(pre_bias_idx, np.zeros(6), biasOmega))
@@ -139,7 +138,7 @@ if __name__ == '__main__':
             # if (dist < 0.1):
             #     continue
             vel = (p[1:4] - pre_p)/dt
-            state = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])), p[1:4], vel)
+            state = navState(quaternion_to_matrix(p[4:8]), p[1:4], vel)
             cur_state_idx = graph.addNode(naviNode(state, cur_stamp))  # add first naviState to graph
             cur_bias_idx = graph.addNode(biasNode(np.zeros(6)))
 
@@ -164,7 +163,7 @@ if __name__ == '__main__':
             last_pose = n.x.p
             marker = find_nearest(truth_data, n.stamp)
             marker = navState(
-                quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])), marker[1:4], np.array([0, 0, 0]))
+                quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
             # marker.p += np.random.normal(0, 0.01, 3)
             graph.addEdge(naviEdge(idx, marker, makeromega))
             marker_list.append(marker.p)

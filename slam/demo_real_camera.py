@@ -14,7 +14,6 @@ from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
 from slam.demo_visual_slam import *
 from visualization_msgs.msg import Marker
-import quaternion
 
 
 def opticalFlowTrack(img0, img1, pts0, back_check, horizontal_check):

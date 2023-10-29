@@ -6,7 +6,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
 from graph_optimization.demo_pose3d_graph import pose3dEdge, pose3dbetweenEdge, pose3Node
-import quaternion
 
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
 
@@ -94,7 +93,7 @@ if __name__ == '__main__':
     mark_dist = 5
     truth_trj = []
     for p in pose_data:
-        T1 = makeT(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])), p[1:4])
+        T1 = makeT(quaternion_to_matrix(p[4:8]), p[1:4])
         truth_trj.append(find_nearest(truth_data, p[0])[1:4])
         if (T0 is None):
             T0 = T1
@@ -102,7 +101,7 @@ if __name__ == '__main__':
             T0_idx = graph.addNode(pose3Node(logSE3(T0))) # add node to graph
             continue
         # pt = find_nearest(truth_data, p[0])
-        # T1t = makeT(quaternion.as_rotation_matrix(np.quaternion(*pt[4:8])), pt[1:4])
+        # T1t = makeT(quaternion_to_matrix(pt[4:8])), pt[1:4])
 
         T1_idx = graph.addNode(pose3Node(logSE3(T1)))
         delta = np.linalg.inv(T0).dot(T1)
@@ -114,7 +113,7 @@ if __name__ == '__main__':
         if (np.linalg.norm(makeRt(np.linalg.inv(last_marker_T).dot(T1))[1])>mark_dist):
             last_marker_T = T1
             marker = find_nearest(truth_data, p[0])
-            marker_T = makeT(quaternion.as_rotation_matrix(np.quaternion(*marker[4:8])), marker[1:4])
+            marker_T = makeT(quaternion_to_matrix(marker[4:8]), marker[1:4])
             # marker_T[0:3, 3] += np.random.normal(0, 0.01, 3)
             graph.addEdge(pose3dEdge(T1_idx, logSE3(marker_T), omegaMaker)) # add prior pose to graph
 

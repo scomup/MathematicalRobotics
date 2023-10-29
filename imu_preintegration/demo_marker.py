@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from graph_optimization.plot_pose import *
 from imu_factor import *
-import quaternion
 
 
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
@@ -63,7 +62,7 @@ if __name__ == '__main__':
     truth_trj = []
 
     for p in pose_data:
-        state1 = navState(quaternion.as_rotation_matrix(np.quaternion(*p[4:8])), p[1:4], np.array([0, 0, 0]))
+        state1 = navState(quaternion_to_matrix(p[4:8]), p[1:4], np.array([0, 0, 0]))
         truth_trj.append(find_nearest(truth_data, p[0])[1:4])
         if (state0 is None):
             state0 = state1
@@ -80,8 +79,7 @@ if __name__ == '__main__':
         if (np.linalg.norm(last_marker.local(state1).p) > mark_dist):
             last_marker = state1
             marker = find_nearest(truth_data, p[0])
-            marker = navState(quaternion.as_rotation_matrix(
-                np.quaternion(*marker[4:8])), marker[1:4], np.array([0, 0, 0]))
+            marker = navState(quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
             marker.p += np.random.normal(0, 0.01, 3)
             graph.addEdge(naviEdge(state1_idx, marker, omegaMaker))  # add prior pose to graph
 

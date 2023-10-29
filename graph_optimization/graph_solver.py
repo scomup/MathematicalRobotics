@@ -52,7 +52,7 @@ class graphSolver:
                     kernel = L2Kernel()
             except:
                 kernel = L2Kernel()
-            e2 = r.dot(omega.dot(r))
+            e2 = r @ omega @ r
             rho = kernel.apply(e2)
             error += rho[0]
             edge_type_name = type(edge).__name__
@@ -88,16 +88,16 @@ class graphSolver:
             if (edge.type == 'one'):
                 node_i = self.nodes[edge.i]
                 r, jacobian_i = edge.residual(self.nodes)
-                e2 = r.dot(omega.dot(r))
+                e2 = r @ omega @ r
                 rho = kernel.apply(e2)
                 s_i = self.loc[edge.i]
                 e_i = s_i + node_i.size
                 if (self.is_no_constant[edge.i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i))
-                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r)).flatten()
+                    H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
+                    g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
             elif (edge.type == 'two'):
                 r, jacobian_i, jacobian_j = edge.residual(self.nodes)
-                e2 = r.dot(omega.dot(r))
+                e2 = r @ omega @ r
                 rho = kernel.apply(e2)
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
@@ -106,14 +106,14 @@ class graphSolver:
                 e_i = s_i + node_i.size
                 e_j = s_j + node_j.size
                 if (self.is_no_constant[edge.i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i))
-                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T @ omega @ jacobian_i
+                    g[s_i:e_i] += rho[1]*jacobian_i.T @ omega @ r
                 if (self.is_no_constant[edge.j]):
-                    H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j))
-                    g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
+                    H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T @ omega @ jacobian_j
+                    g[s_j:e_j] += rho[1]*jacobian_j.T @ omega @ r
                 if (self.is_no_constant[edge.j] and self.is_no_constant[edge.i]): 
-                    H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))
-                    H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))
+                    H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T @ omega @ jacobian_j
+                    H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T @ omega @ jacobian_i
             elif (edge.type == 'three'):
                 node_i = self.nodes[edge.i]
                 node_j = self.nodes[edge.j]
@@ -125,26 +125,26 @@ class graphSolver:
                 e_j = s_j + node_j.size
                 e_k = s_k + node_k.size
                 r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.nodes)
-                e2 = r.dot(omega.dot(r))
+                e2 = r @ omega @ r
                 rho = kernel.apply(e2)
                 if (self.is_no_constant[edge.i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_i))
-                    g[s_i:e_i] += rho[1]*jacobian_i.T.dot(omega.dot(r))
+                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T @ omega @ jacobian_i
+                    g[s_i:e_i] += rho[1]*jacobian_i.T @ omega @ r
                 if (self.is_no_constant[edge.j]):
-                    H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_j))
-                    g[s_j:e_j] += rho[1]*jacobian_j.T.dot(omega.dot(r))
+                    H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T @ omega @ jacobian_j
+                    g[s_j:e_j] += rho[1]*jacobian_j.T @ omega @ r
                 if (self.is_no_constant[edge.k]):
-                    H[s_k:e_k, s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_k))
-                    g[s_k:e_k] += rho[1]*jacobian_k.T.dot(omega.dot(r))
+                    H[s_k:e_k, s_k:e_k] += rho[1]*jacobian_k.T @ omega @ jacobian_k
+                    g[s_k:e_k] += rho[1]*jacobian_k.T @ omega @ r
                 if (self.is_no_constant[edge.i] and self.is_no_constant[edge.j]):
-                    H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_j))
-                    H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_i))
+                    H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T @ omega @ jacobian_j
+                    H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T @ omega @ jacobian_i
                 if (self.is_no_constant[edge.i] and self.is_no_constant[edge.k]):
-                    H[s_i:e_i, s_k:e_k] += rho[1]*jacobian_i.T.dot(omega.dot(jacobian_k))
-                    H[s_k:e_k, s_i:e_i] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_i))
+                    H[s_i:e_i, s_k:e_k] += rho[1]*jacobian_i.T @ omega @ jacobian_k
+                    H[s_k:e_k, s_i:e_i] += rho[1]*jacobian_k.T @ omega @ jacobian_i
                 if (self.is_no_constant[edge.j] and self.is_no_constant[edge.k]):
-                    H[s_j:e_j, s_k:e_k] += rho[1]*jacobian_j.T.dot(omega.dot(jacobian_k))
-                    H[s_k:e_k, s_j:e_j] += rho[1]*jacobian_k.T.dot(omega.dot(jacobian_j))
+                    H[s_j:e_j, s_k:e_k] += rho[1]*jacobian_j.T @ omega @ jacobian_k
+                    H[s_k:e_k, s_j:e_j] += rho[1]*jacobian_k.T @ omega @ jacobian_j
             score += rho[0]
         # import matplotlib.pyplot as plt
         # plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
@@ -160,7 +160,7 @@ class graphSolver:
                 dx = np.linalg.solve(H, -g)
             except:
                 # print('Bad Hassian matrix!')
-                dx = np.linalg.pinv(H).dot(-g)
+                dx = np.linalg.pinv(H) @ -g
         return dx, score
 
     def solve(self, show_info=True, min_score_change=0.01, step=0):
