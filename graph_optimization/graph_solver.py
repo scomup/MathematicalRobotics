@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_matrix, csr_matrix
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -12,7 +12,7 @@ class GraphSolver:
     A graph optimization solver.
     more information is written in graph_optimization.md
     """
-    def __init__(self, use_sparse = False):
+    def __init__(self, use_sparse=False):
         self.vertices = []
         self.is_no_constant = []
         self.edges = []
@@ -20,7 +20,7 @@ class GraphSolver:
         self.psize = 0
         self.use_sparse = use_sparse
 
-    def add_vertex(self, vertex, is_constant = False):
+    def add_vertex(self, vertex, is_constant=False):
         self.vertices.append(vertex)
         if (not is_constant):
             self.loc.append(self.psize)
@@ -29,7 +29,7 @@ class GraphSolver:
             self.loc.append(np.nan)
         self.is_no_constant.append(not is_constant)
         return len(self.vertices) - 1
-    
+
     def set_constant(self, idx):
         self.psize -= self.vertices[idx].size
         self.loc[idx] = np.nan
@@ -46,12 +46,12 @@ class GraphSolver:
         for edge in self.edges:
             r = edge.residual(self.vertices)[0]
             omega = edge.omega
-            try:
-                kernel = edge.kernel
+            if (hasattr(edge, 'kernel')):
                 if (kernel is None):
                     kernel = L2Kernel()
-            except:
+            else:
                 kernel = L2Kernel()
+
             e2 = r @ omega @ r
             rho = kernel.apply(e2)
             error += rho[0]
@@ -79,12 +79,12 @@ class GraphSolver:
         for edge in self.edges:
             # self.vertices[edge.i]
             omega = edge.omega
-            try:
-                kernel = edge.kernel
-                if (kernel is None):
+            kernel = None
+            if (hasattr(edge, 'kernel')):
+                if (edge.kernel is not None):
+                    kernel = edge.kernel
+                else:
                     kernel = L2Kernel()
-            except:
-                kernel = L2Kernel()
             if (edge.type == 'one'):
                 vertex_i = self.vertices[edge.i]
                 r, jacobian_i = edge.residual(self.vertices)
@@ -111,7 +111,7 @@ class GraphSolver:
                 if (self.is_no_constant[edge.j]):
                     H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T @ omega @ jacobian_j
                     g[s_j:e_j] += rho[1]*jacobian_j.T @ omega @ r
-                if (self.is_no_constant[edge.j] and self.is_no_constant[edge.i]): 
+                if (self.is_no_constant[edge.j] and self.is_no_constant[edge.i]):
                     H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T @ omega @ jacobian_j
                     H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T @ omega @ jacobian_i
             elif (edge.type == 'three'):
@@ -154,12 +154,12 @@ class GraphSolver:
         # dx = np.linalg.solve(H, -g)
         # much faster than np.linalg.solve!
         if (self.use_sparse):
-            dx = spsolve(csc_matrix(H, dtype=float), csc_matrix(-g, dtype=float).T)
+            dx = spsolve(csr_matrix(H, dtype=float), csr_matrix(-g, dtype=float).T)
         else:
             try:
                 dx = np.linalg.solve(H, -g)
             except:
-                # print('Bad Hassian matrix!')
+                print('Bad Hassian matrix!')
                 dx = np.linalg.pinv(H) @ -g
         return dx, score
 
@@ -171,9 +171,8 @@ class GraphSolver:
             # import matplotlib.pyplot as plt
             # plt.plot(dx)
             # plt.show()
-
-            if (step > 0 and np.linalg.norm(dx) > step):
-                dx = dx/np.linalg.norm(dx)*step
+            if (step > 0 and np.max(dx) > step):
+                dx = dx/np.max(dx)*step
             iter += 1
             if (show_info):
                 print('iter %d: %f' % (iter, score))

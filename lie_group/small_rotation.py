@@ -71,4 +71,3 @@ if __name__ == '__main__':
     window = Gui3d_sr(static_obj=[org_arrow, ball, p], dynamic_obj=[arrow, approx_arrow])
     window.show()
     app.exec_()
-

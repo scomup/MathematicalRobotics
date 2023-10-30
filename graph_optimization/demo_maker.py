@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
-from graph_optimization.plot_pose import *
+from graph_optimization import plot_pose
 from graph_optimization.demo_pose3d_graph import Pose3dEdge, Pose3dbetweenEdge, Pose3Vertex
 
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
@@ -16,7 +16,7 @@ def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
     for e in graph.edges:
-        if (e.type is 'one'):
+        if (e.type == 'one'):
             continue
         i = e.i
         j = e.j
@@ -76,7 +76,7 @@ def draw_graph_pose(c, l):
 
 def find_nearest(data, stamp):
     idx = (np.abs(data[:, 0] - stamp)).argmin()
-    return data[idx,:]
+    return data[idx, :]
 
 if __name__ == '__main__':
     pose_file = FILE_PATH+'/data/ndt_pose.npy'
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         if (T0 is None):
             T0 = T1
             last_marker_T = T1
-            T0_idx = graph.add_vertex(Pose3Vertex(logSE3(T0))) # add vertex to graph
+            T0_idx = graph.add_vertex(Pose3Vertex(logSE3(T0)))  # add vertex to graph
             continue
         # pt = find_nearest(truth_data, p[0])
         # T1t = makeT(quaternion_to_matrix(pt[4:8])), pt[1:4])
@@ -110,14 +110,12 @@ if __name__ == '__main__':
         T0_idx = T1_idx
         T0 = T1
 
-        if (np.linalg.norm(makeRt(np.linalg.inv(last_marker_T).dot(T1))[1])>mark_dist):
+        if (np.linalg.norm(makeRt(np.linalg.inv(last_marker_T) @ T1)[1]) > mark_dist):
             last_marker_T = T1
             marker = find_nearest(truth_data, p[0])
             marker_T = makeT(quaternion_to_matrix(marker[4:8]), marker[1:4])
             # marker_T[0:3, 3] += np.random.normal(0, 0.01, 3)
-            graph.add_edge(Pose3dEdge(T1_idx, logSE3(marker_T), omegaMaker)) # add prior pose to graph
-
-
+            graph.add_edge(Pose3dEdge(T1_idx, logSE3(marker_T), omegaMaker))  # add prior pose to graph
 
     # draw_graph_pose('blue', 'before ndt')
 
@@ -137,13 +135,11 @@ if __name__ == '__main__':
     err = np.linalg.norm((truth_trj - aft_trj), axis=1)
     avg_err = np.average(err)
     worst_err = np.max(err)
-    print("err%f" % avg_err)
-    print("worst err%f" % worst_err)
+    print("err: %f" % avg_err)
+    print("worst err: %f" % worst_err)
     # plt.scatter(aft_trj[:, 0], aft_trj[:, 1], label='aft_trj', color='m', s=5)
     # plt.scatter(truth_trj[:, 0], truth_trj[:, 1], label='truth_trj', color='cyan', s=5)
 
     plt.grid()
     plt.legend()
     plt.show()
-
-

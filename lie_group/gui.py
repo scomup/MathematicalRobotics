@@ -4,12 +4,11 @@ import pyqtgraph.opengl as gl
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QRadioButton, QApplication
 from OpenGL.GL import *
 # from PyQt5 import QtCore, QtGui, QtWidgets
-from scipy.spatial.transform import Rotation   
 
 import numpy as np
 
 class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
-    def __init__(self, size = 1., width = 100, color = [1, 0, 0, 1], glOptions='translucent'):
+    def __init__(self, size=1., width = 100, color=[1, 0, 0, 1], glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
         self.width = width
         self.color = color
@@ -24,9 +23,9 @@ class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
         self.T = T
 
     def paint(self):
-        o = self.T.dot(self.o) 
-        a = self.T.dot(self.a) 
-        b = self.T.dot(self.b) 
+        o = self.T.dot(self.o)
+        a = self.T.dot(self.a)
+        b = self.T.dot(self.b)
         glLineWidth(self.width)
         glBegin(GL_LINES)
         glColor4f(self.color[0], self.color[1], self.color[2], self.color[3])  # z is blue
@@ -38,7 +37,7 @@ class GLArrowItem(gl.GLGraphicsItem.GLGraphicsItem):
 
 
 class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
-    def __init__(self, size = [1, 1, 1], width = 100, glOptions='translucent'):
+    def __init__(self, size=[1, 1, 1], width=100, glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
         x, y, z = size
         self.width = width
@@ -52,9 +51,9 @@ class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
         self.T = T
 
     def paint(self):
-        axis_x = self.T.dot(self.axis_x) 
-        axis_y = self.T.dot(self.axis_y) 
-        axis_z = self.T.dot(self.axis_z) 
+        axis_x = self.T.dot(self.axis_x)
+        axis_y = self.T.dot(self.axis_y)
+        axis_z = self.T.dot(self.axis_z)
         self.setupGLState()
         glLineWidth(self.width)
         glBegin(GL_LINES)

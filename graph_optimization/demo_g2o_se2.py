@@ -16,7 +16,7 @@ def draw(figname, graph):
         edges.append([*graph.vertices[e.i].x[:2], *graph.vertices[e.j].x[:2]])
     vertices = np.array(vertices)
     edges = np.array(edges)
-    axes.scatter(vertices[:,0], vertices[:,1], s=2, color='k')
+    axes.scatter(vertices[:, 0], vertices[:, 1], s=2, color='k')
     ab_pairs = edges
     plt_args = ab_pairs.reshape(-1, 2, 2).swapaxes(1, 2).reshape(-1, 2)
     axes.plot(*plt_args, c='b', linewidth=1)
@@ -24,8 +24,12 @@ def draw(figname, graph):
 
 if __name__ == '__main__':
 
-    graph = GraphSolver(use_sparse = True)
-    edges, vertices = load_g2o_se2('data/g2o/manhattanOlson3500.g2o')
+    graph = GraphSolver(use_sparse=False)
+    # kernel = GaussianKernel(5)
+    # intel.g2o
+    # manhattanOlson3500.g2o
+    # ringCity.g2o
+    edges, vertices = load_g2o_se2('data/g2o/ringCity.g2o')
 
     for vertex in vertices:
         graph.add_vertex(Pose2Vertex(vertex[1]))  # add vertex to graph
@@ -38,4 +42,3 @@ if __name__ == '__main__':
     draw('after loop-closing', graph)
 
     plt.show()
-

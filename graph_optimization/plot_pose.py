@@ -9,9 +9,10 @@ from matplotlib import patches
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
+
 def plot_pose2_on_axes(axes,
                        pose,
-                       axis_length: float=0.1, covariance = None):
+                       axis_length: float=0.1, covariance=None):
 
     gRp, origin = makeRt(pose)
 
@@ -31,8 +32,8 @@ def plot_pose2_on_axes(axes,
         lambda_, v = np.linalg.eig(covariance)
         lambda_ = np.sqrt(lambda_)
         e1 = patches.Ellipse(xy=(origin[0], origin[1]),
-                  width=lambda_[0]*2, height=lambda_[1]*2,
-                  angle=np.rad2deg(np.arccos(v[0, 0])))
+                             width=lambda_[0]*2, height=lambda_[1]*2,
+                             angle=np.rad2deg(np.arccos(v[0, 0])))
         e1.set_edgecolor('red')
         e1.set_facecolor('none')
 
@@ -42,7 +43,7 @@ def plot_pose2_on_axes(axes,
 def plot_pose2(
         fignum,
         pose,
-        axis_length: float = 0.1, covariance = None,
+        axis_length: float=0.1, covariance=None,
         axis_labels=("X axis", "Y axis", "Z axis")):
     # get figure object
     fig = plt.figure(fignum)
@@ -50,12 +51,13 @@ def plot_pose2(
     axes = fig.gca()
     plot_pose2_on_axes(axes,
                        pose,
-                       axis_length=axis_length, covariance = covariance)
+                       axis_length=axis_length, covariance=covariance)
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
 
     return fig
+
 
 def plot_pose3_on_axes(axes, pose, axis_length=0.1, scale=1):
     # get rotation and translation (center)

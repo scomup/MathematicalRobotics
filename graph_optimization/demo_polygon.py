@@ -11,7 +11,7 @@ from graph_optimization.demo_pose2d_graph import pose2dEdge, Pose2dbetweenEdge
 
 
 class Pose2polygonEdge:
-    def __init__(self, i, z, omega = None):
+    def __init__(self, i, z, omega=None):
         self.i = i
         self.z = z
         self.type = 'one'
@@ -27,6 +27,7 @@ class Pose2polygonEdge:
         J[0:2, 0:2] = numericalDerivative(polygonRes, [x, self.z], 0)
         res[0:2] = r
         return res, J
+
 
 class Pose2Vertex:
     def __init__(self, x):

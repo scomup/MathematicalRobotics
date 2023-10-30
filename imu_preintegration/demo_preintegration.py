@@ -126,7 +126,7 @@ if __name__ == '__main__':
     for i, p in enumerate(pose_data):
         cur_stamp = p[0]
         if (i == 0):
-            state = navState(quaternion_to_matrix(p[4:8]), p[1:4], np.array([0, 0, 0]))
+            state = NavState(quaternion_to_matrix(p[4:8]), p[1:4], np.array([0, 0, 0]))
             pre_state_idx = graph.add_vertex(NaviVertex(state, cur_stamp))
             pre_bias_idx = graph.add_vertex(BiasVertex(np.zeros(6)))
             graph.add_edge(BiasEdge(pre_bias_idx, np.zeros(6), biasOmega))
@@ -138,7 +138,7 @@ if __name__ == '__main__':
             # if (dist < 0.1):
             #     continue
             vel = (p[1:4] - pre_p)/dt
-            state = navState(quaternion_to_matrix(p[4:8]), p[1:4], vel)
+            state = NavState(quaternion_to_matrix(p[4:8]), p[1:4], vel)
             cur_state_idx = graph.add_vertex(NaviVertex(state, cur_stamp))  # add first naviState to graph
             cur_bias_idx = graph.add_vertex(BiasVertex(np.zeros(6)))
 
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         if (np.linalg.norm(last_pose - n.x.p) > mark_dist or idx == 0 or idx >= len(graph.vertices)-2):
             last_pose = n.x.p
             marker = find_nearest(truth_data, n.stamp)
-            marker = navState(
+            marker = NavState(
                 quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
             # marker.p += np.random.normal(0, 0.01, 3)
             graph.add_edge(NaviEdge(idx, marker, makeromega))
@@ -192,5 +192,4 @@ if __name__ == '__main__':
     draw_vel('vel', graph)
     plt.grid()
     plt.show()
-
 

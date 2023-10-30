@@ -84,7 +84,7 @@ class Gui3d(QMainWindow):
         self.label_text.setText("x: %3.2f y: %3.2f" % (self.x, self.y))
 
     def button_cb(self):
-        self.start = not self.start 
+        self.start = not self.start
 
     def setY(self, vel):
         self.y = float(vel/100.)

@@ -13,13 +13,15 @@ If We know:
     Based on the assumption that A and B are attached to the same rigid body, so I want to
     compute the speed of B in its local Frame (vb).
 """
+
+
 def transformVelocity3D(Tba, va):
     Rba, tba = makeRt(Tba)
     M = np.eye(6)
     M[0:3, 0:3] = Rba
     M[0:3, 3:6] = skew(tba) @ Rba
     M[3:6, 3:6] = Rba
-    vb =  M @ va
+    vb = M @ va
     return vb
 
 

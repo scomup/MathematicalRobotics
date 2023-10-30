@@ -8,11 +8,12 @@ from graph_optimization.plot_pose import *
 
 
 class Pose3dEdge:
-    def __init__(self, i, z, omega=None):
+    def __init__(self, i, z, omega=None, kernel=None):
         self.i = i
         self.z = z
         self.type = 'one'
         self.omega = omega
+        self.kernel = kernel
         if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 
@@ -25,13 +26,14 @@ class Pose3dEdge:
 
 
 class Pose3dbetweenEdge:
-    def __init__(self, i, j, z, omega=None, color='black'):
+    def __init__(self, i, j, z, omega=None,  kernel=None, color='black'):
         self.i = i
         self.j = j
         self.z = z
         self.type = 'two'
         self.color = color
         self.omega = omega
+        self.kernel = kernel
         if (self.omega is None):
             self.omega = np.eye(self.z.shape[0])
 

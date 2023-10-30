@@ -35,6 +35,7 @@ class P2planeEdge:
         J = dPdT.dot(dTdx)
         return r*np.ones(1), J.reshape([1, 6])
 
+
 class Pose3Vertex:
     def __init__(self, x):
         self.x = x

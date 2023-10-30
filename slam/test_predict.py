@@ -40,8 +40,8 @@ if __name__ == '__main__':
     # imuIntegrator1 = preintegration1.ImuIntegration(G)
     lastImuTime = -1
     stateGT = gtsam.NavState(gtsam.Pose3(gtsam.Rot3.Quaternion(1, 0, 0, 0), gtsam.Point3(0, 0, 0)), np.array([0, 0, 0]))
-    state0 = navState(np.eye(3), np.array([0, 0, 0]), np.array([0, 0, 0]))
-    # state1 = preintegration1.navState(np.eye(3), np.array([0, 0, 0]), np.array([0, 0, 0]))
+    state0 = NavState(np.eye(3), np.array([0, 0, 0]), np.array([0, 0, 0]))
+    # state1 = preintegration1.NavState(np.eye(3), np.array([0, 0, 0]), np.array([0, 0, 0]))
 
     trj0 = []
     trj1 = []

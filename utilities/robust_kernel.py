@@ -85,6 +85,7 @@ class PseudoHuberKernel:
         rho[2] = -0.5 * dsqrReci * rho[1] / aux1
         return rho
 
+
 class CauchyKernel:
     def __init__(self, delta=2):
         self.delta = delta

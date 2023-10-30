@@ -115,6 +115,7 @@ def getPIM(frame, R_bi, t_bi):
         imuIntegrator.update(imu_data[4:7], imu_data[1:4], 1/400.)
     return imuIntegrator
 
+
 def solve(frames, points, K, baseline, x_bc, use_imu=True):
     graph = GraphSolver()
     frames_idx = {}
@@ -126,7 +127,7 @@ def solve(frames, points, K, baseline, x_bc, use_imu=True):
         x_wb = frame['pose']
         vel = frame['vel']
         bias = frame['bias']
-        state = navState.set(np.hstack([x_wb, vel]))
+        state = NavState.set(np.hstack([x_wb, vel]))
         # add vertex to graph
         idx = graph.add_vertex(NaviVertex(state, frame['stamp'], i))
         frames_idx.update({i: idx})
@@ -174,8 +175,8 @@ def solve(frames, points, K, baseline, x_bc, use_imu=True):
             u_ir[0] -= frames[i]['points'][n][2]
             p_cj = points[n]['pc']
             graph.add_edge(Reproj2StereoEdge(bi_idx, bj_idx, depth_idx,
-                                            [p_cj, u_il, u_ir, baseline, K, x_bc],
-                                            kernel=CauchyKernel(0.1), omega=reporjOmega))
+                                             [p_cj, u_il, u_ir, baseline, K, x_bc],
+                                             kernel=CauchyKernel(0.1), omega=reporjOmega))
 
     graph.report()
     graph.solve(min_score_change=0.01, step=0)
@@ -205,6 +206,7 @@ def drawBias(frames):
     plt.legend()
     plt.show()
 
+
 def drawVel(frames):
     vel = []
     for i, frame in enumerate(frames):
@@ -215,6 +217,7 @@ def drawVel(frames):
     plt.plot(vel[:, 2], label="vel z")
     plt.legend()
     plt.show()
+
 
 def drawG(frames, R_bi):
     acc = []

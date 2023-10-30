@@ -15,6 +15,7 @@ def upper_matrix_to_full(arr, n):
             idx += 1
     return mat
 
+
 def load_g2o_se2(infile):
     edges = []
     vertices = []

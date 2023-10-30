@@ -103,8 +103,3 @@ if __name__ == '__main__':
     test_line()
     test_plane()
     plt.show()
-
-
-
-
-

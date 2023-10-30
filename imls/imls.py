@@ -67,18 +67,17 @@ def draw_norm(figname, pt, n, c='C0'):
     axes = fig.gca()
     for i, p in enumerate(pt):
         axes.annotate('', xy=p + n[i], xytext=p,
-                    arrowprops=dict(arrowstyle='-|>', 
-                                    connectionstyle='arc3', 
-                                    facecolor=c, 
-                                    edgecolor=c))
-
+                      arrowprops=dict(arrowstyle='-|>',
+                      connectionstyle='arc3',
+                      facecolor=c,
+                      edgecolor=c))
 
 
 def test_data():
     f = lambda x: np.cos(1.5*x)
     xx = np.linspace(-np.pi, np.pi, 50)
     yy = f(xx)
-    pt = np.vstack([xx, yy]).T 
+    pt = np.vstack([xx, yy]).T
     pt += np.random.normal(0, 0.05, pt.shape)
 
     xx = np.linspace(-np.pi, np.pi, 100)
@@ -125,7 +124,6 @@ for x in xs:
 
 
 ax.plot(truth[:, 0], truth[:, 1])
-
 
 plt.grid()
 plt.show()

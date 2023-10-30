@@ -260,7 +260,6 @@ if __name__ == '__main__':
     check(J1m, J1)
     check(J2m, J2)
 
-
     print('test projection error')
     r, J = projection(p, K, True)
     Jm = numericalDerivative(projection, [p, K], 0)
@@ -330,4 +329,3 @@ if __name__ == '__main__':
     check(J1, J1m)
     check(J2, J2m)
     check(J3, J3m)
-

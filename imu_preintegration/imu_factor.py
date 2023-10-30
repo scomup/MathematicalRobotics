@@ -12,7 +12,7 @@ class NaviVertex:
         self.id = id
 
     def update(self, dx):
-        d_state = navDelta(expSO3(dx[0:3]), dx[3:6], dx[6:9])
+        d_state = NavDelta(expSO3(dx[0:3]), dx[3:6], dx[6:9])
         self.x = self.x.retract(d_state)
 
 
@@ -168,16 +168,16 @@ if __name__ == '__main__':
     imu.update(np.array([0.1, 0.2, 0.3]), np.array([0.1, 0.2, 0.3]), 0.1)
     vertices = []
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
+        NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
+        NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
     vertices.append(BiasVertex(Vector([0.11, 0.12, 0.01, 0.2, 0.15, 0.16])))
     edge = ImupreintEdge(0, 1, 2, imu)
     r, Ja, Jb, Jc = edge.residual(vertices)
 
-    Jam = numericalDerivative(edge.residual, vertices, 0, navDelta, navDelta)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, navDelta, navDelta)
-    Jcm = numericalDerivative(edge.residual, vertices, 2, Vector, navDelta)
+    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
+    Jcm = numericalDerivative(edge.residual, vertices, 2, Vector, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -193,15 +193,15 @@ if __name__ == '__main__':
 
     print('test NavitransEdge')
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
+        NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
-    z = navDelta(expSO3(np.array([0.5, 0.6, 0.7])), np.array([0.1, 0.2, 0.3]), np.array([-0.1, -0.2, -0.3]))
+        NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
+    z = NavDelta(expSO3(np.array([0.5, 0.6, 0.7])), np.array([0.1, 0.2, 0.3]), np.array([-0.1, -0.2, -0.3]))
 
     edge = NavitransEdge(0, 1, z)
     r, Ja, Jb = edge.residual(vertices)
-    Jam = numericalDerivative(edge.residual, vertices, 0, navDelta, navDelta)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, navDelta, navDelta)
+    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -214,15 +214,15 @@ if __name__ == '__main__':
     print('test NavitransEdge')
     vertices = []
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
+        NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
-    z = navDelta(expSO3(np.array([0.5, 0.6, 0.7])), np.array([0.1, 0.2, 0.3]), np.array([-0.1, -0.2, -0.3]))
+        NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
+    z = NavDelta(expSO3(np.array([0.5, 0.6, 0.7])), np.array([0.1, 0.2, 0.3]), np.array([-0.1, -0.2, -0.3]))
 
     edge = NavitransEdge(0, 1, z)
     r, Ja, Jb = edge.residual(vertices)
-    Jam = numericalDerivative(edge.residual, vertices, 0, navDelta, navDelta)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, navDelta, navDelta)
+    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -235,8 +235,8 @@ if __name__ == '__main__':
     print('test PosvelEdge')
     edge = PosvelEdge(0, 1, 1)
     r, Ja, Jb = edge.residual(vertices)
-    Jam = numericalDerivative(edge.residual, vertices, 0, navDelta, Vector)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, navDelta, Vector)
+    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, Vector)
+    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, Vector)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -249,11 +249,11 @@ if __name__ == '__main__':
     print('test NaviEdge')
     vertices = []
     vertices.append(NaviVertex(
-        navState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
-    z = navState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))
+        NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
+    z = NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))
     edge = NaviEdge(0, z)
     r, Ja = edge.residual(vertices)
-    Jam = numericalDerivative(edge.residual, vertices, 0, navDelta, navDelta)
+    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
