@@ -345,15 +345,15 @@ def quaternion_to_matrix(quaternion):
         raise ZeroDivisionError("bad quaternion input")
     else:
         m = np.empty((3, 3))
-        m[0, 0] = 1.0 - 2*(q[2]**2 + q[3]**2)/n
-        m[0, 1] = 2*(q[1]*q[2] - q[3]*q[0])/n
-        m[0, 2] = 2*(q[1]*q[3] + q[2]*q[0])/n
-        m[1, 0] = 2*(q[1]*q[2] + q[3]*q[0])/n
-        m[1, 1] = 1.0 - 2*(q[1]**2 + q[3]**2)/n
-        m[1, 2] = 2*(q[2]*q[3] - q[1]*q[0])/n
-        m[2, 0] = 2*(q[1]*q[3] - q[2]*q[0])/n
-        m[2, 1] = 2*(q[2]*q[3] + q[1]*q[0])/n
-        m[2, 2] = 1.0 - 2*(q[1]**2 + q[2]**2)/n
+        m[0, 0] = 1.0 - 2*(q[1]**2 + q[2]**2)/n
+        m[0, 1] = 2*(q[0]*q[1] - q[2]*q[3])/n
+        m[0, 2] = 2*(q[0]*q[2] + q[1]*q[3])/n
+        m[1, 0] = 2*(q[0]*q[1] + q[2]*q[3])/n
+        m[1, 1] = 1.0 - 2*(q[0]**2 + q[2]**2)/n
+        m[1, 2] = 2*(q[1]*q[2] - q[0]*q[3])/n
+        m[2, 0] = 2*(q[0]*q[2] - q[1]*q[3])/n
+        m[2, 1] = 2*(q[1]*q[2] + q[0]*q[3])/n
+        m[2, 2] = 1.0 - 2*(q[0]**2 + q[1]**2)/n
         return m
 
 
@@ -447,3 +447,16 @@ if __name__ == '__main__':
     J = -R.dot(skew(a))
     J_numerical = numericalDerivative(residual, [x, a], 0, plus)
     check(J, J_numerical)
+    x1 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    x2 = np.array([-0.3, -0.4, 0.1, 0.3, 0.5, 0.7])
+
+    def plus(x1, x2):
+        return m2p(p2m(x1) @ p2m(x2))
+
+    def minus(x1, x2):
+        r_rot = logSO3(np.linalg.inv(expSO3(x2[3:])) @ expSO3(x1[3:]))
+        r_trans = np.linalg.inv(expSO3(x2[3:])) @ (x1[:3] - x2[:3])
+        # return np.concatenate([r_trans, r_rot])
+        return np.concatenate([r_trans, r_rot])
+
+    J_numerical = numericalDerivative(minus, [x1, x2], 1, plus, minus)

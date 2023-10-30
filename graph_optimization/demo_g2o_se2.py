@@ -29,7 +29,7 @@ if __name__ == '__main__':
     # intel.g2o
     # manhattanOlson3500.g2o
     # ringCity.g2o
-    edges, vertices = load_g2o_se2('data/g2o/ringCity.g2o')
+    edges, vertices = load_g2o_se2('data/g2o/manhattanOlson3500.g2o')
 
     for vertex in vertices:
         graph.add_vertex(Pose2Vertex(vertex[1]))  # add vertex to graph

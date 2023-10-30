@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
+from scipy.linalg import cho_solve, cho_factor
 from scipy.sparse import csc_matrix, csr_matrix
 import sys
 import os
@@ -19,6 +20,7 @@ class GraphSolver:
         self.loc = []
         self.psize = 0
         self.use_sparse = use_sparse
+        self.lam = 0
 
     def add_vertex(self, vertex, is_constant=False):
         self.vertices.append(vertex)
@@ -106,14 +108,14 @@ class GraphSolver:
                 e_i = s_i + vertex_i.size
                 e_j = s_j + vertex_j.size
                 if (self.is_no_constant[edge.i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T @ omega @ jacobian_i
-                    g[s_i:e_i] += rho[1]*jacobian_i.T @ omega @ r
+                    H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
+                    g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
                 if (self.is_no_constant[edge.j]):
-                    H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T @ omega @ jacobian_j
-                    g[s_j:e_j] += rho[1]*jacobian_j.T @ omega @ r
+                    H[s_j:e_j, s_j:e_j] += rho[1] * jacobian_j.T @ omega @ jacobian_j
+                    g[s_j:e_j] += rho[1] * jacobian_j.T @ omega @ r
                 if (self.is_no_constant[edge.j] and self.is_no_constant[edge.i]):
-                    H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T @ omega @ jacobian_j
-                    H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T @ omega @ jacobian_i
+                    H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
+                    H[s_j:e_j, s_i:e_i] += rho[1] * jacobian_j.T @ omega @ jacobian_i
             elif (edge.type == 'three'):
                 vertex_i = self.vertices[edge.i]
                 vertex_j = self.vertices[edge.j]
@@ -128,23 +130,23 @@ class GraphSolver:
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
                 if (self.is_no_constant[edge.i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1]*jacobian_i.T @ omega @ jacobian_i
-                    g[s_i:e_i] += rho[1]*jacobian_i.T @ omega @ r
+                    H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
+                    g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
                 if (self.is_no_constant[edge.j]):
-                    H[s_j:e_j, s_j:e_j] += rho[1]*jacobian_j.T @ omega @ jacobian_j
-                    g[s_j:e_j] += rho[1]*jacobian_j.T @ omega @ r
+                    H[s_j:e_j, s_j:e_j] += rho[1] * jacobian_j.T @ omega @ jacobian_j
+                    g[s_j:e_j] += rho[1] * jacobian_j.T @ omega @ r
                 if (self.is_no_constant[edge.k]):
-                    H[s_k:e_k, s_k:e_k] += rho[1]*jacobian_k.T @ omega @ jacobian_k
-                    g[s_k:e_k] += rho[1]*jacobian_k.T @ omega @ r
+                    H[s_k:e_k, s_k:e_k] += rho[1] * jacobian_k.T @ omega @ jacobian_k
+                    g[s_k:e_k] += rho[1] * jacobian_k.T @ omega @ r
                 if (self.is_no_constant[edge.i] and self.is_no_constant[edge.j]):
-                    H[s_i:e_i, s_j:e_j] += rho[1]*jacobian_i.T @ omega @ jacobian_j
-                    H[s_j:e_j, s_i:e_i] += rho[1]*jacobian_j.T @ omega @ jacobian_i
+                    H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
+                    H[s_j:e_j, s_i:e_i] += rho[1] * jacobian_j.T @ omega @ jacobian_i
                 if (self.is_no_constant[edge.i] and self.is_no_constant[edge.k]):
-                    H[s_i:e_i, s_k:e_k] += rho[1]*jacobian_i.T @ omega @ jacobian_k
-                    H[s_k:e_k, s_i:e_i] += rho[1]*jacobian_k.T @ omega @ jacobian_i
+                    H[s_i:e_i, s_k:e_k] += rho[1] * jacobian_i.T @ omega @ jacobian_k
+                    H[s_k:e_k, s_i:e_i] += rho[1] * jacobian_k.T @ omega @ jacobian_i
                 if (self.is_no_constant[edge.j] and self.is_no_constant[edge.k]):
-                    H[s_j:e_j, s_k:e_k] += rho[1]*jacobian_j.T @ omega @ jacobian_k
-                    H[s_k:e_k, s_j:e_j] += rho[1]*jacobian_k.T @ omega @ jacobian_j
+                    H[s_j:e_j, s_k:e_k] += rho[1] * jacobian_j.T @ omega @ jacobian_k
+                    H[s_k:e_k, s_j:e_j] += rho[1] * jacobian_k.T @ omega @ jacobian_j
             score += rho[0]
         # import matplotlib.pyplot as plt
         # plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
@@ -153,14 +155,16 @@ class GraphSolver:
         # plt.show()
         # dx = np.linalg.solve(H, -g)
         # much faster than np.linalg.solve!
+        # H += np.eye(self.psize) * self.lam
         if (self.use_sparse):
             dx = spsolve(csr_matrix(H, dtype=float), csr_matrix(-g, dtype=float).T)
         else:
             try:
-                dx = np.linalg.solve(H, -g)
+                # dx = -cho_solve(cho_factor(H), g)
+                dx = -np.linalg.solve(H, g)
             except:
                 print('Bad Hassian matrix!')
-                dx = np.linalg.pinv(H) @ -g
+                dx = -np.linalg.pinv(H) @ g
         return dx, score
 
     def solve(self, show_info=True, min_score_change=0.01, step=0):
@@ -168,11 +172,12 @@ class GraphSolver:
         iter = 0
         while(True):
             dx, score = self.solve_once()
+            print("max dx:", np.max(dx))
             # import matplotlib.pyplot as plt
             # plt.plot(dx)
             # plt.show()
             if (step > 0 and np.max(dx) > step):
-                dx = dx/np.max(dx)*step
+                dx = dx/np.max(dx) * step
             iter += 1
             if (show_info):
                 print('iter %d: %f' % (iter, score))
