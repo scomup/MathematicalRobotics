@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import cho_solve, cho_factor
-from scipy.sparse import csc_matrix, csr_matrix
+from scipy.sparse import csc_matrix, csr_matrix, lil_matrix
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -181,7 +181,7 @@ class GraphSolver:
             iter += 1
             if (show_info):
                 print('iter %d: %f' % (iter, score))
-            if (last_score - score < min_score_change):
+            if (last_score - score < min_score_change and iter > 5):
                 break
             self.update(dx)
             last_score = score

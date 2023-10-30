@@ -48,11 +48,11 @@ def load_g2o_se3(infile):
             if line.startswith("VERTEX_SE3:QUAT"):
                 nums = line[16:].split()
                 arr = np.array([float(n) for n in nums[1:]], dtype=np.float64)
-                R = quaternion_to_matrix(arr[3:])
-                t = arr[:3]
-                T = makeT(R, t)
-                p = logSE3(T)
-                v = [int(nums[0]), p]
+                #R = quaternion_to_matrix(arr[3:])
+                #t = arr[:3]
+                #T = makeT(R, t)
+                #p = logSE3(T)
+                v = [int(nums[0]), arr[:7]]
                 vertices.append(v)
                 continue
 
@@ -60,12 +60,12 @@ def load_g2o_se3(infile):
                 nums = line[14:].split()
                 arr = np.array([float(n) for n in nums[2:]], dtype=np.float64)
                 link = [int(nums[0]), int(nums[1])]
-                R = quaternion_to_matrix(arr[3:])
-                t = arr[:3]
-                T = makeT(R, t)
-                estimate = logSE3(T)
+                #R = quaternion_to_matrix(arr[3:])
+                #t = arr[:3]
+                #T = makeT(R, t)
+                #estimate = logSE3(T)
                 information = upper_matrix_to_full(arr[7:], 6)
-                e = [link, estimate, information]
+                e = [link, arr[:7], information]
                 edges.append(e)
                 continue
     return edges, vertices
