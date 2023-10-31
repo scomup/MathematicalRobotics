@@ -27,10 +27,21 @@ pip3 install -r requirements.txt
 ![demo_line](./imgs/demo_line.png)
 
 ### graph_optimization
-#### 2d loop closing
+
+#### 2d simple loop closing example
 ![demo_pose2d_graph](./imgs/demo_pose2d_graph.gif)
-#### 3d loop closing
+
+#### 2d simple loop closing example
+dataset: E. Olson 2006
+![demo_manhattanOlson3500](./imgs/manhattanOlson3500.png)
+
+#### 3d simple loop closing example
 ![demo_pose3d_graph](./imgs/demo_pose3d_graph.gif)
+
+#### 3d graph slam
+dataset: M. Kaess 2012
+![demo_manhattanOlson3500](./imgs/sphere2500.gif)
+
 #### polygon
 Generate a trajectory that avoids polygons(obstacles) as much as possible.  
 ![demo_polygon](./imgs/demo_polygon.gif)
