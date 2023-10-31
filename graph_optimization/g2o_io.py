@@ -71,7 +71,7 @@ def load_g2o_se3(infile):
             if line.startswith("VERTEX_SE3:QUAT"):
                 nums = line[16:].split()
                 arr = np.array([float(n) for n in nums[1:]], dtype=np.float64)
-                R = quaternion_to_matrix(arr[3:])
+                R = quaternion_to_matrix(arr[3:7])
                 t = arr[:3]
                 T = makeT(R, t)
                 v = [int(nums[0]), T]
@@ -82,7 +82,7 @@ def load_g2o_se3(infile):
                 nums = line[14:].split()
                 arr = np.array([float(n) for n in nums[2:]], dtype=np.float64)
                 link = [int(nums[0]), int(nums[1])]
-                R = quaternion_to_matrix(arr[3:])
+                R = quaternion_to_matrix(arr[3:7])
                 t = arr[:3]
                 T = makeT(R, t)
                 information = upper_matrix_to_full(arr[7:], 6)

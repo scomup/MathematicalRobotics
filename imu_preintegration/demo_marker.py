@@ -62,7 +62,7 @@ if __name__ == '__main__':
     truth_trj = []
 
     for p in pose_data:
-        state1 = NavState(quaternion_to_matrix(p[4:8]), p[1:4], np.array([0, 0, 0]))
+        state1 = NavState(quaternion_to_matrix(np.roll(p[4:8], -1)), p[1:4], np.array([0, 0, 0]))
         truth_trj.append(find_nearest(truth_data, p[0])[1:4])
         if (state0 is None):
             state0 = state1
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         if (np.linalg.norm(last_marker.local(state1).p) > mark_dist):
             last_marker = state1
             marker = find_nearest(truth_data, p[0])
-            marker = NavState(quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
+            marker = NavState(quaternion_to_matrix(np.roll(marker[4:8], -1)), marker[1:4], np.array([0, 0, 0]))
             marker.p += np.random.normal(0, 0.01, 3)
             graph.add_edge(NaviEdge([state1_idx], marker, omegaMaker))  # add prior pose to graph
 

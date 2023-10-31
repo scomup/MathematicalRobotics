@@ -339,21 +339,22 @@ def dLogSO3(omega):
 
 
 def quaternion_to_matrix(quaternion):
+    x, y, z, w = quaternion
     q = np.array(quaternion[:4], dtype=np.float64, copy=True)
     n = np.linalg.norm(q)
     if np.any(n == 0.0):
         raise ZeroDivisionError("bad quaternion input")
     else:
         m = np.empty((3, 3))
-        m[0, 0] = 1.0 - 2*(q[1]**2 + q[2]**2)/n
-        m[0, 1] = 2*(q[0]*q[1] - q[2]*q[3])/n
-        m[0, 2] = 2*(q[0]*q[2] + q[1]*q[3])/n
-        m[1, 0] = 2*(q[0]*q[1] + q[2]*q[3])/n
-        m[1, 1] = 1.0 - 2*(q[0]**2 + q[2]**2)/n
-        m[1, 2] = 2*(q[1]*q[2] - q[0]*q[3])/n
-        m[2, 0] = 2*(q[0]*q[2] - q[1]*q[3])/n
-        m[2, 1] = 2*(q[1]*q[2] + q[0]*q[3])/n
-        m[2, 2] = 1.0 - 2*(q[0]**2 + q[1]**2)/n
+        m[0, 0] = 1.0 - 2*(y**2 + z**2)/n
+        m[0, 1] = 2*(x*y - z*w)/n
+        m[0, 2] = 2*(x*z + y*w)/n
+        m[1, 0] = 2*(x*y + z*w)/n
+        m[1, 1] = 1.0 - 2*(x**2 + z**2)/n
+        m[1, 2] = 2*(y*z - x*w)/n
+        m[2, 0] = 2*(x*z - y*w)/n
+        m[2, 1] = 2*(y*z + x*w)/n
+        m[2, 2] = 1.0 - 2*(x**2 + y**2)/n
         return m
 
 
