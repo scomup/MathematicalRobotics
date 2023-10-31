@@ -5,58 +5,46 @@ where $V$ is a set of vertices, each of which contains some parameters to be opt
 Many robotics and computer vision problems can be represented by a graph problem.
 
 ### How to solve graph problem?
-A graph problem can be defined as a nonlinear least squares problems.
-$f_{ij}(v_i, v_j; e_{ij})$ shows the constraint relationship between vertex $v_i$ and $v_j$
-$e_{ij}$ is the prior error of $v_i$ and $v_j$.  
-$$ 
-F(V) = \sum_{\{i,j\} \in E}f_{ij}(v_i, v_j; e_{ij})^2 \quad \tag{1}
+A graph problem can be defined as a nonlinear least squares problems. Here, $r_k$ and $\Sigma_k$ represent the residual vector and the covariance matrix of edge k, respectively.
+
+$$
+\argmin_x  F(x) = \frac{1}{2} \sum_{e_{k}\in E} r_{k}^T \Sigma_{k}^{-1} r_{k} 
+\tag{1}
 $$
 
-We need to find a optimal set of vertices (i.e. $V$) to minimize the overall cost. 
-According to [guass_newton_method.md](./guass_newton_method.md), 
-as soon as we can compute the hessian matrix $H$ and gradient $g$, we can solve this graph optimization problem.
+
+
+We need to find an optimal set of vertices (i.e. $V$) to minimize the overall cost. According to [guass_newton_method.md](./guass_newton_method.md), once we can compute the Hessian matrix $H$ and gradient $g$, we can solve this problem.
 
 ### The hessian matrix $H$
-We note that the size of the hessian matrix will be very large,
-since there are many parameters for $F$.  
-The hessian matrix of $f_{ij}$ can be show as:
-$$H_{ij} = 
-\begin{bmatrix}
-... & ...       & ... & ...       & ... \\  
-... & J_i^T J_i & ... & J_i^T J_j & ... \\  
-... & ...       & ... & ...       & ... \\  
-... & J_j^T J_i & ... & J_j^T J_j & ... \\  
-... & ...       & ... & ...       & ... \\  
-\end{bmatrix} \tag{2}$$
+Assuming the number of vertices in the graph is n and the number of edges is m, the block sizes of J, r, H, and g are m x n, m x 1, n x n, and n x 1, respectively. We noticed that the size of H and g is independent of m.
 
-The $J_i^T J_i$ is located in row i column i of $H_{ij}$  
-The $J_j^T J_j$ is located in row j column j of $H_{ij}$  
-The $J_i^T J_j$ is located in row i column j of $H_{ij}$  
-The $J_j^T J_i$ is located in row j column i of $H_{ij}$  
-
-The overall hessian matrix of F is:
-
-$$ H = \sum_{ \{i,j\} \in E}{H_{ij}} \tag{3} $$
+The hessian matrix can be show as:
+$$ 
+H  =  J^T \Sigma^{-1} J
+= \begin{bmatrix}
+\ddots & \vdots & \vdots \\\\ 
+ \vdots & \sum_{e_k \in E} {J_{i}^k}^T \Sigma^{-1}_{k} J_j^k & \vdots \\\\ 
+\vdots & \vdots & \ddots
+\end{bmatrix}
+ \tag{2}
+$$
 
 ### The gradient $g$
 
-The gradient vector of $f_{ij}$ can be show as:
+The gradient vector can be show as:
 
-$$g_{ij} = 
+$$ 
+g  =  J^T \Sigma^{-1} r = 
 \begin{bmatrix}
-... \\
-J_i^T r_i \\
-... \\
-J_j^T r_n \\
-... \\
-\end{bmatrix} \tag{4}$$
+\vdots \\\\
+ \sum_{e_k \in E} {J_{i}^k}^T \Sigma^{-1}_{k} r_k  \\\\
+\vdots 
+\end{bmatrix}
+\tag{3}
+$$
 
-The $J_i^T r_i$ is located in row i of $g_{ij}$  
-The $J_j^T r_j$ is located in row j of $g_{ij}$  
-
-The overall gradient vector of F is:
-
-$$ g = \sum_{\{i,j\} \in E}{g_{ij}} \tag{5} $$
+$i$ and $j$ are vertex numbers, and they also indicate the row and column numbers within the Hessian matrix. $k$ is the edge number. $J_{i}^k$ represents the partial derivative matrix of $r_k$ with respect to $x_i$.
 
 ## Derivative of edge between two lie groups
 Suppose $\varphi$ is an smooth mapping between two lie groups,
@@ -64,14 +52,14 @@ we can define the derivative of $\varphi$ as $J$:
 
 $$
     \exp(\widehat{J\delta}) = \varphi(x)^{-1}\varphi(x\oplus\delta)
-    \tag{6}
+    \tag{4}
 $$
 
 $x$ is a the parameter of $\varphi$, and $\delta$ is a small increment to $x$.
 
 The the transfrom error of two lie groups can define as:
 $$
-    \varphi(A,B) = Z^{-1}A^{{-1}}B \tag{7}
+    \varphi(A,B) = Z^{-1}A^{{-1}}B \tag{5}
 $$
 
 Where $A$ and $B$ are the two lie groups, which represent the poses of two vertices. The $Z$ represents the relative pose of $A$ nad $B$, which usually measured by odometry or loop-closing.
@@ -87,12 +75,12 @@ $$
     &= -\exp(B^{-1}A \hat{\delta} A^{{-1}}B) \\
     &= -\exp(\widehat{B^{-1}A\delta})
 \end{aligned}
-\tag{8}
+\tag{6}
 $$
 
 Hence:
 $$
-   J_A = -B^{-1}A \tag{9}
+   J_A = -B^{-1}A \tag{7}
 $$
 
 
@@ -103,12 +91,12 @@ $$
     &= B^{-1}AZ Z^{-1}A^{-1} B \exp{(\hat{\delta}}) \\
     &= \exp(\hat{\delta}) 
 \end{aligned}
-\tag{10}
+\tag{8}
 $$
 
 Hence:
 $$
-   J_B = I \tag{11}
+   J_B = I \tag{9}
 $$
 
 ### If A and B are SE2
@@ -120,7 +108,7 @@ $$
 [ \omega ]_+ & v \\
 0 & 0 \\
 \end{bmatrix}
-\tag{12}
+\tag{10}
 $$
 
 
@@ -137,10 +125,10 @@ $$
          R & t \\
         0 & 1 \\
     \end{bmatrix}
-    \tag{13}
+    \tag{11}
 $$
 
-We substitute (12) and (13) into (8), we get:
+We substitute (10) and (11) into (6), we get:
 $$
 \begin{aligned}
     \exp(\widehat{J_A\delta}) 
@@ -194,10 +182,10 @@ $$
         \end{bmatrix}
 )
 \end{aligned} 
-\tag{14}
+\tag{12}
 $$
 
-According to (12), we can rewrite (14) as:
+According to (10), we can rewrite (12) as:
 $$
 \begin{aligned}
 \exp(\widehat{J_A\delta}) 
@@ -217,13 +205,13 @@ Where $t^{\perp} = [1]_+  t=\begin{bmatrix} -t_2 \\ t_1 \end{bmatrix}$
 Hence: 
 $$
    J_A = -\begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
-   =  -\begin{bmatrix}  R_{BA} & -t_{BA}^{\perp}\\ 0 & 1 \end{bmatrix} \tag{15}
+   =  -\begin{bmatrix}  R_{BA} & -t_{BA}^{\perp}\\ 0 & 1 \end{bmatrix} \tag{13}
 $$
 
-similer with (11):
+similer with (9):
 
 $$
-J_B = I \tag{16}
+J_B = I \tag{14}
 $$
 
 
@@ -237,7 +225,7 @@ $$
 [ \omega ]_{\times} & v \\
 0 & 0 \\
 \end{bmatrix}
-\tag{17}
+\tag{15}
 $$
 
 
@@ -246,7 +234,7 @@ $\omega$: the parameters of rotation (is a 3d vector). $[w]_{\times}$ is the ske
 
 $v$: the parameters of translation (is a 3d vector).
 
-Similar to (14), we get:
+Similar to (12), we get:
 $$
 \begin{aligned}
     \exp(\widehat{J_A\delta}) 
@@ -294,10 +282,10 @@ $$
         \end{bmatrix}
         ) 
 \end{aligned}
-\tag{18}
+\tag{16}
 $$
 
-According to (12), we can rewrite (18) as:
+According to (10), we can rewrite (16) as:
 $$
 \begin{aligned}
 \exp(\widehat{J_A\delta}) 
@@ -322,7 +310,7 @@ $$
     \end{bmatrix}
     })
 \end{aligned}
-\tag{19}
+\tag{17}
 $$
 
 Hence: 
@@ -330,13 +318,13 @@ $$
    J_A = -\begin{bmatrix}  
         R_{BA} & [t_{BA}]_{\times}R_{BA}  \\
         0 & R_{BA} 
-    \end{bmatrix} \tag{20} 
+    \end{bmatrix} \tag{18} 
 $$
 
-similer with (11):
+similer with (9):
 
 $$
-J_B = I \tag{21}
+J_B = I \tag{19}
 $$
 
 
