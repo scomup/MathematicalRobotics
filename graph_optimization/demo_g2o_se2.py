@@ -11,20 +11,18 @@ def draw(figname, graph):
     vertices = []
     edges = []
     for v in graph.vertices:
-        vertices.append(v.x)
+        vertices.append(v.x[0:2, 2])
     for e in graph.edges:
-        edges.append([*graph.vertices[e.i].x[:2], *graph.vertices[e.j].x[:2]])
+        edges.append([*graph.vertices[e.i].x[0:2, 2]])
+        edges.append([*graph.vertices[e.j].x[0:2, 2]])
     vertices = np.array(vertices)
     edges = np.array(edges)
-    axes.scatter(vertices[:, 0], vertices[:, 1], s=2, color='k')
-    ab_pairs = edges
-    plt_args = ab_pairs.reshape(-1, 2, 2).swapaxes(1, 2).reshape(-1, 2)
-    axes.plot(*plt_args, c='b', linewidth=1)
-
+    axes.scatter(vertices[:, 0], vertices[:, 1], s=2, color='r')
+    axes.plot(edges[:, 0], edges[:, 1], c='b', linewidth=1)
 
 if __name__ == '__main__':
 
-    graph = GraphSolver(use_sparse=False)
+    graph = GraphSolver(use_sparse=True)
     # kernel = GaussianKernel(5)
     # intel.g2o
     # manhattanOlson3500.g2o
@@ -32,7 +30,10 @@ if __name__ == '__main__':
     edges, vertices = load_g2o_se2('data/g2o/manhattanOlson3500.g2o')
 
     for vertex in vertices:
-        graph.add_vertex(Pose2Vertex(vertex[1]))  # add vertex to graph
+        if(vertex[0] == 0):
+            graph.add_vertex(Pose2Vertex(vertex[1]), is_constant=True)
+        else:
+            graph.add_vertex(Pose2Vertex(vertex[1]))  # add vertex to graph
 
     for edge in edges:
         graph.add_edge(Pose2dbetweenEdge(edge[0][0], edge[0][1], edge[1], edge[2]))  # add edge(i, j) to graph
