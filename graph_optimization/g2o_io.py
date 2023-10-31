@@ -40,7 +40,7 @@ def load_g2o_se2(infile):
     return edges, vertices
 
 
-def load_g2o_se3(infile):
+def load_g2o_pose_quat(infile):
     edges = []
     vertices = []
     with open(infile) as f:
@@ -48,10 +48,6 @@ def load_g2o_se3(infile):
             if line.startswith("VERTEX_SE3:QUAT"):
                 nums = line[16:].split()
                 arr = np.array([float(n) for n in nums[1:]], dtype=np.float64)
-                #R = quaternion_to_matrix(arr[3:])
-                #t = arr[:3]
-                #T = makeT(R, t)
-                #p = logSE3(T)
                 v = [int(nums[0]), arr[:7]]
                 vertices.append(v)
                 continue
@@ -60,16 +56,42 @@ def load_g2o_se3(infile):
                 nums = line[14:].split()
                 arr = np.array([float(n) for n in nums[2:]], dtype=np.float64)
                 link = [int(nums[0]), int(nums[1])]
-                #R = quaternion_to_matrix(arr[3:])
-                #t = arr[:3]
-                #T = makeT(R, t)
-                #estimate = logSE3(T)
                 information = upper_matrix_to_full(arr[7:], 6)
                 e = [link, arr[:7], information]
                 edges.append(e)
                 continue
     return edges, vertices
 
+
+def load_g2o_se3(infile):
+    edges = []
+    vertices = []
+    with open(infile) as f:
+        for line in f.readlines():
+            if line.startswith("VERTEX_SE3:QUAT"):
+                nums = line[16:].split()
+                arr = np.array([float(n) for n in nums[1:]], dtype=np.float64)
+                R = quaternion_to_matrix(arr[3:])
+                t = arr[:3]
+                T = makeT(R, t)
+                p = logSE3(T)
+                v = [int(nums[0]), p]
+                vertices.append(v)
+                continue
+
+            if line.startswith("EDGE_SE3:QUAT"):
+                nums = line[14:].split()
+                arr = np.array([float(n) for n in nums[2:]], dtype=np.float64)
+                link = [int(nums[0]), int(nums[1])]
+                R = quaternion_to_matrix(arr[3:])
+                t = arr[:3]
+                T = makeT(R, t)
+                estimate = logSE3(T)
+                information = upper_matrix_to_full(arr[7:], 6)
+                e = [link, estimate, information]
+                edges.append(e)
+                continue
+    return edges, vertices
 
 if __name__ == '__main__':
     load_g2o_se2('data/g2o/manhattanOlson3500.g2o')

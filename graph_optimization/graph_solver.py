@@ -157,7 +157,7 @@ class GraphSolver:
         # much faster than np.linalg.solve!
         # H += np.eye(self.psize) * self.lam
         if (self.use_sparse):
-            dx = spsolve(csr_matrix(H, dtype=float), csr_matrix(-g, dtype=float).T)
+            dx = spsolve(csr_matrix(H, dtype=float), -g)
         else:
             try:
                 # dx = -cho_solve(cho_factor(H), g)
