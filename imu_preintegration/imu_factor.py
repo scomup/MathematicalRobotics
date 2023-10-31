@@ -2,12 +2,12 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from imu_preintegration.preintegration import *
+from graph_optimization.graph_solver import BaseVertex, BaseEdge
 
 
-class NaviVertex:
+class NaviVertex(BaseVertex):
     def __init__(self, x, stamp=0, id=0):
-        self.x = x
-        self.size = 9
+        super().__init__(x, 9)
         self.stamp = stamp
         self.id = id
 
@@ -16,21 +16,18 @@ class NaviVertex:
         self.x = self.x.retract(d_state)
 
 
-class BiasVertex:
-    def __init__(self, bias, id=0):
-        self.x = bias
-        self.size = 6
+class BiasVertex(BaseVertex):
+    def __init__(self, x, id=0):
+        super().__init__(x, 6)
         self.id = id
 
     def update(self, dx):
         self.x = self.x + dx
 
 
-class BiasEdge:
+class BiasEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(6)):
-        self.link = link  # bias i
-        self.z = z
-        self.omega = omega
+        super().__init__(link, z, omega, kernel=None)
 
     def residual(self, vertices):
         bias_i = vertices[self.link[0]].x
@@ -38,10 +35,9 @@ class BiasEdge:
         return r, [np.eye(6)]
 
 
-class BiasChangeEdge:
+class BiasChangeEdge(BaseEdge):
     def __init__(self, link, omega=np.eye(6)):
-        self.link = link  # bias i
-        self.omega = omega
+        super().__init__(link, None, omega, kernel=None)
 
     def residual(self, vertices):
         bias_i = vertices[self.link[0]].x
@@ -50,12 +46,9 @@ class BiasChangeEdge:
         return r, [np.eye(6), -np.eye(6)]
 
 
-class NaviEdge:
+class NaviEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(9)):
-        self.link = link
-        self.z = z
-        self.type = 'one'
-        self.omega = omega
+        super().__init__(link, z, omega, kernel=None)
 
     def residual(self, vertices):
         state = vertices[self.link[0]].x
@@ -64,12 +57,9 @@ class NaviEdge:
         return r, [j]
 
 
-class PosvelEdge:
+class PosvelEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(3)):
-        self.link = link  # state i
-        self.z = z  # time
-        self.type = 'two'
-        self.omega = omega
+        super().__init__(link, z, omega, kernel=None)
 
     def residual(self, vertices):
         state_i = vertices[self.link[0]].x
@@ -84,12 +74,9 @@ class PosvelEdge:
         return r, [Ji, Jj]
 
 
-class NavitransEdge:
+class NavitransEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(9)):
-        self.link = link  # state i, state j
-        self.z = z  # error between state i and j
-        self.type = 'two'
-        self.omega = omega
+        super().__init__(link, z, omega, kernel=None)
 
     def residual(self, vertices):
         state_i = vertices[self.link[0]].x
@@ -102,12 +89,9 @@ class NavitransEdge:
         return r, [Ji, Jj]
 
 
-class ImupreintEdge:
+class ImupreintEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(9)):
-        self.link = link  # state i, state j, bias i
-        self.z = z  # pim between ij
-        self.type = 'three'
-        self.omega = omega
+        super().__init__(link, z, omega, kernel=None)
 
     def residual(self, vertices):
         pim = self.z

@@ -80,9 +80,8 @@ class GraphSolver:
         for edge in self.edges:
             r = edge.residual(self.vertices)[0]
             omega = edge.omega
-            if (hasattr(edge, 'kernel')):
-                if (kernel is None):
-                    kernel = L2Kernel()
+            if (hasattr(edge, 'kernel') and edge.kernel is not None):
+                kernel = edge.kernel
             else:
                 kernel = L2Kernel()
 

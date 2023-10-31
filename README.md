@@ -6,7 +6,7 @@ The development of robotics is always closely related to mathematics. But someti
 
 ## The goals of our project.
 We want to select some widely used and practical algorithms. for each algorithm, we aim to 
-* Provide a readable a python implementation.
+* Provide a readable python implementation.
 * Show a detailed mathematical proof.
 * To show the math behind it, minimal use of third-party libraries. 
 
