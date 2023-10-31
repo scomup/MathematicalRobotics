@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
         state1_idx = graph.add_vertex(NaviVertex(state1))
         delta = state0.local(state1, False)
-        graph.add_edge(NavitransEdge(state0_idx, state1_idx, delta, omegaOdom))
+        graph.add_edge(NavitransEdge([state0_idx, state1_idx], delta, omegaOdom))
         state0_idx = state1_idx
         state0 = state1
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             marker = find_nearest(truth_data, p[0])
             marker = NavState(quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
             marker.p += np.random.normal(0, 0.01, 3)
-            graph.add_edge(NaviEdge(state1_idx, marker, omegaMaker))  # add prior pose to graph
+            graph.add_edge(NaviEdge([state1_idx], marker, omegaMaker))  # add prior pose to graph
 
     graph.report()
     print_error(truth_trj)

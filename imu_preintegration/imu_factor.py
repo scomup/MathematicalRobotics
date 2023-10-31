@@ -5,8 +5,8 @@ from imu_preintegration.preintegration import *
 
 
 class NaviVertex:
-    def __init__(self, state, stamp=0, id=0):
-        self.x = state
+    def __init__(self, x, stamp=0, id=0):
+        self.x = x
         self.size = 9
         self.stamp = stamp
         self.id = id
@@ -27,57 +27,53 @@ class BiasVertex:
 
 
 class BiasEdge:
-    def __init__(self, i, z, omega=np.eye(6)):
-        self.i = i  # bias i
-        self.type = 'one'
+    def __init__(self, link, z, omega=np.eye(6)):
+        self.link = link  # bias i
         self.z = z
         self.omega = omega
 
     def residual(self, vertices):
-        bias_i = vertices[self.i].x
+        bias_i = vertices[self.link[0]].x
         r = bias_i - self.z
-        return r, np.eye(6)
+        return r, [np.eye(6)]
 
 
 class BiasChangeEdge:
-    def __init__(self, i, j, omega=np.eye(6)):
-        self.i = i  # bias i
-        self.j = j  # bias j
-        self.type = 'two'
+    def __init__(self, link, omega=np.eye(6)):
+        self.link = link  # bias i
         self.omega = omega
 
     def residual(self, vertices):
-        bias_i = vertices[self.i].x
-        bias_j = vertices[self.j].x
+        bias_i = vertices[self.link[0]].x
+        bias_j = vertices[self.link[1]].x
         r = bias_i - bias_j
-        return r, np.eye(6), -np.eye(6)
+        return r, [np.eye(6), -np.eye(6)]
 
 
 class NaviEdge:
-    def __init__(self, i, z, omega=np.eye(9)):
-        self.i = i
+    def __init__(self, link, z, omega=np.eye(9)):
+        self.link = link
         self.z = z
         self.type = 'one'
         self.omega = omega
 
     def residual(self, vertices):
-        state = vertices[self.i].x
+        state = vertices[self.link[0]].x
         r, j, _ = state.local(self.z, True)
         r = r.vec()
-        return r, j
+        return r, [j]
 
 
 class PosvelEdge:
-    def __init__(self, i, j, z, omega=np.eye(3)):
-        self.i = i  # state i
-        self.j = j  # state j
+    def __init__(self, link, z, omega=np.eye(3)):
+        self.link = link  # state i
         self.z = z  # time
         self.type = 'two'
         self.omega = omega
 
     def residual(self, vertices):
-        state_i = vertices[self.i].x
-        state_j = vertices[self.j].x
+        state_i = vertices[self.link[0]].x
+        state_j = vertices[self.link[1]].x
         t_inv = 1./self.z
         r = state_i.v - (state_j.p - state_i.p)*t_inv
         Ji = np.zeros([3, 9])
@@ -85,49 +81,46 @@ class PosvelEdge:
         Ji[:, 3:6] = state_i.R*t_inv
         Ji[:, 6:9] = state_i.R
         Jj[:, 3:6] = -state_j.R*t_inv
-        return r, Ji, Jj
+        return r, [Ji, Jj]
 
 
 class NavitransEdge:
-    def __init__(self, i, j, z, omega=np.eye(9)):
-        self.i = i  # state i
-        self.j = j  # state j
+    def __init__(self, link, z, omega=np.eye(9)):
+        self.link = link  # state i, state j
         self.z = z  # error between state i and j
         self.type = 'two'
         self.omega = omega
 
     def residual(self, vertices):
-        state_i = vertices[self.i].x
-        state_j = vertices[self.j].x
+        state_i = vertices[self.link[0]].x
+        state_j = vertices[self.link[1]].x
         deltaij, J_d_i, J_d_j = state_i.local(state_j, True)
         r, _, J_f_d = self.z.local(deltaij, True)
         r = r.vec()
         Ji = J_f_d.dot(J_d_i)
         Jj = J_f_d.dot(J_d_j)
-        return r, Ji, Jj
+        return r, [Ji, Jj]
 
 
 class ImupreintEdge:
-    def __init__(self, i, j, k, z, omega=np.eye(9)):
-        self.i = i  # state i
-        self.j = j  # state j
-        self.k = k  # bias i
+    def __init__(self, link, z, omega=np.eye(9)):
+        self.link = link  # state i, state j, bias i
         self.z = z  # pim between ij
         self.type = 'three'
         self.omega = omega
 
     def residual(self, vertices):
         pim = self.z
-        statei = vertices[self.i].x
-        statej = vertices[self.j].x
-        bias = vertices[self.k].x
+        statei = vertices[self.link[0]].x
+        statej = vertices[self.link[1]].x
+        bias = vertices[self.link[2]].x
         statejstar, J_statejstar_statei, J_statejstar_bias = pim.predict(statei, bias, True)
         r, J_local_statej, J_local_statejstar = statej.local(statejstar, True)
         r = r.vec()
         J_statei = J_local_statejstar.dot(J_statejstar_statei)
         J_statej = J_local_statej
         J_biasi = J_local_statejstar.dot(J_statejstar_bias)
-        return r, J_statei, J_statej, J_biasi
+        return r, [J_statei, J_statej, J_biasi]
 
 
 def to2d(x):
@@ -172,8 +165,9 @@ if __name__ == '__main__':
     vertices.append(NaviVertex(
         NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
     vertices.append(BiasVertex(Vector([0.11, 0.12, 0.01, 0.2, 0.15, 0.16])))
-    edge = ImupreintEdge(0, 1, 2, imu)
-    r, Ja, Jb, Jc = edge.residual(vertices)
+    edge = ImupreintEdge([0, 1, 2], imu)
+    r, J = edge.residual(vertices)
+    Ja, Jb, Jc = J
 
     Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
     Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
@@ -198,8 +192,9 @@ if __name__ == '__main__':
         NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
     z = NavDelta(expSO3(np.array([0.5, 0.6, 0.7])), np.array([0.1, 0.2, 0.3]), np.array([-0.1, -0.2, -0.3]))
 
-    edge = NavitransEdge(0, 1, z)
-    r, Ja, Jb = edge.residual(vertices)
+    edge = NavitransEdge([0, 1], z)
+    r, J = edge.residual(vertices)
+    Ja, Jb = J
     Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
     Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
@@ -219,8 +214,9 @@ if __name__ == '__main__':
         NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))))
     z = NavDelta(expSO3(np.array([0.5, 0.6, 0.7])), np.array([0.1, 0.2, 0.3]), np.array([-0.1, -0.2, -0.3]))
 
-    edge = NavitransEdge(0, 1, z)
-    r, Ja, Jb = edge.residual(vertices)
+    edge = NavitransEdge([0, 1], z)
+    r, J = edge.residual(vertices)
+    Ja, Jb = J
     Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
     Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
@@ -233,8 +229,9 @@ if __name__ == '__main__':
         print('NG')
 
     print('test PosvelEdge')
-    edge = PosvelEdge(0, 1, 1)
-    r, Ja, Jb = edge.residual(vertices)
+    edge = PosvelEdge([0, 1], 1)
+    r, J = edge.residual(vertices)
+    Ja, Jb = J
     Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, Vector)
     Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, Vector)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
@@ -251,8 +248,9 @@ if __name__ == '__main__':
     vertices.append(NaviVertex(
         NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))))
     z = NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.1, 0.2, 0.3]))
-    edge = NaviEdge(0, z)
-    r, Ja = edge.residual(vertices)
+    edge = NaviEdge([0], z)
+    r, J = edge.residual(vertices)
+    Ja = J[0]
     Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')

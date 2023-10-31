@@ -35,8 +35,9 @@ def draw(axes, graph, color, label):
         if (not isinstance(e, ImupreintEdge)):
             continue
         imuIntegrator = ImuIntegration(G)
-        statei = graph.vertices[e.i].x
-        biasi = graph.vertices[e.k].x
+        e_i, e_j, e_k = e.link
+        statei = graph.vertices[e_i].x
+        biasi = graph.vertices[e_k].x
         for acc, gyo, dt in zip(e.z.acc_buf, e.z.gyo_buf, e.z.dt_buf):
             imuIntegrator.update(acc, gyo, dt)
             state_new = imuIntegrator.predict(statei, biasi)
@@ -129,7 +130,7 @@ if __name__ == '__main__':
             state = NavState(quaternion_to_matrix(p[4:8]), p[1:4], np.array([0, 0, 0]))
             pre_state_idx = graph.add_vertex(NaviVertex(state, cur_stamp))
             pre_bias_idx = graph.add_vertex(BiasVertex(np.zeros(6)))
-            graph.add_edge(BiasEdge(pre_bias_idx, np.zeros(6), biasOmega))
+            graph.add_edge(BiasEdge([pre_bias_idx], np.zeros(6), biasOmega))
             pre_state_idx = 0
         else:
             pre_p = graph.vertices[pre_state_idx].x.p
@@ -145,13 +146,13 @@ if __name__ == '__main__':
             imuIntegrator = getPIM(imu_data, graph.vertices[pre_state_idx].stamp, cur_stamp)
 
             delta = graph.vertices[pre_state_idx].x.local(state, False)
-            graph.add_edge(NavitransEdge(pre_state_idx, cur_state_idx, delta, navitransformOmega))
+            graph.add_edge(NavitransEdge([pre_state_idx, cur_state_idx], delta, navitransformOmega))
             # add imu preintegration to graph
-            graph.add_edge(ImupreintEdge(pre_state_idx, cur_state_idx, pre_bias_idx, imuIntegrator, imupreintOmega))
+            graph.add_edge(ImupreintEdge([pre_state_idx, cur_state_idx, pre_bias_idx], imuIntegrator, imupreintOmega))
             # add the relationship between velocity and position to graph
-            graph.add_edge(PosvelEdge(pre_state_idx, cur_state_idx, imuIntegrator.d_tij, posvelOmega))
+            graph.add_edge(PosvelEdge([pre_state_idx, cur_state_idx], imuIntegrator.d_tij, posvelOmega))
             # add the bias change error to graph
-            graph.add_edge(BiasChangeEdge(pre_bias_idx, cur_bias_idx, biaschangeOmega))
+            graph.add_edge(BiasChangeEdge([pre_bias_idx, cur_bias_idx], biaschangeOmega))
             pre_state_idx = cur_state_idx
 
     marker_list = []
@@ -165,7 +166,7 @@ if __name__ == '__main__':
             marker = NavState(
                 quaternion_to_matrix(marker[4:8]), marker[1:4], np.array([0, 0, 0]))
             # marker.p += np.random.normal(0, 0.01, 3)
-            graph.add_edge(NaviEdge(idx, marker, makeromega))
+            graph.add_edge(NaviEdge([idx], marker, makeromega))
             marker_list.append(marker.p)
             # break
 

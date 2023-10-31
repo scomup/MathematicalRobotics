@@ -8,15 +8,9 @@ from graph_optimization.plot_pose import *
 from graph_optimization import plot_pose
 
 
-class Pose3dEdge:
-    def __init__(self, link, z, omega=None, kernel=None):
-        self.link = link
-        self.z = z
-        self.type = 'one'
-        self.omega = omega
-        self.kernel = kernel
-        if (self.omega is None):
-            self.omega = np.eye(6)
+class Pose3dEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(6), kernel=None):
+        super().__init__(link, z, omega, kernel)
 
     def residual(self, vertices):
         """
@@ -26,16 +20,10 @@ class Pose3dEdge:
         return logSE3(Tzx), [np.eye(6)]
 
 
-class Pose3dbetweenEdge:
-    def __init__(self, link, z, omega=None, kernel=None, color='black'):
-        self.link = link
-        self.z = z
-        self.type = 'two'
+class Pose3dbetweenEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(6), kernel=None, color='black'):
+        super().__init__(link, z, omega, kernel)
         self.color = color
-        self.omega = omega
-        self.kernel = kernel
-        if (self.omega is None):
-            self.omega = np.eye(6)
 
     def residual(self, vertices):
         """
@@ -56,10 +44,9 @@ class Pose3dbetweenEdge:
         return r, [J, np.eye(6)]
 
 
-class Pose3Vertex:
+class Pose3Vertex(BaseVertex):
     def __init__(self, x):
-        self.x = x
-        self.size = 6
+        super().__init__(x, 6)
 
     def update(self, dx):
         self.x = self.x @ expSE3(dx)

@@ -8,6 +8,38 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
 
 
+class BaseVertex:
+    def __init__(self, x, size):
+        self.x = x  # vertex object
+        self.size = size  # vertex object's size
+
+    def update(self, dx):
+        '''
+        implemented the update function for vertex
+        '''
+        print("not implemented!")
+        self.x = self.x + dx
+
+
+class BaseEdge:
+    def __init__(self, link, z, omega, kernel):
+        self.link = link
+        self.z = z
+        self.omega = omega
+        self.kernel = kernel
+
+    def residual(self, vertices):
+        print("not implemented!")
+        '''
+        calculate the residual and jacbians for edge
+        '''
+        r = 0.  # residual
+        J = []  # jacbians
+        for v_i in self.link:
+            J.append(0)  # dr_dxi
+        return r, J
+
+
 class GraphSolver:
     """
     A graph optimization solver.
@@ -77,82 +109,36 @@ class GraphSolver:
     def solve_once(self):
         H = np.zeros([self.psize, self.psize])
         g = np.zeros([self.psize])
+
         score = 0
         for edge in self.edges:
-            # self.vertices[edge_i]
+            # self.vertices[v_i]
             omega = edge.omega
             kernel = None
-            if (hasattr(edge, 'kernel')):
-                if (edge.kernel is not None):
-                    kernel = edge.kernel
-                else:
-                    kernel = L2Kernel()
-            if (len(edge.link) == 1):
-                edge_i = edge.link[0]
-                vertex_i = self.vertices[edge_i]
-                r, jacobian = edge.residual(self.vertices)
-                jacobian_i = jacobian[0]
-                e2 = r @ omega @ r
-                rho = kernel.apply(e2)
-                s_i = self.loc[edge_i]
-                e_i = s_i + vertex_i.size
-                if (self.is_no_constant[edge_i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
+            if (hasattr(edge, 'kernel') and edge.kernel is not None):
+                kernel = edge.kernel
+            else:
+                kernel = L2Kernel()
+
+            link = edge.link
+            r, jacobian = edge.residual(self.vertices)
+            e2 = r @ omega @ r
+            rho = kernel.apply(e2)
+
+            for i, v_i in enumerate(edge.link):
+                s_i = self.loc[v_i]
+                e_i = self.loc[v_i] + self.vertices[v_i].size
+                jacobian_i = jacobian[i]
+                if (self.is_no_constant[v_i]):
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
-            elif (len(edge.link) == 2):
-                edge_i, edge_j = edge.link
-                r, jacobian = edge.residual(self.vertices)
-                jacobian_i, jacobian_j = jacobian
-                e2 = r @ omega @ r
-                rho = kernel.apply(e2)
-                vertex_i = self.vertices[edge_i]
-                vertex_j = self.vertices[edge_j]
-                s_i = self.loc[edge_i]
-                s_j = self.loc[edge_j]
-                e_i = s_i + vertex_i.size
-                e_j = s_j + vertex_j.size
-                if (self.is_no_constant[edge_i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
-                    g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
-                if (self.is_no_constant[edge_j]):
-                    H[s_j:e_j, s_j:e_j] += rho[1] * jacobian_j.T @ omega @ jacobian_j
-                    g[s_j:e_j] += rho[1] * jacobian_j.T @ omega @ r
-                if (self.is_no_constant[edge_j] and self.is_no_constant[edge_i]):
-                    H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
-                    H[s_j:e_j, s_i:e_i] += rho[1] * jacobian_j.T @ omega @ jacobian_i
-            elif (len(edge.link) == 3):
-                edge_i, edge_j, edge_k = edge.link
-                vertex_i = self.vertices[edge_i]
-                vertex_j = self.vertices[edge_j]
-                vertex_k = self.vertices[edge_k]
-                s_i = self.loc[edge_i]
-                s_j = self.loc[edge_j]
-                s_k = self.loc[edge_k]
-                e_i = s_i + vertex_i.size
-                e_j = s_j + vertex_j.size
-                e_k = s_k + vertex_k.size
-                r, jacobian = edge.residual(self.vertices)
-                jacobian_i, jacobian_j, jacobian_k = jacobian
-                e2 = r @ omega @ r
-                rho = kernel.apply(e2)
-                if (self.is_no_constant[edge_i]):
-                    H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
-                    g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
-                if (self.is_no_constant[edge_j]):
-                    H[s_j:e_j, s_j:e_j] += rho[1] * jacobian_j.T @ omega @ jacobian_j
-                    g[s_j:e_j] += rho[1] * jacobian_j.T @ omega @ r
-                if (self.is_no_constant[edge_k]):
-                    H[s_k:e_k, s_k:e_k] += rho[1] * jacobian_k.T @ omega @ jacobian_k
-                    g[s_k:e_k] += rho[1] * jacobian_k.T @ omega @ r
-                if (self.is_no_constant[edge_i] and self.is_no_constant[edge_j]):
-                    H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
-                    H[s_j:e_j, s_i:e_i] += rho[1] * jacobian_j.T @ omega @ jacobian_i
-                if (self.is_no_constant[edge_i] and self.is_no_constant[edge_k]):
-                    H[s_i:e_i, s_k:e_k] += rho[1] * jacobian_i.T @ omega @ jacobian_k
-                    H[s_k:e_k, s_i:e_i] += rho[1] * jacobian_k.T @ omega @ jacobian_i
-                if (self.is_no_constant[edge_j] and self.is_no_constant[edge_k]):
-                    H[s_j:e_j, s_k:e_k] += rho[1] * jacobian_j.T @ omega @ jacobian_k
-                    H[s_k:e_k, s_j:e_j] += rho[1] * jacobian_k.T @ omega @ jacobian_j
+                for j, v_j in enumerate(edge.link):
+                    s_i = self.loc[v_i]
+                    e_i = self.loc[v_i] + self.vertices[v_i].size
+                    s_j = self.loc[v_j]
+                    e_j = self.loc[v_j] + self.vertices[v_j].size
+                    jacobian_j = jacobian[j]
+                    if (self.is_no_constant[v_j] and self.is_no_constant[v_i]):
+                        H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
             score += rho[0]
         # import matplotlib.pyplot as plt
         # plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))

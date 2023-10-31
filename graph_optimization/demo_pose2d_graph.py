@@ -8,14 +8,9 @@ from graph_optimization.plot_pose import *
 from utilities.robust_kernel import *
 
 
-class Pose2dEdge:
-    def __init__(self, link, z, omega=None, kernel=None):
-        self.link = link
-        self.z = z
-        self.omega = omega
-        self.kernel = kernel
-        if (self.omega is None):
-            self.omega = np.eye(3)
+class Pose2dEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(3), kernel=None):
+        super().__init__(link, z, omega, kernel)
 
     def residual(self, vertices):
         """
@@ -25,15 +20,10 @@ class Pose2dEdge:
         return m2v(Tzx), [np.eye(3)]
 
 
-class Pose2dbetweenEdge:
-    def __init__(self, link, z, omega=None, kernel=None, color='black'):
-        self.link = link
-        self.z = z
+class Pose2dbetweenEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(3), kernel=None, color='black'):
+        super().__init__(link, z, omega, kernel)
         self.color = color
-        self.omega = omega
-        self.kernel = kernel
-        if (self.omega is None):
-            self.omega = np.eye(3)
 
     def residual(self, vertices):
         """
@@ -54,10 +44,9 @@ class Pose2dbetweenEdge:
         return r, [J, np.eye(3)]
 
 
-class Pose2Vertex:
+class Pose2Vertex(BaseVertex):
     def __init__(self, x):
-        self.x = x
-        self.size = 3
+        super().__init__(x, 3)
 
     def update(self, dx):
         self.x = self.x @ v2m(dx)
