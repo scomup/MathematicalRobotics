@@ -14,8 +14,9 @@ def draw(figname, graph):
     for v in graph.vertices:
         vertices.append((v.x)[0:3, 3])
     for e in graph.edges:
-        edges.append([*(graph.vertices[e.i].x)[0:3, 3]])
-        edges.append([*(graph.vertices[e.j].x)[0:3, 3]])
+        i, j = e.link
+        edges.append([*(graph.vertices[i].x)[0:3, 3]])
+        edges.append([*(graph.vertices[j].x)[0:3, 3]])
     vertices = np.array(vertices)
     axes.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2],  s=10, color='r')
     edges = np.array(edges)
@@ -36,7 +37,7 @@ if __name__ == '__main__':
         else:
             graph.add_vertex(Pose3Vertex(vertex[1]))  # add vertex to graph
     for edge in edges:
-        graph.add_edge(Pose3dbetweenEdge(edge[0][0], edge[0][1], edge[1], edge[2], kernel=kernel))
+        graph.add_edge(Pose3dbetweenEdge(edge[0], edge[1], edge[2], kernel=kernel))
 
     draw('before loop-closing', graph)
     graph.solve(step=0)

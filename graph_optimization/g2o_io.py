@@ -24,15 +24,15 @@ def load_g2o_se2(infile):
             if line.startswith("VERTEX_SE2"):
                 nums = line[10:].split()
                 arr = np.array([float(n) for n in nums[1:]], dtype=np.float64)
-                p = arr
-                v = [int(nums[0]), p]
+                T = v2m(arr)
+                v = [int(nums[0]), T]
                 vertices.append(v)
                 continue
             if line.startswith("EDGE_SE2"):
                 nums = line[9:].split()
                 arr = np.array([float(m) for m in nums[2:]], dtype=np.float64)
                 link = [int(nums[0]), int(nums[1])]
-                estimate = arr[:3]
+                estimate = v2m(arr[:3])
                 information = upper_matrix_to_full(arr[3:], 3)
                 e = [link, estimate, information]
                 edges.append(e)
@@ -74,8 +74,7 @@ def load_g2o_se3(infile):
                 R = quaternion_to_matrix(arr[3:])
                 t = arr[:3]
                 T = makeT(R, t)
-                p = logSE3(T)
-                v = [int(nums[0]), p]
+                v = [int(nums[0]), T]
                 vertices.append(v)
                 continue
 
@@ -86,9 +85,8 @@ def load_g2o_se3(infile):
                 R = quaternion_to_matrix(arr[3:])
                 t = arr[:3]
                 T = makeT(R, t)
-                estimate = logSE3(T)
                 information = upper_matrix_to_full(arr[7:], 6)
-                e = [link, estimate, information]
+                e = [link, T, information]
                 edges.append(e)
                 continue
     return edges, vertices
@@ -96,5 +94,4 @@ def load_g2o_se3(infile):
 if __name__ == '__main__':
     load_g2o_se2('data/g2o/manhattanOlson3500.g2o')
     load_g2o_se3('data/g2o/sphere2500.g2o')
-
 

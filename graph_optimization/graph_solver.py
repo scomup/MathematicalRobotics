@@ -79,7 +79,7 @@ class GraphSolver:
         g = np.zeros([self.psize])
         score = 0
         for edge in self.edges:
-            # self.vertices[edge.i]
+            # self.vertices[edge_i]
             omega = edge.omega
             kernel = None
             if (hasattr(edge, 'kernel')):
@@ -87,64 +87,70 @@ class GraphSolver:
                     kernel = edge.kernel
                 else:
                     kernel = L2Kernel()
-            if (edge.type == 'one'):
-                vertex_i = self.vertices[edge.i]
-                r, jacobian_i = edge.residual(self.vertices)
+            if (len(edge.link) == 1):
+                edge_i = edge.link[0]
+                vertex_i = self.vertices[edge_i]
+                r, jacobian = edge.residual(self.vertices)
+                jacobian_i = jacobian[0]
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
-                s_i = self.loc[edge.i]
+                s_i = self.loc[edge_i]
                 e_i = s_i + vertex_i.size
-                if (self.is_no_constant[edge.i]):
+                if (self.is_no_constant[edge_i]):
                     H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
-            elif (edge.type == 'two'):
-                r, jacobian_i, jacobian_j = edge.residual(self.vertices)
+            elif (len(edge.link) == 2):
+                edge_i, edge_j = edge.link
+                r, jacobian = edge.residual(self.vertices)
+                jacobian_i, jacobian_j = jacobian
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
-                vertex_i = self.vertices[edge.i]
-                vertex_j = self.vertices[edge.j]
-                s_i = self.loc[edge.i]
-                s_j = self.loc[edge.j]
+                vertex_i = self.vertices[edge_i]
+                vertex_j = self.vertices[edge_j]
+                s_i = self.loc[edge_i]
+                s_j = self.loc[edge_j]
                 e_i = s_i + vertex_i.size
                 e_j = s_j + vertex_j.size
-                if (self.is_no_constant[edge.i]):
+                if (self.is_no_constant[edge_i]):
                     H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
-                if (self.is_no_constant[edge.j]):
+                if (self.is_no_constant[edge_j]):
                     H[s_j:e_j, s_j:e_j] += rho[1] * jacobian_j.T @ omega @ jacobian_j
                     g[s_j:e_j] += rho[1] * jacobian_j.T @ omega @ r
-                if (self.is_no_constant[edge.j] and self.is_no_constant[edge.i]):
+                if (self.is_no_constant[edge_j] and self.is_no_constant[edge_i]):
                     H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
                     H[s_j:e_j, s_i:e_i] += rho[1] * jacobian_j.T @ omega @ jacobian_i
-            elif (edge.type == 'three'):
-                vertex_i = self.vertices[edge.i]
-                vertex_j = self.vertices[edge.j]
-                vertex_k = self.vertices[edge.k]
-                s_i = self.loc[edge.i]
-                s_j = self.loc[edge.j]
-                s_k = self.loc[edge.k]
+            elif (len(edge.link) == 3):
+                edge_i, edge_j, edge_k = edge.link
+                vertex_i = self.vertices[edge_i]
+                vertex_j = self.vertices[edge_j]
+                vertex_k = self.vertices[edge_k]
+                s_i = self.loc[edge_i]
+                s_j = self.loc[edge_j]
+                s_k = self.loc[edge_k]
                 e_i = s_i + vertex_i.size
                 e_j = s_j + vertex_j.size
                 e_k = s_k + vertex_k.size
-                r, jacobian_i, jacobian_j, jacobian_k = edge.residual(self.vertices)
+                r, jacobian = edge.residual(self.vertices)
+                jacobian_i, jacobian_j, jacobian_k = jacobian
                 e2 = r @ omega @ r
                 rho = kernel.apply(e2)
-                if (self.is_no_constant[edge.i]):
+                if (self.is_no_constant[edge_i]):
                     H[s_i:e_i, s_i:e_i] += rho[1] * jacobian_i.T @ omega @ jacobian_i
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
-                if (self.is_no_constant[edge.j]):
+                if (self.is_no_constant[edge_j]):
                     H[s_j:e_j, s_j:e_j] += rho[1] * jacobian_j.T @ omega @ jacobian_j
                     g[s_j:e_j] += rho[1] * jacobian_j.T @ omega @ r
-                if (self.is_no_constant[edge.k]):
+                if (self.is_no_constant[edge_k]):
                     H[s_k:e_k, s_k:e_k] += rho[1] * jacobian_k.T @ omega @ jacobian_k
                     g[s_k:e_k] += rho[1] * jacobian_k.T @ omega @ r
-                if (self.is_no_constant[edge.i] and self.is_no_constant[edge.j]):
+                if (self.is_no_constant[edge_i] and self.is_no_constant[edge_j]):
                     H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
                     H[s_j:e_j, s_i:e_i] += rho[1] * jacobian_j.T @ omega @ jacobian_i
-                if (self.is_no_constant[edge.i] and self.is_no_constant[edge.k]):
+                if (self.is_no_constant[edge_i] and self.is_no_constant[edge_k]):
                     H[s_i:e_i, s_k:e_k] += rho[1] * jacobian_i.T @ omega @ jacobian_k
                     H[s_k:e_k, s_i:e_i] += rho[1] * jacobian_k.T @ omega @ jacobian_i
-                if (self.is_no_constant[edge.j] and self.is_no_constant[edge.k]):
+                if (self.is_no_constant[edge_j] and self.is_no_constant[edge_k]):
                     H[s_j:e_j, s_k:e_k] += rho[1] * jacobian_j.T @ omega @ jacobian_k
                     H[s_k:e_k, s_j:e_j] += rho[1] * jacobian_k.T @ omega @ jacobian_j
             score += rho[0]
@@ -172,7 +178,6 @@ class GraphSolver:
         iter = 0
         while(True):
             dx, score = self.solve_once()
-            print("max dx:", np.max(dx))
             # import matplotlib.pyplot as plt
             # plt.plot(dx)
             # plt.show()

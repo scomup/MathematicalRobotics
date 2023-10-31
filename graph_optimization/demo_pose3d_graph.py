@@ -5,77 +5,77 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from graph_optimization.plot_pose import *
+from graph_optimization import plot_pose
 
 
 class Pose3dEdge:
-    def __init__(self, i, z, omega=None, kernel=None):
-        self.i = i
+    def __init__(self, link, z, omega=None, kernel=None):
+        self.link = link
         self.z = z
         self.type = 'one'
         self.omega = omega
         self.kernel = kernel
         if (self.omega is None):
-            self.omega = np.eye(self.z.shape[0])
+            self.omega = np.eye(6)
 
     def residual(self, vertices):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
-        Tzx = np.linalg.inv(expSE3(self.z)).dot(expSE3(vertices[self.i].x))
-        return logSE3(Tzx), np.eye(6)
+        Tzx = np.linalg.inv(self.z) @ vertices[self.link[0]].x
+        return logSE3(Tzx), [np.eye(6)]
 
 
 class Pose3dbetweenEdge:
-    def __init__(self, i, j, z, omega=None,  kernel=None, color='black'):
-        self.i = i
-        self.j = j
+    def __init__(self, link, z, omega=None, kernel=None, color='black'):
+        self.link = link
         self.z = z
         self.type = 'two'
         self.color = color
         self.omega = omega
         self.kernel = kernel
         if (self.omega is None):
-            self.omega = np.eye(self.z.shape[0])
+            self.omega = np.eye(6)
 
     def residual(self, vertices):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
         """
-        T1 = expSE3(vertices[self.i].x)
-        T2 = expSE3(vertices[self.j].x)
+        T0 = vertices[self.link[0]].x
+        T1 = vertices[self.link[1]].x
+        T01 = np.linalg.inv(T0) @ T1
 
-        T12 = np.linalg.inv(T1).dot(T2)
-        T21 = np.linalg.inv(T12)
-        R, t = makeRt(T21)
+        r = logSE3(np.linalg.inv(self.z) @ T01)
+
+        T10 = np.linalg.inv(T01)
+        R10, t10 = makeRt(T10)
         J = np.zeros([6, 6])
-        J[0:3, 0:3] = R
-        J[0:3, 3:6] = skew(t).dot(R)
-        J[3:6, 3:6] = R
-        J = -J
-        return logSE3(np.linalg.inv(expSE3(self.z)).dot(T12)), J, np.eye(6)
+        J[0:3, 0:3] = -R10
+        J[0:3, 3:6] = -skew(t10).dot(R10)
+        J[3:6, 3:6] = -R10
+        return r, [J, np.eye(6)]
 
 
 class Pose3Vertex:
     def __init__(self, x):
         self.x = x
-        self.size = x.size
+        self.size = 6
 
     def update(self, dx):
-        self.x = logSE3(expSE3(self.x).dot(expSE3(dx)))
+        self.x = self.x @ expSE3(dx)
 
 
 def draw(figname, graph):
     for n in graph.vertices:
-        plot_pose3(figname, expSE3(n.x), 0.05)
+        plot_pose3(figname, n.x, 0.05)
     fig = plt.figure(figname)
     axes = fig.gca()
     for e in graph.edges:
-        if (e.type == 'one'):
+        if (len(e.link) != 2):
             continue
-        i = e.i
-        j = e.j
-        _, ti = makeRt(expSE3(graph.vertices[i].x))
-        _, tj = makeRt(expSE3(graph.vertices[j].x))
+        i, j = e.link
+        _, ti = makeRt((graph.vertices[i].x))
+        _, tj = makeRt((graph.vertices[j].x))
         x = [ti[0], tj[0]]
         y = [ti[1], tj[1]]
         z = [ti[2], tj[2]]
@@ -87,19 +87,19 @@ if __name__ == '__main__':
     graph = GraphSolver()
 
     n = 12
-    cur_pose = np.array([0, 0, 0, 0, 0, 0])
-    odom = np.array([0.2, 0, 0.00, 0.05, 0, 0.5])
+    cur_pose = expSE3(np.array([0, 0, 0, 0, 0, 0]))
+    odom = expSE3(np.array([0.2, 0, 0.00, 0.05, 0, 0.5]))
     for i in range(n):
         graph.add_vertex(Pose3Vertex(cur_pose))  # add vertex to graph
-        cur_pose = logSE3(expSE3(cur_pose).dot(expSE3(odom)))
+        cur_pose = cur_pose @ odom
 
-    graph.add_edge(Pose3dEdge(0, np.array([0, 0, 0, 0, 0, 0])))  # add prior pose to graph
+    graph.add_edge(Pose3dEdge([0], expSE3(np.array([0, 0, 0, 0, 0, 0]))))  # add prior pose to graph
 
     for i in range(n-1):
         j = (i + 1)
-        graph.add_edge(Pose3dbetweenEdge(i, j, odom))  # add edge(i, j) to graph
+        graph.add_edge(Pose3dbetweenEdge([i, j], odom))  # add edge(i, j) to graph
 
-    graph.add_edge(Pose3dbetweenEdge(n-1, 0, odom, color='red'))
+    graph.add_edge(Pose3dbetweenEdge([n-1, 0], odom, color='red'))
 
     draw('before loop-closing', graph)
     graph.solve()
