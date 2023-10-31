@@ -4,67 +4,72 @@ from g2o_io import *
 # from graph_optimization.demo_pose3d_graph import Pose3dEdge, Pose3dbetweenEdge, Pose3Vertex
 import matplotlib.pyplot as plt
 
-def add(self, other):
-    # boxplus: self [+] other
-    qnorm = np.linalg.norm(other[3:])
+
+def add(x1, x2):
+    # boxplus: self [+] x2
+    qnorm = np.linalg.norm(x2[3:])
     if qnorm > 1.0:
         qw, qx, qy, qz = 1., 0., 0., 0.
     else:
         qw = np.sqrt(1. - qnorm**2)
-        qx, qy, qz = other[3:]
-    return np.array([self[0] + other[0] + 2. * (-(self[4]**2 + self[5]**2) * other[0] + (self[3] * self[4] - self[5] * self[6]) * other[1] + (self[3] * self[5] + self[4] * self[6]) * other[2]),
-                    self[1] + other[1] + 2. * ((self[3] * self[4] + self[5] * self[6]) * other[0] - (self[3]**2 + self[5]**2) * other[1] + (self[4] * self[5] - self[3] * self[6]) * other[2]),
-                    self[2] + other[2] + 2. * ((self[3] * self[5] - self[4] * self[6]) * other[0] + (self[3] * self[6] + self[4] * self[5]) * other[1] - (self[3]**2 + self[4]**2) * other[2]),
-                    self[6] * qx + self[3] * qw + self[4] * qz - self[5] * qy,
-                    self[6] * qy - self[3] * qz + self[4] * qw + self[5] * qx,
-                    self[6] * qz + self[3] * qy - self[4] * qx + self[5] * qw,
-                    self[6] * qw - self[3] * qx - self[4] * qy - self[5] * qz])
-
-def sub(self, other):
-    return np.array([self[0] - other[0] + 2. * (-(other[4]**2 + other[5]**2) * (self[0] - other[0]) + (other[3] * other[4] + other[5] * other[6]) * (self[1] - other[1]) + (other[3] * other[5] - other[4] * other[6]) * (self[2] - other[2])),
-                    self[1] - other[1] + 2. * ((other[3] * other[4] - other[5] * other[6]) * (self[0] - other[0]) - (other[3]**2 + other[5]**2) * (self[1] - other[1]) + (other[4] * other[5] + other[3] * other[6]) * (self[2] - other[2])),
-                    self[2] - other[2] + 2. * ((other[3] * other[5] + other[4] * other[6]) * (self[0] - other[0]) + (other[4] * other[5] - other[3] * other[6]) * (self[1] - other[1]) - (other[3]**2 + other[4]**2) * (self[2] - other[2])),
-                    other[6] * self[3] - other[3] * self[6] - other[4] * self[5] + other[5] * self[4],
-                    other[6] * self[4] + other[3] * self[5] - other[4] * self[6] - other[5] * self[3],
-                    other[6] * self[5] - other[3] * self[4] + other[4] * self[3] - other[5] * self[6],
-                    other[6] * self[6] + other[3] * self[3] + other[4] * self[4] + other[5] * self[5]])
+        qx, qy, qz = x2[3:]
+    return np.array([x1[0] + x2[0] + 2. * (-(x1[4]**2 + x1[5]**2) * x2[0] + (x1[3] * x1[4] - x1[5] * x1[6]) * x2[1] + (x1[3] * x1[5] + x1[4] * x1[6]) * x2[2]),
+                     x1[1] + x2[1] + 2. * ((x1[3] * x1[4] + x1[5] * x1[6]) * x2[0] - (x1[3]**2 + x1[5]**2) * x2[1] + (x1[4] * x1[5] - x1[3] * x1[6]) * x2[2]),
+                     x1[2] + x2[2] + 2. * ((x1[3] * x1[5] - x1[4] * x1[6]) * x2[0] + (x1[3] * x1[6] + x1[4] * x1[5]) * x2[1] - (x1[3]**2 + x1[4]**2) * x2[2]),
+                     x1[6] * qx + x1[3] * qw + x1[4] * qz - x1[5] * qy,
+                     x1[6] * qy - x1[3] * qz + x1[4] * qw + x1[5] * qx,
+                     x1[6] * qz + x1[3] * qy - x1[4] * qx + x1[5] * qw,
+                     x1[6] * qw - x1[3] * qx - x1[4] * qy - x1[5] * qz])
 
 
-def jacobian_self_ominus_other_wrt_self(self, other):
-    return np.array([[1. - 2. * (other[4]**2 + other[5]**2), 2. * (other[3] * other[4] + other[5] * other[6]), 2. * (other[3] * other[5] - other[4] * other[6]), 0., 0., 0., 0.],
-                     [2. * (other[3] * other[4] - other[5] * other[6]), 1. - 2. * (other[3]**2 + other[5]**2), 2. * (other[4] * other[5] + other[3] * other[6]), 0., 0., 0., 0.],
-                     [2. * (other[3] * other[5] + other[4] * other[6]), 2. * (other[4] * other[5] - other[3] * other[6]), 1. - 2. * (other[3]**2 + other[4]**2), 0., 0., 0., 0.],
-                     [0., 0., 0., other[6], other[5], -other[4], -other[3]],
-                     [0., 0., 0., -other[5], other[6], other[3], -other[4]],
-                     [0., 0., 0., other[4], -other[3], other[6], -other[5]],
-                     [0., 0., 0., other[3], other[4], other[5], other[6]]], dtype=np.float64)
+def sub(x1, x2):
+    return np.array([x1[0] - x2[0] + 2. * (-(x2[4]**2 + x2[5]**2) * (x1[0] - x2[0]) + (x2[3] * x2[4] + x2[5] * x2[6]) * (x1[1] - x2[1]) + (x2[3] * x2[5] - x2[4] * x2[6]) * (x1[2] - x2[2])),
+                     x1[1] - x2[1] + 2. * ((x2[3] * x2[4] - x2[5] * x2[6]) * (x1[0] - x2[0]) - (x2[3]**2 + x2[5]**2) * (x1[1] - x2[1]) + (x2[4] * x2[5] + x2[3] * x2[6]) * (x1[2] - x2[2])),
+                     x1[2] - x2[2] + 2. * ((x2[3] * x2[5] + x2[4] * x2[6]) * (x1[0] - x2[0]) + (x2[4] * x2[5] - x2[3] * x2[6]) * (x1[1] - x2[1]) - (x2[3]**2 + x2[4]**2) * (x1[2] - x2[2])),
+                     x2[6] * x1[3] - x2[3] * x1[6] - x2[4] * x1[5] + x2[5] * x1[4],
+                     x2[6] * x1[4] + x2[3] * x1[5] - x2[4] * x1[6] - x2[5] * x1[3],
+                     x2[6] * x1[5] - x2[3] * x1[4] + x2[4] * x1[3] - x2[5] * x1[6],
+                     x2[6] * x1[6] + x2[3] * x1[3] + x2[4] * x1[4] + x2[5] * x1[5]])
 
 
-def jacobian_self_ominus_other_wrt_other(self, other):
-    return np.array([[-1. + 2. * (other[4]**2 + other[5]**2), -2. * (other[3] * other[4] + other[5] * other[6]), -2. * (other[3] * other[5] - other[4] * other[6]), 2. * (other[4] * (self[1] - other[1]) + other[5] * (self[2] - other[2])), 2. * (-2. * other[4] * (self[0] - other[0]) + other[3] * (self[1] - other[1]) - other[6] * (self[2] - other[2])), 2. * (-2. * other[5] * (self[0] - other[0]) + other[6] * (self[1] - other[1]) + other[3] * (self[2] - other[2])), 2. * (other[5] * (self[1] - other[1]) - other[4] * (self[2] - other[2]))],
-                     [-2. * (other[3] * other[4] - other[5] * other[6]), -1. + 2. * (other[3]**2 + other[5]**2), -2. * (other[4] * other[5] + other[3] * other[6]), 2. * (other[4] * (self[0] - other[0]) - 2. * other[3] * (self[1] - other[1]) + other[6] * (self[2] - other[2])), 2. * (other[3] * (self[0] - other[0]) + other[5] * (self[2] - other[2])), 2. * (-other[6] * (self[0] - other[0]) - 2. * other[5] * (self[1] - other[1]) + other[4] * (self[2] - other[2])), 2. * (-other[5] * (self[0] - other[0]) + other[3] * (self[2] - other[2]))],
-                     [-2. * (other[3] * other[5] + other[4] * other[6]), -2. * (other[4] * other[5] - other[3] * other[6]), -1. + 2. * (other[3]**2 + other[4]**2), 2. * (other[5] * (self[0] - other[0]) - other[6] * (self[1] - other[1]) - 2. * other[3] * (self[2] - other[2])), 2. * (other[6] * (self[0] - other[0]) + other[5] * (self[1] - other[1]) - 2. * other[4] * (self[2] - other[2])), 2. * (other[3] * (self[0] - other[0]) + other[4] * (self[1] - other[1])), 2. * (other[4] * (self[0] - other[0]) - other[3] * (self[1] - other[1]))],
-                     [0., 0., 0., -self[6], -self[5], self[4], self[3]],
-                     [0., 0., 0., self[5], -self[6], -self[3], self[4]],
-                     [0., 0., 0., -self[4], self[3], -self[6], self[5]],
-                     [0., 0., 0., self[3], self[4], self[5], self[6]]], dtype=np.float64)
+def J_x1_minus_x2_dx1(x1, x2):
+    return np.array([[1. - 2. * (x2[4]**2 + x2[5]**2), 2. * (x2[3] * x2[4] + x2[5] * x2[6]), 2. * (x2[3] * x2[5] - x2[4] * x2[6]), 0., 0., 0., 0.],
+                     [2. * (x2[3] * x2[4] - x2[5] * x2[6]), 1. - 2. * (x2[3]**2 + x2[5]**2), 2. * (x2[4] * x2[5] + x2[3] * x2[6]), 0., 0., 0., 0.],
+                     [2. * (x2[3] * x2[5] + x2[4] * x2[6]), 2. * (x2[4] * x2[5] - x2[3] * x2[6]), 1. - 2. * (x2[3]**2 + x2[4]**2), 0., 0., 0., 0.],
+                     [0., 0., 0., x2[6], x2[5], -x2[4], -x2[3]],
+                     [0., 0., 0., -x2[5], x2[6], x2[3], -x2[4]],
+                     [0., 0., 0., x2[4], -x2[3], x2[6], -x2[5]],
+                     [0., 0., 0., x2[3], x2[4], x2[5], x2[6]]], dtype=np.float64)
 
-def jacobian_self_ominus_other_wrt_other_compact(self, other):
-    return    np.array([[-1. + 2. * (other[4]**2 + other[5]**2), -2. * (other[3] * other[4] + other[5] * other[6]), -2. * (other[3] * other[5] - other[4] * other[6]), 2. * (other[4] * (self[1] - other[1]) + other[5] * (self[2] - other[2])), 2. * (-2. * other[4] * (self[0] - other[0]) + other[3] * (self[1] - other[1]) - other[6] * (self[2] - other[2])), 2. * (-2. * other[5] * (self[0] - other[0]) + other[6] * (self[1] - other[1]) + other[3] * (self[2] - other[2])), 2. * (other[5] * (self[1] - other[1]) - other[4] * (self[2] - other[2]))],
-                         [-2. * (other[3] * other[4] - other[5] * other[6]), -1. + 2. * (other[3]**2 + other[5]**2), -2. * (other[4] * other[5] + other[3] * other[6]), 2. * (other[4] * (self[0] - other[0]) - 2. * other[3] * (self[1] - other[1]) + other[6] * (self[2] - other[2])), 2. * (other[3] * (self[0] - other[0]) + other[5] * (self[2] - other[2])), 2. * (-other[6] * (self[0] - other[0]) - 2. * other[5] * (self[1] - other[1]) + other[4] * (self[2] - other[2])), 2. * (-other[5] * (self[0] - other[0]) + other[3] * (self[2] - other[2]))],
-                         [-2. * (other[3] * other[5] + other[4] * other[6]), -2. * (other[4] * other[5] - other[3] * other[6]), -1. + 2. * (other[3]**2 + other[4]**2), 2. * (other[5] * (self[0] - other[0]) - other[6] * (self[1] - other[1]) - 2. * other[3] * (self[2] - other[2])), 2. * (other[6] * (self[0] - other[0]) + other[5] * (self[1] - other[1]) - 2. * other[4] * (self[2] - other[2])), 2. * (other[3] * (self[0] - other[0]) + other[4] * (self[1] - other[1])), 2. * (other[4] * (self[0] - other[0]) - other[3] * (self[1] - other[1]))],
-                         [0., 0., 0., -self[6], -self[5], self[4], self[3]],
-                         [0., 0., 0., self[5], -self[6], -self[3], self[4]],
-                         [0., 0., 0., -self[4], self[3], -self[6], self[5]]], dtype=np.float64)
 
-def jacobian_boxplus(self):
-    return np.array([[1. - 2. * (self[4]**2 + self[5]**2), 2. * (self[3] * self[4] - self[5] * self[6]), 2. * (self[3] * self[5] + self[4] * self[6]), 0., 0., 0.],
-                         [2. * (self[3] * self[4] + self[5] * self[6]), 1. - 2. * (self[3]**2 + self[5]**2), 2. * (self[4] * self[5] - self[3] * self[6]), 0., 0., 0.],
-                         [2. * (self[3] * self[5] - self[4] * self[6]), 2. * (self[3] * self[6] + self[4] * self[5]), 1. - 2. * (self[3]**2 + self[4]**2), 0., 0., 0.],
-                         [0., 0., 0., self[6], -self[5], self[4]],
-                         [0., 0., 0., self[5], self[6], -self[3]],
-                         [0., 0., 0., -self[4], self[3], self[6]],
-                         [0., 0., 0., -self[3], -self[4], -self[5]]], dtype=np.float64)
+def J_x1_minus_x2_dx2(x1, x2):
+    return np.array([[-1. + 2. * (x2[4]**2 + x2[5]**2), -2. * (x2[3] * x2[4] + x2[5] * x2[6]), -2. * (x2[3] * x2[5] - x2[4] * x2[6]), 2. * (x2[4] * (x1[1] - x2[1]) + x2[5] * (x1[2] - x2[2])), 2. * (-2. * x2[4] * (x1[0] - x2[0]) + x2[3] * (x1[1] - x2[1]) - x2[6] * (x1[2] - x2[2])), 2. * (-2. * x2[5] * (x1[0] - x2[0]) + x2[6] * (x1[1] - x2[1]) + x2[3] * (x1[2] - x2[2])), 2. * (x2[5] * (x1[1] - x2[1]) - x2[4] * (x1[2] - x2[2]))],
+                     [-2. * (x2[3] * x2[4] - x2[5] * x2[6]), -1. + 2. * (x2[3]**2 + x2[5]**2), -2. * (x2[4] * x2[5] + x2[3] * x2[6]), 2. * (x2[4] * (x1[0] - x2[0]) - 2. * x2[3] * (x1[1] - x2[1]) + x2[6] * (x1[2] - x2[2])), 2. * (x2[3] * (x1[0] - x2[0]) + x2[5] * (x1[2] - x2[2])), 2. * (-x2[6] * (x1[0] - x2[0]) - 2. * x2[5] * (x1[1] - x2[1]) + x2[4] * (x1[2] - x2[2])), 2. * (-x2[5] * (x1[0] - x2[0]) + x2[3] * (x1[2] - x2[2]))],
+                     [-2. * (x2[3] * x2[5] + x2[4] * x2[6]), -2. * (x2[4] * x2[5] - x2[3] * x2[6]), -1. + 2. * (x2[3]**2 + x2[4]**2), 2. * (x2[5] * (x1[0] - x2[0]) - x2[6] * (x1[1] - x2[1]) - 2. * x2[3] * (x1[2] - x2[2])), 2. * (x2[6] * (x1[0] - x2[0]) + x2[5] * (x1[1] - x2[1]) - 2. * x2[4] * (x1[2] - x2[2])), 2. * (x2[3] * (x1[0] - x2[0]) + x2[4] * (x1[1] - x2[1])), 2. * (x2[4] * (x1[0] - x2[0]) - x2[3] * (x1[1] - x2[1]))],
+                     [0., 0., 0., -x1[6], -x1[5], x1[4], x1[3]],
+                     [0., 0., 0., x1[5], -x1[6], -x1[3], x1[4]],
+                     [0., 0., 0., -x1[4], x1[3], -x1[6], x1[5]],
+                     [0., 0., 0., x1[3], x1[4], x1[5], x1[6]]], dtype=np.float64)
+
+
+def J_x1_minus_x2_dnewx(x1, x2):
+    return    np.array([[-1. + 2. * (x2[4]**2 + x2[5]**2), -2. * (x2[3] * x2[4] + x2[5] * x2[6]), -2. * (x2[3] * x2[5] - x2[4] * x2[6]), 2. * (x2[4] * (x1[1] - x2[1]) + x2[5] * (x1[2] - x2[2])), 2. * (-2. * x2[4] * (x1[0] - x2[0]) + x2[3] * (x1[1] - x2[1]) - x2[6] * (x1[2] - x2[2])), 2. * (-2. * x2[5] * (x1[0] - x2[0]) + x2[6] * (x1[1] - x2[1]) + x2[3] * (x1[2] - x2[2])), 2. * (x2[5] * (x1[1] - x2[1]) - x2[4] * (x1[2] - x2[2]))],
+                        [-2. * (x2[3] * x2[4] - x2[5] * x2[6]), -1. + 2. * (x2[3]**2 + x2[5]**2), -2. * (x2[4] * x2[5] + x2[3] * x2[6]), 2. * (x2[4] * (x1[0] - x2[0]) - 2. * x2[3] * (x1[1] - x2[1]) + x2[6] * (x1[2] - x2[2])), 2. * (x2[3] * (x1[0] - x2[0]) + x2[5] * (x1[2] - x2[2])), 2. * (-x2[6] * (x1[0] - x2[0]) - 2. * x2[5] * (x1[1] - x2[1]) + x2[4] * (x1[2] - x2[2])), 2. * (-x2[5] * (x1[0] - x2[0]) + x2[3] * (x1[2] - x2[2]))],
+                        [-2. * (x2[3] * x2[5] + x2[4] * x2[6]), -2. * (x2[4] * x2[5] - x2[3] * x2[6]), -1. + 2. * (x2[3]**2 + x2[4]**2), 2. * (x2[5] * (x1[0] - x2[0]) - x2[6] * (x1[1] - x2[1]) - 2. * x2[3] * (x1[2] - x2[2])), 2. * (x2[6] * (x1[0] - x2[0]) + x2[5] * (x1[1] - x2[1]) - 2. * x2[4] * (x1[2] - x2[2])), 2. * (x2[3] * (x1[0] - x2[0]) + x2[4] * (x1[1] - x2[1])), 2. * (x2[4] * (x1[0] - x2[0]) - x2[3] * (x1[1] - x2[1]))],
+                        [0., 0., 0., -x1[6], -x1[5], x1[4], x1[3]],
+                        [0., 0., 0., x1[5], -x1[6], -x1[3], x1[4]],
+                        [0., 0., 0., -x1[4], x1[3], -x1[6], x1[5]]], dtype=np.float64)
+
+
+def J_plus(x1):
+    return np.array([[1. - 2. * (x1[4]**2 + x1[5]**2), 2. * (x1[3] * x1[4] - x1[5] * x1[6]), 2. * (x1[3] * x1[5] + x1[4] * x1[6]), 0., 0., 0.],
+                    [2. * (x1[3] * x1[4] + x1[5] * x1[6]), 1. - 2. * (x1[3]**2 + x1[5]**2), 2. * (x1[4] * x1[5] - x1[3] * x1[6]), 0., 0., 0.],
+                    [2. * (x1[3] * x1[5] - x1[4] * x1[6]), 2. * (x1[3] * x1[6] + x1[4] * x1[5]), 1. - 2. * (x1[3]**2 + x1[4]**2), 0., 0., 0.],
+                    [0., 0., 0., x1[6], -x1[5], x1[4]],
+                    [0., 0., 0., x1[5], x1[6], -x1[3]],
+                    [0., 0., 0., -x1[4], x1[3], x1[6]],
+                    [0., 0., 0., -x1[3], -x1[4], -x1[5]]], dtype=np.float64)
+
 
 class Pose3dbetweenEdge:
     def __init__(self, i, j, z, omega=None,  kernel=None, color='black'):
@@ -82,10 +87,10 @@ class Pose3dbetweenEdge:
         v0 = vertices[self.i].x
         v1 = vertices[self.j].x
 
-        r = (self.z - (v1 - v0))[:6]
+        r = sub(self.z, sub(v1, v0))[:6]
 
-        J0 = jacobian_self_ominus_other_wrt_other_compact(self.z, sub(v1, v0)) @ jacobian_self_ominus_other_wrt_other(v1, v0) @  jacobian_boxplus(v0)
-        J1 = jacobian_self_ominus_other_wrt_other_compact(self.z, sub(v1, v0)) @ jacobian_self_ominus_other_wrt_self(v1, v0) @  jacobian_boxplus(v1)
+        J0 = J_x1_minus_x2_dnewx(self.z, sub(v1, v0)) @ J_x1_minus_x2_dx2(v1, v0) @  J_plus(v0)
+        J1 = J_x1_minus_x2_dnewx(self.z, sub(v1, v0)) @ J_x1_minus_x2_dx1(v1, v0) @  J_plus(v1)
 
         return r, J0, J1
 
@@ -148,8 +153,8 @@ if __name__ == '__main__':
     for edge in edges:
         graph.add_edge(Pose3dbetweenEdge(edge[0][0], edge[0][1], edge[1], edge[2], kernel=kernel))
 
-    # draw('before loop-closing', graph)
+    draw('before loop-closing', graph)
     graph.solve(step=0)
-    # draw('after loop-closing', graph)
+    draw('after loop-closing', graph)
 
     plt.show()
