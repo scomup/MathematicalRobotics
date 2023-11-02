@@ -25,7 +25,8 @@ We made a guass-newton method library implemented in pure python. It can solve a
 * [Guass-newton Method Document](docs/guass_newton_method.pdf)
 * [Newton Method Document](docs/newton_method.pdf)
 
-We use Lie group to solve for 2D and 3D scan matching.
+My implementation is using the Lie group to solve for the 2D and 3D scan matching problems.
+
 * [Lie group Document](docs/rotation.pdf)
 * [SO3 (Japanese)](https://qiita.com/scomup/items/fa9aed8870585e865117)
 * [SE3 Blog (Japanese)](https://qiita.com/scomup/items/d82b35aeb1ecabd75e60)
