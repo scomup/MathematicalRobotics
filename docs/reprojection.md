@@ -1,6 +1,7 @@
 # Camera reprojection.  
 
 The reprojection errors $r$ indicate the difference between the projected image point $u_{c_j}^*$ and the observed image point $u_{c_j}$.
+
 $$ 
 r = u_{c_j}^*(p_{c_j}(T_{c_j,c_i}(T_{w,b_i},T_{w,b_j}),p_{c_i}(d))) - u_{c_j} 
 \tag{1}

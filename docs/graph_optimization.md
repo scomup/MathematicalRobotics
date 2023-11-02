@@ -186,10 +186,10 @@ $$
 )
 \end{aligned} 
 \tag{12}
-
 $$
 
 According to (10), we can rewrite (12) as:
+
 $$
 \begin{aligned}
 \exp(\widehat{J_A\delta}) 
@@ -202,7 +202,6 @@ $$
     \begin{bmatrix}  v\\ w \end{bmatrix}
     })
 \end{aligned} 
-
 $$
 
 Where $t^{\perp} = [1]_+  t=\begin{bmatrix} -t_2 \\ t_1 \end{bmatrix}$ 
@@ -291,7 +290,6 @@ $$
         ) 
 \end{aligned}
 \tag{16}
-
 $$
 
 According to (10), we can rewrite (16) as:

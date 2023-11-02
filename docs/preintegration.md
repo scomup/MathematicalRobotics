@@ -6,16 +6,16 @@ Suppose we know the navigation state of the robot at time i ,as well as the IMU 
 $$ 
 s_j^* = \mathscr{R}(s_i, \mathscr{D}(\xi(\zeta, b))) 
 \tag{1}
-
 $$
+
 The navigation state combined by attitude $R(\theta)$, position $p$ and velocity $v$.   
 
 $$
 s_i = (R_{nb}, p_{nb}, v_{nb}) \\
 s_j = (R_{nc}, p_{nc}, v_{nc}) 
 \tag{2}
-
 $$
+
 * n denotes navigation state frame.
 * b denotes body frame in time i.
 * c denotes current frame in time j.

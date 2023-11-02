@@ -107,7 +107,12 @@ If the angles are small enough, the following equations are true.
 * $sin(a)sin(b) \approx 0$
 
 If we substitute the above equations into (8) and (9), we can yield the same results.
-$\gdef\skew#1{[{#1}]_{\times}}$
+
+
+$$
+\newcommand{\skew}[1]{[{#1}]_{\times}} %skew matrix
+$$
+
 
 $$
 \begin{aligned} 

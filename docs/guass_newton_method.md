@@ -80,7 +80,8 @@ $$
 \widehat{\delta} = \begin{bmatrix}
 [ \omega ]_{\times} & v \\
 0 & 0 \\
-\end{bmatrix} \tag{11}$$
+\end{bmatrix} \tag{11}
+$$
 
 $$
 \begin{aligned}
