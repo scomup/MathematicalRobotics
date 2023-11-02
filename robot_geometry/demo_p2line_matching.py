@@ -14,8 +14,8 @@ from utilities.robust_kernel import *
 
 
 class P2lineEdge:
-    def __init__(self, i, z, omega=None, kernel=None):
-        self.i = i
+    def __init__(self, link, z, omega=None, kernel=None):
+        self.link = link
         self.z = z
         self.type = 'one'
         self.omega = omega
@@ -32,13 +32,13 @@ class P2lineEdge:
         dir: direction of line
         P: point to line
         """
-        x = vertices[self.i].x
+        x = vertices[self.link[0]].x
         a, c, dir = self.z
         a_star, dTdx, _ = transform(x, a, True)
         r, dPdT = point2line(a_star, c, dir, True)
         # dPdT2 = numericalDerivative(point2line, [a_star, c, dir], 0)
         J = dPdT.dot(dTdx)
-        return r*np.ones(1), J.reshape([1, 6])
+        return r*np.ones(1), [J.reshape([1, 6])]
 
 
 class Pose3Vertex:
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     draw_line(ax, center, direction)
 
     for p in tar:
-        graph.add_edge(P2lineEdge(0, [p, center, direction], kernel=HuberKernel(0.5)))  # add prior pose to graph
+        graph.add_edge(P2lineEdge([0], [p, center, direction], kernel=HuberKernel(0.5)))  # add prior pose to graph
         r, j = point2line(p, center, direction, True)
         g = -j*r
         draw_arrow(ax, p, g)

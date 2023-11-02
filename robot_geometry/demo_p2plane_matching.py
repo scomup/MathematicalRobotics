@@ -13,8 +13,8 @@ from utilities.robust_kernel import *
 
 
 class P2planeEdge:
-    def __init__(self, i, z, omega=None, kernel=None):
-        self.i = i
+    def __init__(self, link, z, omega=None, kernel=None):
+        self.link = link
         self.z = z
         self.type = 'one'
         self.omega = omega
@@ -28,12 +28,12 @@ class P2planeEdge:
         T: transform matrix, x the se3 of T
         P: point to plane
         """
-        x = vertices[self.i].x
+        x = vertices[self.link[0]].x
         a, plane = self.z
         a_star, dTdx, _ = transform(x, a, True)
         r, dPdT = point2plane(a_star, plane, True)
         J = dPdT.dot(dTdx)
-        return r*np.ones(1), J.reshape([1, 6])
+        return r*np.ones(1), [J.reshape([1, 6])]
 
 
 class Pose3Vertex:
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     draw_plane(ax, plane)
 
     for p in tar:
-        graph.add_edge(P2planeEdge(0, [p, plane], kernel=HuberKernel(0.5)))  # add prior pose to graph
+        graph.add_edge(P2planeEdge([0], [p, plane], kernel=HuberKernel(0.5)))  # add prior pose to graph
         r, j = point2plane(p, plane, True)
         g = -j*r
         draw_arrow(ax, p, g)

@@ -92,8 +92,8 @@ def draw_lines(ax, points):
 if __name__ == '__main__':
     fig = plt.figure("plane", figsize=plt.figaspect(1))
     ax = fig.add_subplot(projection='3d')
-    p = np.array([0.8, -0.8, 0.8])
-    norm = np.array([1, -3, 0.5])
+    p = np.array([0.8, -0.0, 0.8])
+    norm = np.array([1, -1, 0.5])
     norm = norm/np.linalg.norm(norm)
     plane = np.zeros(4)
     plane[0:3] = norm
