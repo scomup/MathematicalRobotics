@@ -92,21 +92,26 @@ def draw_lines(ax, points):
 if __name__ == '__main__':
     fig = plt.figure("plane", figsize=plt.figaspect(1))
     ax = fig.add_subplot(projection='3d')
-    p = np.array([0.8, -0.0, 0.8])
-    norm = np.array([1, -1, 0.5])
+    p = np.array([-2, -0.1, 0.3])
+    norm = np.array([2, -0.5, 0.5])
     norm = norm/np.linalg.norm(norm)
-    plane = np.zeros(4)
-    plane[0:3] = norm
-    cube_p = np.array([-1, -1, -1])
-    cube_size = np.array([2, 2, 2.])
-    draw_arrow(ax, p, norm)
-    draw_plane2(ax, p, get_R_by_norm(norm), size=[2, 2])
-    draw_cube(ax, cube_p, cube_size)
-    points = cross_cube(p, norm, cube_p, cube_size)
-    points = order_points_clockwise(points)
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='black')
-    draw_lines(ax, points)
-    set_axes_equal(ax)
 
-    ax.legend()
-    plt.show()
+    for i in range(40):
+        #plane = np.zeros(4)
+        #plane[0:3] = norm
+        ax.clear()
+        cube_p = np.array([-1, -1, -1])
+        cube_size = np.array([2, 2, 2.])
+        #draw_arrow(ax, p, norm)
+        p[0] += 0.1
+        draw_plane2(ax, p, get_R_by_norm(norm), size=[3, 3])
+        draw_cube(ax, cube_p, cube_size)
+        points = cross_cube(p, norm, cube_p, cube_size)
+        if(points.shape[0] <= 2):
+            continue
+        points = order_points_clockwise(points)
+        ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='black')
+        draw_lines(ax, points)
+        set_axes_equal(ax)
+        ax.legend()
+        plt.pause(0.1)

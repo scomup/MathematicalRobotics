@@ -12,14 +12,9 @@ from slam.reprojection import *
 from utilities.robust_kernel import *
 
 
-class P2planeEdge:
-    def __init__(self, link, z, omega=None, kernel=None):
-        self.link = link
-        self.z = z
-        self.type = 'one'
-        self.omega = omega
-        if (self.omega is None):
-            self.omega = np.eye(1)
+class P2planeEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(1), kernel=None):
+        super().__init__(link, z, omega, kernel)
 
     def residual(self, vertices):
         """
@@ -36,10 +31,9 @@ class P2planeEdge:
         return r*np.ones(1), [J.reshape([1, 6])]
 
 
-class Pose3Vertex:
+class Pose3Vertex(BaseVertex):
     def __init__(self, x):
-        self.x = x
-        self.size = x.size
+        super().__init__(x, x.size)
 
     def update(self, dx):
         self.x = pose_plus(self.x, dx)
