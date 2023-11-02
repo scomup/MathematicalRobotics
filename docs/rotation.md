@@ -9,6 +9,7 @@ The Euler angles are three angles introduced by Leonhard Euler to describe the o
 * $\gamma$: Often be called as *Yaw*, rotation around the z axis.
 
 Rotation around the x axis.
+
 $$
 R_x(\alpha) = 
 \left[\begin{matrix} 1 & 0 & 0 \\
@@ -19,6 +20,7 @@ R_x(\alpha) =
 $$
 
 Rotation around the y axis.
+
 $$
 R_y(\beta) = \left[\begin{matrix} cos\beta & 0 & sin\beta \\
 0 & 1 & 0 \\
@@ -28,6 +30,7 @@ R_y(\beta) = \left[\begin{matrix} cos\beta & 0 & sin\beta \\
 $$
 
 Rotation around the z axis.
+
 $$
 R_z(\gamma) = 
 \left[\begin{matrix} cos\gamma & -sin\gamma & 0 \\
@@ -130,6 +133,7 @@ $\skew{\omega}$ is a [skew-symmetric matrix](https://en.wikipedia.org/wiki/Skew-
 Now that we can obtain a commutative represention of a small rotation by a 3d vector. The remaining question is how to represent a larger rotation?
 
 If we want a larger rotation, we can simply split 3d vector $\omega$ into n pieces, and compose the as follows:
+
 $$
 R(\omega) =
 \underbrace{(I+\frac{\skew{\omega}}{n}) \times ...  (I+\frac{\skew{\omega}}{n})}_\text{n factors}
@@ -154,6 +158,7 @@ R(\omega)
 =\sum_{k=0}^\infty \frac{\skew{\omega}^k}{k!}
 \tag{9}
 $$
+
 $\gdef\so3{\mathfrak{so}(3)}$
 
 In actually, some part of Lie group theories have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so3$ associated with $SO(3)$ by the exponential map.

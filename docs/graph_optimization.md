@@ -102,6 +102,7 @@ $$
 ### If A and B are SE2
 
 The small incremental matrix of SE2 can be shown as follow: 
+
 $$
   \hat{\delta} = 
   \begin{bmatrix}
@@ -119,6 +120,7 @@ $v$: the parameters of translation (is a 2d vector).
 
 
 We rewrite the $B^{-1}A$ as $T_{BA}$.
+
 $$
     T_{BA} =       
     \begin{bmatrix}
@@ -129,6 +131,7 @@ $$
 $$
 
 We substitute (10) and (11) into (6), we get:
+
 $$
 \begin{aligned}
     \exp(\widehat{J_A\delta}) 
@@ -183,6 +186,7 @@ $$
 )
 \end{aligned} 
 \tag{12}
+
 $$
 
 According to (10), we can rewrite (12) as:
@@ -198,11 +202,13 @@ $$
     \begin{bmatrix}  v\\ w \end{bmatrix}
     })
 \end{aligned} 
+
 $$
 
 Where $t^{\perp} = [1]_+  t=\begin{bmatrix} -t_2 \\ t_1 \end{bmatrix}$ 
 
 Hence: 
+
 $$
    J_A = -\begin{bmatrix}  R & -t^{\perp}\\ 0 & 1 \end{bmatrix}
    =  -\begin{bmatrix}  R_{BA} & -t_{BA}^{\perp}\\ 0 & 1 \end{bmatrix} \tag{13}
@@ -219,6 +225,7 @@ $$
 ### If A and B are SE3
 
 The small incremental matrix of SE3 can be shown as follow: 
+
 $$
   \hat{\delta} = 
   \begin{bmatrix}
@@ -235,6 +242,7 @@ $\omega$: the parameters of rotation (is a 3d vector). $[w]_{\times}$ is the ske
 $v$: the parameters of translation (is a 3d vector).
 
 Similar to (12), we get:
+
 $$
 \begin{aligned}
     \exp(\widehat{J_A\delta}) 
@@ -283,9 +291,11 @@ $$
         ) 
 \end{aligned}
 \tag{16}
+
 $$
 
 According to (10), we can rewrite (16) as:
+
 $$
 \begin{aligned}
 \exp(\widehat{J_A\delta}) 
@@ -314,6 +324,7 @@ $$
 $$
 
 Hence: 
+
 $$
    J_A = -\begin{bmatrix}  
         R_{BA} & [t_{BA}]_{\times}R_{BA}  \\

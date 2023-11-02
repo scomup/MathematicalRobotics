@@ -65,6 +65,7 @@ $$
 Unlike Newton's method, gauss-newton methods are not necessary to calculate second derivatves, which may difficult to compute in some cases.  
 
 #### No robust kernel.
+
 $$
 g =\dot{f} = r^T \Sigma \dot{r} \tag{10}
 $$
@@ -72,7 +73,9 @@ $$
 $$
 H = \ddot{f} = \dot{r}^T \Sigma \dot{r} \tag{11}
 $$
+
 #### With robust kernel.
+
 $$
 g = \dot{\rho} \dot{f}  \tag{12}
 $$

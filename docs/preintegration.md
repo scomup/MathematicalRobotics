@@ -2,15 +2,19 @@
 
 ## Predicting navigation state by IMU
 Suppose we know the navigation state of the robot at time i ,as well as the IMU measurements from the i time to j time. We want predict the state of robot at time j.
+
 $$ 
 s_j^* = \mathscr{R}(s_i, \mathscr{D}(\xi(\zeta, b))) 
 \tag{1}
+
 $$
 The navigation state combined by attitude $R(\theta)$, position $p$ and velocity $v$.   
+
 $$
 s_i = (R_{nb}, p_{nb}, v_{nb}) \\
 s_j = (R_{nc}, p_{nc}, v_{nc}) 
 \tag{2}
+
 $$
 * n denotes navigation state frame.
 * b denotes body frame in time i.
@@ -18,18 +22,23 @@ $$
 * $\theta$ is the lie algebra of R.
 
 The retract action $\mathscr{R}$ which defined on navigation state  takes 2 parameters: $s_i$ and $\mathscr{D}$ to predict $s_j$. The $\mathscr{D}$ represents the difference between $s_i$ and $s_j$.
+
 $$
 d(\xi,s_i) = (R_{nc}, p_{nc}, v_{nc}) 
 \tag{3}
 $$
+
 $\xi$ represents bias corrected preintegration measurement (PIM), which take 2 parameters, the PIM $\zeta$ and IMU bias b.
 
 #### The Jacobian of $s_i$
+
 $$
 J^{s_j^*}_{s_i} = J^{\mathscr{R}}_{s_i} + J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{s_i} 
 \tag{4}
 $$ 
+
 #### The Jacobian of $b$
+
 $$
 J^{s_j^*}_{b} = J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{\xi} J^{\xi}_{b}  
 \tag{5}
@@ -38,6 +47,7 @@ $$
 ### Preintegration measurement (PIM)
 The PIM $\zeta(R(\theta), p ,v)$ integrates all the IMU measurements  without considering the IMU bias and the gravity.
 $\omega^b_k$,$a^b_k$ are the acceleration and angular velocity measured by IMU (accelerometer + gyroscope) respectively.
+
 $$
 \begin{aligned}
 R_{k+1} &= R_k \exp(\omega^b_k\Delta{t}) \\
@@ -46,8 +56,10 @@ v_{k+1} &= v_k + R_k a^b_k \Delta{t}
 \end{aligned} 
 \tag{7}
 $$
+
 $n$: navigation frame, $b$: body frame.
 #### A:Derivative of old $\zeta$
+
 $$
 \begin{aligned}
 A &= \frac{\partial{\zeta_{k+1}}}{\partial \zeta_{k}}  \\
@@ -64,7 +76,9 @@ A &= \frac{\partial{\zeta_{k+1}}}{\partial \zeta_{k}}  \\
 \end{aligned} 
 \tag{8}
 $$
+
 #### B:Derivative of input $a$
+
 $$
 B = \frac{\partial{\zeta_{k+1}}}{\partial a^b_k} = 
 \begin{bmatrix}
@@ -81,6 +95,7 @@ B = \frac{\partial{\zeta_{k+1}}}{\partial a^b_k} =
 $$
 
 #### C:Derivative of input $\omega$
+
 $$
 C = \frac{\partial{\zeta_{k+1}}}{\partial \omega^b_k} = 
 \begin{bmatrix}
@@ -100,20 +115,24 @@ Where $H$ is the Jocabian for $\exp$: $\exp(a+\delta{x}) = \exp(a) + H(a)\delta{
 
 ### Bias correct
 We want correct $\zeta$ by a given accelerometer and gyroscope bias.   
+
 $$
 \xi(b+\Delta{b}) = \zeta \oplus (\Delta b_{acc} \frac{\partial{\zeta}}{\partial b_{acc}} +
 \Delta b_{\omega} \frac{\partial{\zeta}}{\partial b_{\omega}} ) 
 \tag{11}
 $$
+
 * $b_{acc}$ is bias for accelerometer.
 * $b_{\omega}$ is bias for gyroscope.
 * Because the parameter $\theta$ cannot be added directly, we define the combination of $\zeta$ with the symbol $\oplus$. 
+
 $$
 a\oplus b = [\log(\exp(\theta_a)\exp(\theta_b)), p_a+p_b, v_a+v_b]
 \tag{12}
 $$
 
 #### The jocabian of bias for corrected PIM.
+
 $$
 J^{\xi}_{b} =  [ \frac{\partial{\zeta}}{\partial b_{acc}}, \frac{\partial{\zeta}}{\partial b_{\omega}}] 
 \tag{13}
@@ -122,6 +141,7 @@ $$
 #### Find the partial derivatives of accelerometer's bias
 
 The bias model for accelerometer.
+
 $$
 \tilde{a^b_k} = a^b_k - b_{acc}  
 \tag{14}
@@ -134,6 +154,7 @@ $$
 = A \frac{\partial{\zeta_{k}}}{\partial b_{acc}} - B 
 \tag{15}
 $$
+
 #### Find the partial derivatives of gyroscope's bias
 
 $$
@@ -154,9 +175,11 @@ $$
 
 ### Delta between two states
 The $\mathscr{D}$ represents the difference between two $s_i$ and $s_j$.   
+
 $$
 \mathscr{D} = (R_{bc}, p_{bc}, v_{bc}) \tag{18}
 $$
+
 We can calculate $\mathscr{D}$ from corrected PIM $\xi(R_{bc}^{\xi},p_{bc}^{\xi},v_{bc}^{\xi})$ and velocity, which is included in $s_i$.
 
 $$
@@ -173,6 +196,7 @@ $$
 
 
 #### The jocabian matrix of navigation state
+
 $$
 \begin{aligned}
 J^{\mathscr{D}}_{s_i}
@@ -193,6 +217,7 @@ J^{\mathscr{D}}_{s_i}
 $$
 
 #### The jocabian matrix of $\xi$
+
 $$
 J^{\mathscr{D}}_{\xi}=\begin{bmatrix}
  I_{3\times3} & 0_{3\times3} & 0_{3\times3}\\  
@@ -215,7 +240,9 @@ v_{nc}^{*} &= v_{nb} + R_{nb} v_{bc}
 \end{aligned}
 \tag{22}
 $$
+
 #### Derivative of $s_i$
+
 $$
 J^{\mathscr{R}}_{s_i}=\begin{bmatrix}
  R_{bc}^{-1} & 0_{3\times3} & 0_{3\times3}\\  
@@ -226,6 +253,7 @@ J^{\mathscr{R}}_{s_i}=\begin{bmatrix}
 $$
 
 #### Derivative of $d$
+
 $$
 J^{\mathscr{R}}_{d}=\begin{bmatrix}
  I_{3\times3} & 0_{3\times3} & 0_{3\times3}\\  
@@ -253,8 +281,10 @@ r_{jj^*}=\mathscr{L}(s_j,s_j^*) =
 \end{bmatrix} 
 \tag{25}
 $$
+
 Local $\mathscr{L}$  is the inverse function of $\mathscr{R}$, which takes two navigation states, and get the delta between the two states in tangent vector space
 #### Derivative of an $s_j$
+
 $$
 J^{\mathscr{L}}_{s_j}=\begin{bmatrix}
  -\Delta{R}^{-1}  & 0_{3\times3} & 0_{3\times3}\\  
@@ -263,7 +293,9 @@ J^{\mathscr{L}}_{s_j}=\begin{bmatrix}
 \end{bmatrix} 
 \tag{26}
 $$
+
 #### Derivative of an $s_j^*$
+
 $$
 J^{\mathscr{L}}_{s_j^*}=\begin{bmatrix}
  I_{3\times3}& 0_{3\times3} & 0_{3\times3}\\  
@@ -276,15 +308,18 @@ $$
 ### Overall Jaccobian for prediction error
 
 To summarize, The prediction error $r$ takes 3 parameters $s_i$, $s_j$ and $b$. According to the chain rule, their Jaccobian can be written in the following form.
+
 $$
 J^r_{s_j} = J^{\mathscr{L}}_{s_j}
 \tag{28}
 $$
+
 $$
 J^r_{s_i} = J^{\mathscr{L}}_{s_j^*} J^{s_j^*}_{s_i} = 
 J^{\mathscr{L}}_{s_j^*}(J^{\mathscr{R}}_{s_i} + J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{s_i})
 \tag{29}
 $$
+
 $$
 J^r_{b} = J^{\mathscr{L}}_{s_j^*} J^{s_j^*}_{b} = 
 J^{\mathscr{L}}_{s_j^*}J^{\mathscr{R}}_{\mathscr{D}} J^{\mathscr{D}}_{\xi} J^{\xi}_{b}
@@ -297,6 +332,7 @@ $$
 
 ### A-1. Proof of [Preintegration measurement (PIM)] (8)(9)(10)
 $A$ and $B$ are the two lie groups: $\varphi(A,B) = AB $
+
 $$
 \begin{aligned}
     \exp(\widehat{J_A\delta}) 
@@ -317,10 +353,12 @@ $$
 $$
 
 Hence:
+
 $$
    J_A = B^{-1} 
    \tag{A1-1}
 $$
+
 $$
    J_B = I 
    \tag{A1-2}
@@ -328,6 +366,7 @@ $$
 
 #### Proof of (8) $J_{\zeta_k}^{\zeta_{k+1}}$:
 According to A1-1:
+
 $$
 \frac{\partial{R_{k+1}}}{\partial{R_{k}}} 
 = \exp(-\omega^b_k \Delta t) \\
@@ -358,6 +397,7 @@ J_p &= \frac{A (p + \delta) - Ap}{\delta} \\
 $$
 
 According to A1-3:
+
 $$
 \frac{\partial{p_{k+1}}}{\partial{R_{k}}} 
 = -R_{k}\widehat{a_{k}^{b}}\frac{\Delta{t}}{2}^{2}
@@ -370,6 +410,7 @@ $$
 
 #### Proof of (9) $J_{a^b_k}^{\zeta_{k+1}}$:
 According to A1-4:
+
 $$
 \frac{\partial{p_{k+1}}}{\partial{a^b_k}} 
 = R_{k}\frac{\Delta{t}}{2}^{2}
@@ -382,6 +423,7 @@ $$
 
 #### Proof of (10) $J_{\omega^b_k}^{\zeta_{k+1}}$:
 According to A1-2:
+
 $$
 \frac{\partial{R_{k+1}}}{\partial{\omega^b_k}} 
 = I_{3 \times 3}\Delta{t}
@@ -413,8 +455,10 @@ J_p
 \end{aligned}
 \tag{A2-2}
 $$
+
 #### Proof of (20) $J_{s_i}^{\mathscr{D}}$
 The $\mathscr{D}$ function:
+
 $$
 \mathscr{D}(\xi,s_i)=\begin{bmatrix}
 R_{bc}^{\xi}\\  
@@ -424,6 +468,7 @@ v_{bc}^{\xi} + R_{nb}^{-1} g \Delta{t}\\
 $$
 
 According to A2-1: 
+
 $$
 \frac{\partial{p_{bc}}}{\partial R_{nb}} =
 \widehat{R_{nb}^{-1}v_{nb}} \Delta{t} + \widehat{R_{nb}^{-1}g} \frac{\Delta{t}^2}{2}
@@ -442,9 +487,10 @@ $$
  = I_{3\times3}\Delta{t}
 $$
 
- ### A-3. Proof of Retraction $\mathscr{R}$ (23)(24)
- The $\mathscr{R}$ function:
- $$
+### A-3. Proof of Retraction $\mathscr{R}$ (23)(24)
+The $\mathscr{R}$ function:
+ 
+$$
 \begin{aligned}
 R_{nc}^{*} &= R_{nb}R_{bc} \\
 p_{nc}^{*} &= p_{nb} + R_{nb} p_{bc} \\
@@ -453,6 +499,7 @@ v_{nc}^{*} &= v_{nb} + R_{nb} v_{bc}
 $$
 
 The Jacobian of x for F:
+
 $$
 J^F_x
 =\frac{\mathscr{L}(F(x),F(\mathscr{R(x,\delta{x})}))}{\delta x}
@@ -461,16 +508,19 @@ $$
 
 #### Proof of (23) $J^\mathscr{R}_{s_i}$:
 According to A1-1: 
+
 $$
 \frac{\partial{R^*_{nc}}}{\partial R_{nb}} = R_{bc}^{-1}
 $$
 
 According to A2-2 and A3-1: 
+
 $$
 \frac{\partial{p_{nc}^*}}{\partial R_{nb}} 
 =\frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})p_{bc}- R_{nb}p_{bc})}{\delta \theta_{b}} \\
 = -R^{-1}_{bc} \widehat{p_{bc}}
 $$
+
 $$
 \frac{\partial{v_{nc}^*}}{\partial R_{nb}} =
 \frac{ R_{nc}^{-1}( R_{nb}\exp(\widehat{\delta \theta_{b}})v_{bc}- R_{nb}v_{bc})}{\delta \theta_{b}} \\
@@ -479,11 +529,13 @@ $$
 
 
 According to A1-3 and (22)(25): 
+
 $$
 \frac{\partial{p_{bc}^*}}{\partial p_{nb}} =
 \frac{ R_{nc}^{-1}( p_{nb} + R_{nb}\delta{p_{b}} -  p_{nb})}{\delta{p_{b}}} \\
 = R^{-1}_{bc}
 $$
+
 $$
 \frac{\partial{v_{bc}^*}}{\partial v_{nb}} =
 \frac{ R_{nc}^{-1}( v_{nb} + R_{nb}\delta v_{b} -  v_{nb})}{\delta v_{b}} \\
@@ -493,20 +545,23 @@ $$
  #### Proof of (24) $J^\mathscr{R}_{d}$
 
 According to A2-2 and A3-1: 
+
 $$
 \frac{\partial{p_{nc}^*}}{\partial p_{bc}} =
 \frac{ R_{nc}^{-1}( R_{nb} (p_{bc} + \delta p_{b})- R_{nb}p_{bc})}{\delta p_{b}} \\
 = R^{-1}_{bc}
 $$
+
 $$
 \frac{\partial{v_{nc}^*}}{\partial v_{b}} =
 \frac{ R_{nc}^{-1}( R_{nb} (v_{bc} + \delta v_{b})- R_{nb}v_{bc})}{\delta v_{b}} \\
 = R^{-1}_{bc}
 $$
 
- ### A-4. Proof of Local $\mathscr{L}$ (23)(24)
- The $\mathscr{L}$ function:
- $$
+### A-4. Proof of Local $\mathscr{L}$ (23)(24)
+The $\mathscr{L}$ function:
+
+$$
 r_{jj^*}=\mathscr{L}(s_j,s_j^*) =
 \begin{bmatrix}
  \Delta{R} \\  

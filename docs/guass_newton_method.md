@@ -76,7 +76,8 @@ $\omega$: the parameters of rotation.
 
 $v$: the parameters of translation.
 
-$$\widehat{\delta} = \begin{bmatrix}
+$$
+\widehat{\delta} = \begin{bmatrix}
 [ \omega ]_{\times} & v \\
 0 & 0 \\
 \end{bmatrix} \tag{11}$$

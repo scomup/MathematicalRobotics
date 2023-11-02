@@ -119,8 +119,8 @@ $$
 なお、オイラー角を使うとき、回転の順番を決めることが非常に重要である。
 
 <div class="pic_frame">
-  <img src="xyz.png" width="300">
-  <img src="zxy.png" width="300">
+  <img src="../imgs/xyz.png" width="300">
+  <img src="../imgs/zxy.png" width="300">
   <p>同じ数値だが、XYZとZXYオイラー角が違う</p> 
 </div>
 
@@ -157,7 +157,7 @@ $$
 
 ジンバルロックのイメージ：
 
-<img src="lock.gif" width="400">
+<img src="../imgs/lock.gif" width="400">
 
 ジンバルロック問題のが存在するために、オイラー角は数学的に非連続的な回転表現である。また、非可換という性質があるため、多くの数学的問題で扱いにくいものとなる。
 
@@ -202,8 +202,8 @@ $\skew{\omega}$ は $\alpha$, $\beta$ と $\gamma$から構成された交代行
 一方、本当の回転の結果は球面で動かす、一方、微小回転はこの球面の接平面(Tangent space)で動かす。球面は滑らかな空間のため、回転が小さいとき、近似結果の精度も十分高い。
 
 <div class="pic_frame">
-  <img src="small_rotation.png" width="300">
-  <img src="big_rotation.png" width="300">
+  <img src="../imgs/small_rotation.png" width="300">
+  <img src="../imgs/big_rotation.png" width="300">
   <p>微小回転の近似(<span style="color: purple; ">紫</span>)
   と本当の回転(<span style="color: red; ">赤</span>)
   がオリジナルベクトル（<span style="color: blue; ">青</span>）を回転させる</p> 

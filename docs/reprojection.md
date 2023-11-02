@@ -51,6 +51,7 @@ J_{d}^r = J_{p_{c_j}}^{u_{c_j}^*} J_{p_{c_i}}^{p_{c_j}} J_{d}^{p_{c_i}}
 $$
 
 ### Jocabian of $T_{w,b_i}$ for $T_{c_j,c_i}$
+
 $$
 T_{c_j,c_i} = T_{bc}^{-1}T_{w,b_j}^{-1}T_{w,b_i}T_{bc}
 $$
