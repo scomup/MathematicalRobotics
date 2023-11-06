@@ -105,6 +105,10 @@ def logSE2(T):
 
 
 def expSE3(x):
+    """
+    Exponential map of SE3
+    The proof is shown in 3d_transformation_group.md (13)~(18)
+    """
     omega = x[3:6]
     v = x[0:3]
     R = expSO3(omega)
@@ -135,6 +139,10 @@ def expSE3test(x):
 
 
 def logSE3(pose):
+    """
+    Logarithm map of SE3
+    The proof is shown in 3d_transformation_group.md (19)~(24)
+    """
     w = logSO3(pose[0:3, 0:3])
     T = pose[0:3, 3]
     t = np.linalg.norm(w)
@@ -142,8 +150,6 @@ def logSE3(pose):
         return np.hstack([T, w])
     else:
         W = skew(w / t)
-        # Formula from Agrawal06iros, equation (14)
-        # simplified with Mathematica, and multiplying in T to avoid matrix math
         Tan = np.tan(0.5 * t)
         WT = W.dot(T)
         u = T - (0.5 * t) * WT + (1 - t / (2. * Tan)) * (W.dot(WT))
@@ -154,7 +160,7 @@ def logSE3(pose):
 def expSO3(omega):
     """
     Exponential map of SO3
-    The proof is shown in rotation.md (10)
+    The proof is shown in 3d_rotation_group.md (10)
     """
     theta2 = omega.dot(omega)
     theta = np.sqrt(theta2)

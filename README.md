@@ -29,7 +29,7 @@ We also provide some demos on Lie-Group based points matching using our library.
 
 Lie group Document:
 * [SO3 group](docs/3d_rotation_group.pdf)
-* [SE3 group](docs/3d_rotation_group.pdf)
+* [SE3 group](docs/3d_transformation_group.pdf)
 * Blog(Japanese): [SO3 group](https://qiita.com/scomup/items/fa9aed8870585e865117); [SE3 group](https://qiita.com/scomup/items/d82b35aeb1ecabd75e60); [Lie group based optimization](https://qiita.com/scomup/items/a9c09d57101583c58619)
 #### gauss newton for 2d points matching.
 guass_newton_method/demo_2d.py

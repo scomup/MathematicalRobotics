@@ -42,7 +42,7 @@ Before solving for the velocities, let us consider the difference between A and 
 $$
 T_{aa'} = \exp{(\widehat{\xi \Delta{t}})} 
 =\left[\begin{matrix} 
-  I + \skew{\omega} \Delta{t}  & v\Delta{t}\\\\
+  I + \skew{\omega} \Delta{t}  & v\Delta{t}\\
   \mathbf{0}^T & 1 
 \end{matrix}\right]
 \tag{1}
@@ -54,24 +54,24 @@ Since A and B are mounted on the same rigid body, difference between B and B' ca
 
 $$
 \begin{aligned} 
-T_{bb'} &= T_{ba} T_{aa'} T_{ba}^{-1} \\\\
+T_{bb'} &= T_{ba} T_{aa'} T_{ba}^{-1} \\
 &= 
 \left[\begin{matrix} 
-  R_{ba} & t_{ba} \\\\
+  R_{ba} & t_{ba} \\
   \mathbf{0}^{-1} & 1  \\
 \end{matrix}\right]
 \left[\begin{matrix} 
-  R_{aa'} & t_{aa'} \\\\
+  R_{aa'} & t_{aa'} \\
   \mathbf{0}^{-1} & 1  \\
 \end{matrix}\right]
 \left[\begin{matrix} 
-  R_{ba}^{-1} & -R_{ba}^{-1} t_{ba} \\\\
+  R_{ba}^{-1} & -R_{ba}^{-1} t_{ba} \\
   \mathbf{0}^T & 1  \\
-\end{matrix}\right]\\\\
+\end{matrix}\right] \\
 &= 
 \left[\begin{matrix} 
   R_{ba}R_{aa'}R_{ba}^{-1} 
-  & R_{ba}R_{aa'}(-R_{ba}^Tt_{ba})+R_{ba}t_{aa'}+t_{ba} \\\\
+  & R_{ba}R_{aa'}(-R_{ba}^Tt_{ba})+R_{ba}t_{aa'}+t_{ba} \\
   \mathbf{0}^T & 1  \\
 \end{matrix}\right]
 \end{aligned}
@@ -91,12 +91,12 @@ Substituting the translational part of Equation (3) with $t_{bb'}$ in Equation (
 $$
 \begin{aligned} 
 v_{bb'} 
-&= \lim_{\Delta{t} \to \infty} \frac{t_{bb'}}{\Delta{t}} \\\\
-&= \lim_{\Delta{t} \to \infty} \frac{R_{ba}(I + \skew{\omega}\Delta{t})(-R_{ba}^Tt_{ba})+R_{ba}v\Delta{t}+t_{ba}}{\Delta{t}} \\\\
-&=  -R_{ba}(I + \skew{\omega}  )R_{ba}^Tt_{ba}+R_{ba}v+t_{ba} \\\\
-&=  -R_{ba}\skew{\omega}  R_{ba}^T t_{ba}  + R_{ba} v \\\\
-&=  R_{ba}\skew{  R_{ba}^T t_{ba}} \omega  + R_{ba} v \\\\
-&=  \skew{t_{ba}}R_{ba} \omega  + R_{ba} v  \\\\
+&= \lim_{\Delta{t} \to \infty} \frac{t_{bb'}}{\Delta{t}} \\
+&= \lim_{\Delta{t} \to \infty} \frac{R_{ba}(I + \skew{\omega}\Delta{t})(-R_{ba}^Tt_{ba})+R_{ba}v\Delta{t}+t_{ba}}{\Delta{t}} \\
+&=  -R_{ba}(I + \skew{\omega}  )R_{ba}^Tt_{ba}+R_{ba}v+t_{ba} \\
+&=  -R_{ba}\skew{\omega}  R_{ba}^T t_{ba}  + R_{ba} v \\
+&=  R_{ba}\skew{  R_{ba}^T t_{ba}} \omega  + R_{ba} v \\
+&=  \skew{t_{ba}}R_{ba} \omega  + R_{ba} v  \\
 \end{aligned}
 \tag{5}
 $$
@@ -117,12 +117,12 @@ Since we have calculated the change in orientation of B in equation (4), we can 
 $$
 \begin{aligned} 
 \omega_b 
-&= \lim_{\Delta{t} \to \infty} \frac{\log{(R_{bb'})}^{\vee}}{\Delta{t}} \\\\
-&= \lim_{\Delta{t} \to \infty} \frac{\log{(R_{ba}(I + \skew{\omega} \Delta{t} )R_{ba}^T)}^{\vee}}{\Delta{t}} \\\\
-&= \lim_{\Delta{t} \to \infty} \frac{\log{(I+R_{ba}\skew{\omega} R_{ba}^T  \Delta{t})}^{\vee}}{\Delta{t}} \\\\
-&= \lim_{\Delta{t} \to \infty} \frac{\log{(I+\skew{R_{ba}\omega \Delta{t}} )}^{\vee}}{\Delta{t}} \\\\
-&= \lim_{\Delta{t} \to \infty} \frac{R_{ba}\omega \Delta{t}}{\Delta{t}} \\\\
-&=  R_{ba}\omega\\\\
+&= \lim_{\Delta{t} \to \infty} \frac{\log{(R_{bb'})}^{\vee}}{\Delta{t}} \\
+&= \lim_{\Delta{t} \to \infty} \frac{\log{(R_{ba}(I + \skew{\omega} \Delta{t} )R_{ba}^T)}^{\vee}}{\Delta{t}} \\
+&= \lim_{\Delta{t} \to \infty} \frac{\log{(I+R_{ba}\skew{\omega} R_{ba}^T  \Delta{t})}^{\vee}}{\Delta{t}} \\
+&= \lim_{\Delta{t} \to \infty} \frac{\log{(I+\skew{R_{ba}\omega \Delta{t}} )}^{\vee}}{\Delta{t}} \\
+&= \lim_{\Delta{t} \to \infty} \frac{R_{ba}\omega \Delta{t}}{\Delta{t}} \\
+&=  R_{ba}\omega\\
 \end{aligned}
 \tag{7}
 $$
@@ -137,16 +137,16 @@ $$
 \begin{aligned} 
 \xi_b =
 \left[\begin{matrix} 
-  v_b \\\\
+  v_b \\
   \omega_b
 \end{matrix}\right]
 &= 
 \left[\begin{matrix} 
-  R_{ba} & \skew{t_{ba}}R_{ba} \\\\
+  R_{ba} & \skew{t_{ba}}R_{ba} \\
   \mathbf{0}_{3\times3} & R_{ba}  \\
 \end{matrix}\right] 
 \left[\begin{matrix} 
-  v_a \\\\
+  v_a \\
   \omega_a 
 \end{matrix}\right]
 \end{aligned}
