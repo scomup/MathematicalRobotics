@@ -2,7 +2,8 @@
 
 ## Euler angles
 
-The Euler angles are three angles introduced by Leonhard Euler to describe the orientation of a rigid body.
+Euler angles are a set of three angles introduced by Leonhard Euler that are used to describe the orientation or rotation of a rigid body in three-dimensional space.
+
 
 * $\alpha$: Often be called as *Roll*, rotation around the x axis.
 * $\beta$: Often be called as *Pitch*, rotation around the y axis.
@@ -39,14 +40,15 @@ sin\gamma & cos\gamma & 0 \\ 0 & 0 & 1
 \tag{3}
 $$
 
-Any rotation can be composed by above three elemental rotation matrices.
+By combining these three angles, the orientation of the rigid body in three-dimensional space can be fully described. 
+
 
 ### Rotation order of Euler angles
 
 But since the multiplication of matrices does not satisfy the commutative law, different orders of x,y and z rotation generate different final rotation matrices.
 
 $$
-\begin{aligned} R_{xyz}(\alpha, \beta, \gamma) 
+\begin{aligned} R_{xyz}
 &=
   R_z (\gamma) R_y (\beta) R_x (\alpha) \\
 &= 
@@ -70,7 +72,7 @@ c_{\beta} s_{\gamma} & c_{\gamma} c_{\alpha} + s_{\gamma} s_{\beta} s_{\alpha} &
 $$
 
 $$
-\begin{aligned} R_{zxy}(\alpha, \beta, \gamma) 
+\begin{aligned} R_{zxy}
 &=
 R_y (\beta) R_x (\alpha) R_z (\gamma) \\
 &= 
@@ -94,25 +96,31 @@ c_{\beta} s_{\alpha} s_{\gamma}-s_{\beta} c_{\gamma} & s_{\beta} s_{\gamma}+c_{\
 \tag{5}
 $$
 
-Therefore it is very important to determine the order of rotation when using Euler angles. 
+Therefore, it is crucial to determine the rotation order when using Euler angles.
 
-Euler angles are frequently used, however, they are not continuous because of the gimbal lock problem. And they can be very tricky to handle in many mathematical problems due to the non-commutative nature.
+Euler angles are commonly used, however, they are not continuous due to the gimbal lock problem. Additionally, handling them in various mathematical problems can be challenging because of their non-commutative nature.
 
 ### Infinitesimal Rotation
 
-If the angles are small enough, the following equations are true.
+If the angles are small enough, the following approximations hold true:
 
 * $cos(a) \approx 1$
 * $sin(a)\approx a$
 * $sin(a)sin(b) \approx 0$
 
-If we substitute the above equations into (8) and (9), we can yield the same results.
+By substituting these approximations into equations (8) or (9), we can obtain the same results.
 
+$$
+\newcommand{\norm}[1]{\|{#1}\|} %norm 
+$$
+
+$$
+\newcommand{\so}[1]{ \mathfrak{so}{(#1)} } %lie algebra so3
+$$
 
 $$
 \newcommand{\skew}[1]{[{#1}]_{\times}} %skew matrix
 $$
-
 
 $$
 \begin{aligned} 
@@ -133,11 +141,11 @@ R_{xyz} \approx R_{zxy} &\approx
 $$
 
 
-$\skew{\omega}$ is a [skew-symmetric matrix](https://en.wikipedia.org/wiki/Skew-symmetric_matrix), which is composed of $\alpha$, $\beta$ and $\gamma$.
+Here, $\skew{\omega}$ is a [skew-symmetric matrix](https://en.wikipedia.org/wiki/Skew-symmetric_matrix). A skew-symmetric matrix is a square matrix where the transpose of the matrix is equal to the negation of the matrix itself.
 
 Now that we can obtain a commutative represention of a small rotation by a 3d vector. The remaining question is how to represent a larger rotation?
 
-If we want a larger rotation, we can simply split 3d vector $\omega$ into n pieces, and compose the as follows:
+If we desire a larger rotation, we can simply divide the 3D vector $\omega$ into n pieces and compose them as follows:
 
 $$
 R(\omega) =
@@ -164,9 +172,8 @@ R(\omega)
 \tag{9}
 $$
 
-$\gdef\so3{\mathfrak{so}(3)}$
 
-In actually, some part of Lie group theories have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so3$ associated with $SO(3)$ by the exponential map.
+In actually, some part of Lie group theories have been described in above. The 3D rotation space $R$ is called as *special orthogonal group* $SO(3)$. The 3d vector $\omega$ is called the Lie algebra $\so{3}$ associated with $SO(3)$ by the exponential map.
 
 ## Group
 
@@ -191,24 +198,25 @@ For example, the Rubik's Cube group is a group, we can simply verify that the gr
 ##  Lie group
 
 A Lie group is a continuous group, which means a Lie group is infinitely differentiable (smooth).
-Therefore, the Rubik's Cube group is a group, but not a Lie group. 3D rotation space is a group as well as a Lie group. 
+Therefore, The Rubik's Cube group, on the other hand, is a group but not a Lie group. In contrast, 3D rotation space is both a group and a Lie group.
 
-Because of the following advantages, Lie group and Lie algebra are often used to represent rotations in the latest SLAM studies.
+Due to several advantages, Lie groups and Lie algebras are commonly used to represent rotations in modern SLAM (Simultaneous Localization and Mapping) studies. These advantages include:
 
-* Lie algebra only use 3 values to represent a rotation.
-* A Lie group and Lie algebra is differentiable.
-* There is no gimbal lock problem in Lie group or Lie algebra.
-* For small rotation, Lie group is easy to be linearized (6).
+* Lie algebra only requires three values to represent a rotation..
+* A Lie groups or Lie algebras is differentiable.
+* Gimbal lock problems do not occur in Lie groups or Lie algebras.
+* For small rotations, Lie groups are easily linearized (6).
 
 ## Special orthogonal group $SO(3)$
 
 ### Exponential map
-We can map a $\so3$ to $SO(3)$ by (8) or (9), But the calculation is too complicated. Here we will try to simplify it.
-$\gdef\norm#1{\|{#1}\|}$
+We can map a $\so3$ to $SO(3)$ using equations (8) or (9), However, these calculations can be quite complex. To simplify the process, we introduce the following definitions:
 
 We define $\omega = \theta r$
-* $r$ is a unit vector of $\omega$,  $ r =\frac{\omega}{\norm{\omega}} $ 
+* $r$ is a unit vector of $\omega$, $ r =\frac{\omega}{\norm{\omega}} $.
 * $\theta$ is the norm of a $\omega$, $ \theta = \norm{\omega} $  
+
+The exponential map can be computed as follows:
 
 $$
 \begin{aligned} 
@@ -245,11 +253,11 @@ If $r$ is a unit vector:
 
 
 
-The formula (10) show a fast way to calculate the exponential map from $\so3$ to $SO(3)$, it is known as [Rodrigues' Formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula).
+The formula (10) represents a fast way to calculate the exponential map from $\so3$ to $SO(3)$, and is known as [Rodrigues' Formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula).
 
 ### Logarithm map
 
-In contrast to Exponential map, using the Logarithm map can correspond a Lie algebra to a Lie group.
+In contrast to exponential map, the logarithm map corresponds a Lie algebra to a Lie group.
 
 The formula (10) can be wrtten as matrix:
 
@@ -277,7 +285,7 @@ r_1 r_2 (1-cos\theta) +r_3 sin\theta   & r_2^2 (1-cos\theta) + cos\theta      & 
 \tag{11}
 $$
 
-From (11) we can see:
+From equation (11), we can derive the following formulas:
 
 $$
 \theta = arccos( \frac{1}{2}(R_{11} + R_{22} + R_{33} -1)) \\
@@ -290,7 +298,7 @@ r = [ R_{32} - R_{23}, R_{13} - R_{31}, R_{12} - R_{21}]/2 sin \theta
 \tag{13}
 $$
 
-from (12) (13), Logarithm map can be implmented as follows:
+From equations (12) and (13), the logarithm map can be implemented as follows:
 
 $$
 log(R)^{\vee} = \omega = \frac{\theta[ R_{32} - R_{23}, R_{13} - R_{31}, R_{12} - R_{21}]}{2 sin \theta}  

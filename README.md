@@ -20,17 +20,17 @@ pip3 install -r requirements.txt
 
 ### guass_newton_method
 
-We made a guass-newton method library implemented in pure python. It can solve a variety of problems.
+We have developed a Gauss-Newton method library implemented in pure Python.
 
 * [Guass-newton Method Document](docs/guass_newton_method.pdf)
 * [Newton Method Document](docs/newton_method.pdf)
 
-My implementation is using the Lie group to solve for the 2D and 3D scan matching problems.
+We also provide some demos on Lie-Group based points matching using our library.
 
-* [Lie group Document](docs/rotation.pdf)
-* [SO3 (Japanese)](https://qiita.com/scomup/items/fa9aed8870585e865117)
-* [SE3 Blog (Japanese)](https://qiita.com/scomup/items/d82b35aeb1ecabd75e60)
-
+Lie group Document:
+* [SO3 group](docs/3d_rotation_group.pdf)
+* [SE3 group](docs/3d_rotation_group.pdf)
+* Blog(Japanese): [SO3 group](https://qiita.com/scomup/items/fa9aed8870585e865117); [SE3 group](https://qiita.com/scomup/items/d82b35aeb1ecabd75e60); [Lie group based optimization](https://qiita.com/scomup/items/a9c09d57101583c58619)
 #### gauss newton for 2d points matching.
 guass_newton_method/demo_2d.py
 ![demo2d](./imgs/demo2d.gif)
