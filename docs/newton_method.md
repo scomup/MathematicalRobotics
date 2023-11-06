@@ -15,7 +15,7 @@ $$
 When the objective function is presented by square form, we call this problem as least-squares problem.
 
 $$ 
-f =  \frac{r^T \Sigma r}{2} \tag{2}
+f =  r^T \Sigma^{-1} r \tag{2}
 $$
 
 ### Newton's method

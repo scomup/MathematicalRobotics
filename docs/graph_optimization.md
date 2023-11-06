@@ -8,18 +8,18 @@ Many robotics and computer vision problems can be represented by a graph problem
 A graph problem can be defined as a nonlinear least squares problems. Here, $r_k$ and $\Sigma_k$ represent the residual vector and the covariance matrix of edge k, respectively.
 
 $$
-\argmin_x  F(x) = \frac{1}{2} \sum_{e_{k}\in E} r_{k}^T \Sigma_{k}^{-1} r_{k} 
+\argmin_x  F(x) = \sum_{e_{k}\in E} r_{k}^T \Sigma_{k}^{-1} r_{k} 
 \tag{1}
 $$
 
 
 
-We need to find an optimal set of vertices (i.e. $V$) to minimize the overall cost. According to [guass_newton_method.md](./guass_newton_method.md), once we can compute the Hessian matrix $H$ and gradient $g$, we can solve this problem.
+We need to find an optimal set of vertices (i.e. $V$) to minimize the overall cost. As mentioned in [guass_newton_method.md](./guass_newton_method.md), once we can compute the Hessian matrix $H$ and gradient $g$, we can solve this problem.
 
 ### The hessian matrix $H$
-Assuming the number of vertices in the graph is n and the number of edges is m, the block sizes of J, r, H, and g are m x n, m x 1, n x n, and n x 1, respectively. We noticed that the size of H and g is independent of m.
+Assuming the number of vertices in the graph is n and the number of edges is m, the block sizes of J, r, H, and g are m x n, m x 1, n x n, and n x 1, respectively. We notice that the size of H and g is independent of m.
 
-The hessian matrix can be show as:
+The hessian matrix can be calculated as:
 $$ 
 H  =  J^T \Sigma^{-1} J
 = \begin{bmatrix}
@@ -32,7 +32,7 @@ $$
 
 ### The gradient $g$
 
-The gradient vector can be show as:
+The gradient vector can be calculated as:
 
 $$ 
 g  =  J^T \Sigma^{-1} r = 
@@ -44,7 +44,7 @@ g  =  J^T \Sigma^{-1} r =
 \tag{3}
 $$
 
-$i$ and $j$ are vertex numbers, and they also indicate the row and column numbers within the Hessian matrix. $k$ is the edge number. $J_{i}^k$ represents the partial derivative matrix of $r_k$ with respect to $x_i$.
+Here, $i$ and $j$ are the index of vertex, and they also indicate the row and column numbers within the Hessian matrix. $k$ is the index of edge. $J_{i}^k$ represents the partial derivative matrix of $r_k$ with respect to $x_i$.
 
 ## Derivative of edge between two lie groups
 Suppose $\varphi$ is an smooth mapping between two lie groups,

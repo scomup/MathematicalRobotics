@@ -14,7 +14,7 @@ class Pose3dEdge(BaseEdge):
 
     def residual(self, vertices):
         """
-        The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
+        The proof of Jocabian of SE3 is given in a graph_optimization.md (18)(19)
         """
         Tzx = np.linalg.inv(self.z) @ vertices[self.link[0]].x
         return logSE3(Tzx), [np.eye(6)]
@@ -27,7 +27,7 @@ class Pose3dbetweenEdge(BaseEdge):
 
     def residual(self, vertices):
         """
-        The proof of Jocabian of SE3 is given in a graph_optimization.md (20)(21)
+        The proof of Jocabian of SE3 is given in a graph_optimization.md (18)(19)
         """
         T0 = vertices[self.link[0]].x
         T1 = vertices[self.link[1]].x
