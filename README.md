@@ -30,7 +30,7 @@ We also provide some demos on Lie-Group based points matching using our library.
 Lie group Document:
 * [SO3 group](docs/3d_rotation_group.pdf)
 * [SE3 group](docs/3d_transformation_group.pdf)
-* Blog(Japanese): [SO3 group](https://qiita.com/scomup/items/fa9aed8870585e865117); [SE3 group](https://qiita.com/scomup/items/d82b35aeb1ecabd75e60); [Lie group based optimization](https://qiita.com/scomup/items/a9c09d57101583c58619)
+
 #### gauss newton for 2d points matching.
 guass_newton_method/demo_2d.py
 ![demo2d](./imgs/demo2d.gif)
@@ -58,7 +58,8 @@ robot_geometry/demo_plane_cross_cube.py
 ![demopcc](./imgs/plane_cross_cube.gif)
 
 ### Graph Optimization
-We made a graph optimization library implemented in pure python. Compared to well-known libraries such as g2o, gtsam, ceres, etc., the implementation is very easy to understand and ideal for study.
+We have developed a graph optimization library implemented in pure Python. In comparison to well-known graph optimization libraries like g2o, gtsam, ceres, etc., our implementation is highly readable and ideal for studying purposes.
+
 
 * [Graph Optimization Document](docs/graph_optimization.pdf)
 
