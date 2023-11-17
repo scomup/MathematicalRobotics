@@ -10,33 +10,37 @@ from basic_geometry import *
 from graph_optimization.graph_solver import *
 from slam.reprojection import *
 from utilities.robust_kernel import *
+from demo_p2line_matching import transform, plus
 
 
-class P2planeEdge(BaseEdge):
-    def __init__(self, link, z, omega=np.eye(1), kernel=None):
-        super().__init__(link, z, omega, kernel)
-
-    def residual(self, vertices):
-        """
-        r = P(T(x)*a, plane)
-        a: target point
-        T: transform matrix, x the se3 of T
-        P: point to plane
-        """
-        x = vertices[self.link[0]].x
-        a, plane = self.z
-        a_star, dTdx, _ = transform(x, a, True)
-        r, dPdT = point2plane(a_star, plane, True)
-        J = dPdT.dot(dTdx)
-        return r*np.ones(1), [J.reshape([1, 6])]
+def transform(T, p, calcJ=False):
+    R, t = makeRt(T)
+    r = R.dot(p) + t
+    if (calcJ is True):
+        M = R.dot(skew(-p))
+        dTdx = np.hstack([R, M])
+        dTdp = R
+        return r, dTdx, dTdp
+    else:
+        return r
 
 
-class Pose3Vertex(BaseVertex):
-    def __init__(self, x):
-        super().__init__(x, x.size)
+def residual(T, param):
+    """
+    r = P(T(x)*a, plane)
+    a: target point
+    T: transform matrix, x the se3 of T
+    P: point to plane
+    """
+    a, plane = param
+    a_star, dTdx, _ = transform(T, a, True)
+    r, dPdT = point2plane(a_star, plane, True)
+    J = dPdT.dot(dTdx)
+    return r*np.ones(1), J.reshape([1, 6])
 
-    def update(self, dx):
-        self.x = pose_plus(self.x, dx)
+
+def plus(T, delta):
+    return T @ p2m(delta)
 
 
 if __name__ == '__main__':
@@ -45,38 +49,34 @@ if __name__ == '__main__':
     ax = fig.add_subplot(projection='3d')
 
     graph = GraphSolver()
-    cur_pose = np.array([0, 0, 0, 0, 0, 0])
+    T = p2m(np.array([0, 0, 0, 0, 0, 0]))
 
     ref = np.array([[-1, 0, 2.01], [1, 3.02, 1], [-2.1, 3, 1], [1, 0., 1.1], [0, 1, 1.02]])
-    tar = np.array([[1.5, 1.5, -1.5], [-1.5, 0.5, -0.5], [2, 2.2, -2]])
+    src = np.array([[1.5, 1.5, -1.5], [-1.5, 0.5, -0.5], [2, 2.2, -2]])
 
     s, plane = find_plane(ref)
 
-    graph.add_vertex(Pose3Vertex(cur_pose))  # add vertex to graph
     draw_plane(ax, plane)
 
-    for p in tar:
-        graph.add_edge(P2planeEdge([0], [p, plane], kernel=HuberKernel(0.5)))  # add prior pose to graph
+    for p in src:
         r, j = point2plane(p, plane, True)
         g = -j*r
         draw_arrow(ax, p, g)
 
-    ax.scatter(ref[:, 0], ref[:, 1], ref[:, 2], label='ref')
-    ax.scatter(tar[:, 0], tar[:, 1], tar[:, 2], label='tar')
-    graph.solve(min_score_change=0.00001, step=0.1)
+    ax.scatter(ref[:, 0], ref[:, 1], ref[:, 2], label='target points (plane)')
+    ax.scatter(src[:, 0], src[:, 1], src[:, 2], label='source points')
 
-    x = graph.vertices[0].x
+    params = []
+    for i in src:
+        params.append([i, plane])
 
-    # for p in tar:
-    #     p2 = transform(x, p)
-    #     r, j = point2plane(p, plane, True)
-    #     g = -j*r
-    #     draw_arrow(ax, p2, g)
+    gn = guassNewton(6, residual, params, plus, kernel=HuberKernel(0.5))
 
-    R = expSO3(x[0:3])
-    t = x[3:6]
-    tar2 = (R.dot(tar.T).T + t)
-    ax.scatter(tar2[:, 0], tar2[:, 1], tar2[:, 2], label='tar2')
+    T = gn.solve(T, step=0.1)
+
+    R, t = makeRt(T)
+    tar2 = (R.dot(src.T).T + t)
+    ax.scatter(tar2[:, 0], tar2[:, 1], tar2[:, 2], label='matched source points')
 
     ax.legend()
     plt.show()

@@ -28,38 +28,37 @@ class Plot3D:
         plt.show()
 
 
-def residual(x, param):
+def residual(T, param):
     """
     The residual vector of 3d point matching is given by guass_newton_method.md (7)
     The proof of Jocabian of 3d point matching is given in a guass_newton_method.md (12)
     """
     a, b = param
-    T0 = expSE3(x)
-    R, t = makeRt(T0)
+    R, t = makeRt(T)
     r = R.dot(a) + t - b
     I = np.eye(3)
     j = np.zeros([4, 6])
     j[0:3, 0:3] = I
     j[0:3, 3:6] = skew(-a)
-    j = (T0 @ j)[0:3]
+    j = (T @ j)[0:3]
     return r.flatten(), j
 
 
-def plus(x1, x2):
+def plus(T, delta):
     """
     The incremental function of SE3 is given in guass_newton_method.md (5)
     """
-    return logSE3(expSE3(x1).dot(expSE3(x2)))
+    return T @ expSE3(delta)
 
 
 if __name__ == '__main__':
 
     plt3d = Plot3D()
 
-    x_truth = np.array([1000, -0.1, 0.1, 2.1, 2.2, -1.3])
+    T_truth = expSE3(np.array([1000, -0.1, 0.1, 2.1, 2.2, -1.3]))
     a = np.loadtxt("data/bunny.txt")
     # a = (np.random.rand(elements, 3)-0.5)*2
-    b = transform3d(x_truth, a.T).T
+    b = transform3d(T_truth, a.T).T
     elements = a.shape[0]
     b += np.random.normal(0, 0.001, (elements, 3))
 
@@ -67,16 +66,16 @@ if __name__ == '__main__':
     for i in range(a.shape[0]):
         params.append([a[i], b[i]])
 
-    gn = guassNewton(residual, params, plus)
-    x_cur = np.array([0., 0., 0., 0., 0., 0.])
+    gn = guassNewton(6, residual, params, plus)
+    T_cur = expSE3(np.array([0., 0., 0., 0., 0., 0.]))
     cur_a = a.copy()
     last_score = None
     iter = 0
     while(True):
         plt3d.update(cur_a, b)
-        dx, score = gn.solve_once(x_cur)
-        x_cur = gn.plus(x_cur, dx)
-        cur_a = transform3d(x_cur, a.T).T
+        dx, score = gn.solve_once(T_cur)
+        T_cur = gn.plus(T_cur, dx)
+        cur_a = transform3d(T_cur, a.T).T
         print('iter %d: %f' % (iter, score))
         iter += 1
         if (last_score is None):

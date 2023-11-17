@@ -7,40 +7,39 @@ from utilities import *
 from guass_newton_method.guass_newton import *
 from geometry_plot import *
 from basic_geometry import *
-from graph_optimization.graph_solver import *
-from slam.reprojection import *
-
 from utilities.robust_kernel import *
 
 
-class P2lineEdge(BaseEdge):
-    def __init__(self, link, z, omega=np.eye(1), kernel=None):
-        super().__init__(link, z, omega, kernel)
-
-    def residual(self, vertices):
-        """
-        r = P(T(x)*a, c, dir)
-        a: target point
-        T: transform matrix, x the se3 of T
-        c: center of line
-        dir: direction of line
-        P: point to line
-        """
-        x = vertices[self.link[0]].x
-        a, c, dir = self.z
-        a_star, dTdx, _ = transform(x, a, True)
-        r, dPdT = point2line(a_star, c, dir, True)
-        # dPdT2 = numericalDerivative(point2line, [a_star, c, dir], 0)
-        J = dPdT.dot(dTdx)
-        return r*np.ones(1), [J.reshape([1, 6])]
+def transform(T, p, calcJ=False):
+    R, t = makeRt(T)
+    r = R.dot(p) + t
+    if (calcJ is True):
+        M = R.dot(skew(-p))
+        dTdx = np.hstack([R, M])
+        dTdp = R
+        return r, dTdx, dTdp
+    else:
+        return r
 
 
-class Pose3Vertex(BaseVertex):
-    def __init__(self, x):
-        super().__init__(x, x.size)
+def plus(T, delta):
+    return T @ p2m(delta)
 
-    def update(self, dx):
-        self.x = pose_plus(self.x, dx)
+
+def residual(T, param):
+    """
+    r = P(T(x)*a, c, dir)
+    a: target point
+    T: transform matrix, x the se3 of T
+    c: center of line
+    dir: direction of line
+    P: point to line
+    """
+    a, c, dir = param
+    a_star, dTdx, _ = transform(T, a, True)
+    r, dPdT = point2line(a_star, c, dir, True)
+    J = dPdT @ dTdx
+    return r * np.ones(1), J.reshape([1, 6])
 
 
 if __name__ == '__main__':
@@ -48,44 +47,39 @@ if __name__ == '__main__':
     fig = plt.figure("plane", figsize=plt.figaspect(1))
     ax = fig.add_subplot(projection='3d')
 
-    graph = GraphSolver()
-    cur_pose = np.array([0, 0, 0, 0, 0, 0])
+    T = p2m(np.array([0, 0, 0, 0, 0, 0]))
 
-    # ref = np.array([[0.1, 0.2, -0.2], [1, 1.02, 0.1], [2.1, 2.5, 0.4], [2.8, 3.0, 0.5], [4.2, 3.9, 1.2]])
-    # tar = np.array([[1.5, 1.5, 1.2], [0.4, 0.7, 0.5], [2, 2.2, 2]])
-    ref = np.array([[0.1, 0.2, -0.0], [1, 1.02, 0.0], [2.1, 2.5, 0.0], [2.8, 3.0, 0.0], [4.2, 3.9, 0]])
-    # tar = np.array([[1.5, 1.5, 1.2], [0.4, 0.7, 0.5], [2, 2.2, 2]])
-    tar = np.array([[1.6, 1.5, 1.5], [0.5, 0.4, 0.5], [2, 2.2, 1.9]])
+    tar = np.array([[0.1, 0.2, -0.0], [1, 1.02, 0.0], [2.1, 2.5, 0.0], [2.8, 3.0, 0.0], [4.2, 3.9, 0]])
+    src = np.array([[1.6, 1.5, 1.5], [0.5, 0.4, 0.5], [2, 2.2, 1.9]])
 
-    s, center, direction = find_line(ref)
-    # tar = np.array([[0.1, 0.2, -0], [1, 1.02, 0], [2.1, 2.5, 0], [2.8, 3.0, 0], [4.2, 3.9, 0], [5, 5, 0], [5, 5, 0]])
+    _, center, direction = find_line(tar)
 
-    graph.add_vertex(Pose3Vertex(cur_pose))  # add vertex to graph
+    params = []
+    for i in src:
+        params.append([i, center, direction])
+
+    gn = guassNewton(6, residual, params, plus, kernel=HuberKernel(2))
+
+    T = gn.solve(T, step=0.1)
+
     draw_line(ax, center, direction)
 
-    for p in tar:
-        graph.add_edge(P2lineEdge([0], [p, center, direction], kernel=HuberKernel(0.5)))  # add prior pose to graph
+    for p in src:
         r, j = point2line(p, center, direction, True)
         g = -j*r
         draw_arrow(ax, p, g)
 
-    ax.scatter(ref[:, 0], ref[:, 1], ref[:, 2], label='ref')
-    ax.scatter(tar[:, 0], tar[:, 1], tar[:, 2], label='tar')
-    graph.solve(min_score_change=0.00001, step=0.1)
-    x = graph.vertices[0].x
+    ax.scatter(tar[:, 0], tar[:, 1], tar[:, 2], label='target points (line)')
+    ax.scatter(src[:, 0], src[:, 1], src[:, 2], label='source points')
 
-    # R = expSO3(x[0:3])
-    # t = x[3:6]
-    # tar2 = (R.dot(tar.T) + t).T
-    for p in tar:
-        p2 = transform(x, p)
+    for p in src:
+        p2 = transform(T, p)
         r, j = point2line(p2, center, direction, True)
         g = -j*r
         draw_arrow(ax, p2, g)
 
-    R = expSO3(x[0:3])
-    t = x[3:6]
-    tar2 = (R.dot(tar.T).T + t)
-    ax.scatter(tar2[:, 0], tar2[:, 1], tar2[:, 2], label='tar2')
+    R, t = makeRt(T)
+    tar2 = (R.dot(src.T).T + t)
+    ax.scatter(tar2[:, 0], tar2[:, 1], tar2[:, 2], label='matched source points')
     ax.legend()
     plt.show()

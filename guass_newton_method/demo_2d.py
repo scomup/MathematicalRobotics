@@ -22,13 +22,13 @@ class Plot2D:
         plt.show()
 
 
-def residual(x, param):
+def residual(T, param):
     """
     The residual vector of 2d point matching is given by guass_newton_method.md (7)
     The proof of Jocabian of 2d point matching is given in a guass_newton_method.md (12)
     """
     a, b = param
-    R, t = makeRt(v2m(x))
+    R, t = makeRt(T)
     r = R.dot(a) + t - b
     j = np.array([[1, 0, -a[1]],
                   [0, 1,  a[0]]])
@@ -36,21 +36,21 @@ def residual(x, param):
     return r.flatten(), j
 
 
-def plus(x1, x2):
+def plus(T, delta):
     """
     The incremental function of SE2 is given in guass_newton_method.md (5)
     """
-    return m2v(v2m(x1).dot(v2m(x2)))
+    return T @ v2m(delta)
 
 if __name__ == '__main__':
 
     plt2d = Plot2D()
-    x_truth = np.array([-0.3, 0.2, np.pi/2])
+    T_truth = v2m(np.array([-0.3, 0.2, np.pi/2]))
     elements = 10
     # a = (np.random.rand(elements, 2)-0.5)*2
 
     a = np.array([[0, 0], [0, 0.5], [0, 1], [0.5, 0], [0.5, 1], [1, 0], [1, 0.5], [1, 1]])
-    b = transform2d(x_truth, a.T).T
+    b = transform2d(T_truth, a.T).T
     b[0, 1] -= 0.5
     b[0, 0] += 0.5
 
@@ -60,16 +60,16 @@ if __name__ == '__main__':
 
     # b += np.random.normal(0, 0.03, (elements, 2))
     kernel = CauchyKernel(0.1)
-    gn = guassNewton(residual, params, plus, kernel)
-    x_cur = np.array([0., 0., 0.])
+    gn = guassNewton(3, residual, params, plus, kernel)
+    T_cur = v2m(np.array([0., 0., 0.]))
     cur_a = a.copy()
     last_score = None
     iter = 0
     while(True):
         plt2d.update(cur_a, b)
-        dx, score = gn.solve_once(x_cur)
-        x_cur = gn.plus(x_cur, dx)
-        cur_a = transform2d(x_cur, a.T).T
+        dx, score = gn.solve_once(T_cur)
+        T_cur = gn.plus(T_cur, dx)
+        cur_a = transform2d(T_cur, a.T).T
         print('iter %d: %f' % (iter, score))
         iter += 1
         if (last_score is None):

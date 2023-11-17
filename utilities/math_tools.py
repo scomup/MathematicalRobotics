@@ -258,14 +258,14 @@ def logSO3(R):
     return omega
 
 
-def transform2d(x, p, x2T=v2m):
+def transform2d(x, p, x2T=lambda x: x):
     R, t = makeRt(x2T(x))
     element = int(p.size/2)
     tp = np.dot(R, p).reshape(2, -1) + np.array([t, ]*(element)).transpose()
     return tp
 
 
-def transform3d(x, p, x2T=expSE3):
+def transform3d(x, p, x2T=lambda x: x):
     R, t = makeRt(x2T(x))
     element = int(p.size/3)
     tp = np.dot(R, p).reshape(3, -1) + np.array([t, ]*(element)).transpose()
