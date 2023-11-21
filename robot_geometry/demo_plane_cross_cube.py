@@ -62,10 +62,10 @@ def cube(cube_p, cube_size):
     p2 = np.array([cube_p[0], cube_p[1]+cube_size[1], cube_p[2]])
     p3 = np.array([cube_p[0], cube_p[1]+cube_size[1], cube_p[2]+cube_size[2]])
     p4 = np.array([cube_p[0], cube_p[1], cube_p[2]+cube_size[2]])
-    p5 = np.array([cube_p[0]+cube_size[2], cube_p[1], cube_p[2]])
-    p6 = np.array([cube_p[0]+cube_size[2], cube_p[1]+cube_size[1], cube_p[2]])
-    p7 = np.array([cube_p[0]+cube_size[2], cube_p[1]+cube_size[1], cube_p[2]+cube_size[2]])
-    p8 = np.array([cube_p[0]+cube_size[2], cube_p[1], cube_p[2]+cube_size[2]])
+    p5 = np.array([cube_p[0]+cube_size[0], cube_p[1], cube_p[2]])
+    p6 = np.array([cube_p[0]+cube_size[0], cube_p[1]+cube_size[1], cube_p[2]])
+    p7 = np.array([cube_p[0]+cube_size[0], cube_p[1]+cube_size[1], cube_p[2]+cube_size[2]])
+    p8 = np.array([cube_p[0]+cube_size[0], cube_p[1], cube_p[2]+cube_size[2]])
 
     # Define the vertices of the cube
     cube_vertices = np.array([p1, p2, p3, p4, p5, p6, p7, p8])
@@ -75,11 +75,14 @@ def cube(cube_p, cube_size):
     return cube_vertices, cube_edges
 
 
-def draw_cube(ax, cube_p, cube_size):
+def draw_cube(ax, T, cube_p, cube_size, **kwargs):
     cube_vertices, cube_edges = cube(cube_p, cube_size)
+    R, t = makeRt(T)
     # Plot the cube
     for edge in cube_edges:
-        ax.plot(cube_vertices[edge, 0], cube_vertices[edge, 1], cube_vertices[edge, 2], 'r')
+        p0 = R @ cube_vertices[edge[0]] + t
+        p1 = R @ cube_vertices[edge[1]] + t
+        ax.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], **kwargs)
 
 
 def draw_lines(ax, points):
@@ -97,15 +100,15 @@ if __name__ == '__main__':
     norm = norm/np.linalg.norm(norm)
 
     for i in range(40):
-        #plane = np.zeros(4)
-        #plane[0:3] = norm
+        # plane = np.zeros(4)
+        # plane[0:3] = norm
         ax.clear()
         cube_p = np.array([-1, -1, -1])
         cube_size = np.array([2, 2, 2.])
-        #draw_arrow(ax, p, norm)
+        # draw_arrow(ax, p, norm)
         p[0] += 0.1
         draw_plane2(ax, p, get_R_by_norm(norm), size=[3, 3])
-        draw_cube(ax, cube_p, cube_size)
+        draw_cube(ax, np.eye(4), cube_p, cube_size, color='r')
         points = cross_cube(p, norm, cube_p, cube_size)
         if(points.shape[0] <= 2):
             continue
