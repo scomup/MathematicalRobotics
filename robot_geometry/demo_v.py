@@ -2,7 +2,7 @@ import open3d as o3d
 import numpy as np
 import matplotlib.pyplot as plt
 
-# from pypcd import pypcd
+from pypcd import pypcd
 # pc1 = pypcd.PointCloud.from_path('/Users/liuyang/workspace/MathematicalRobotics/robot_geometry/2.pcd')
 
 pcd1 = o3d.io.read_point_cloud("/Users/liuyang/workspace/MathematicalRobotics/robot_geometry/1.pcd", format='pcd')

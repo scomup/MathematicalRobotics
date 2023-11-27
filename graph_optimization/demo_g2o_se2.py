@@ -1,6 +1,6 @@
 import numpy as np
 from graph_solver import *
-from g2o_io import *
+from utilities.g2o_io import *
 from graph_optimization.demo_pose2d_graph import Pose2dEdge, Pose2dbetweenEdge, Pose2Vertex, draw
 import matplotlib.pyplot as plt
 

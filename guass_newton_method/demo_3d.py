@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from guass_newton import *
 from mpl_toolkits.mplot3d import axes3d, Axes3D
+from utilities.pcd_io import load_pcd
 
 class Plot3D:
     def __init__(self):
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     plt3d = Plot3D()
 
     T_truth = expSE3(np.array([1000, -0.1, 0.1, 2.1, 2.2, -1.3]))
-    a = np.loadtxt("data/bunny.txt")
+    a = load_pcd("data/bunny.pcd")
     # a = (np.random.rand(elements, 3)-0.5)*2
     b = transform3d(T_truth, a.T).T
     elements = a.shape[0]
