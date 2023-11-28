@@ -34,6 +34,11 @@ def transformVelocity2D(Tba, vwa):
     return vwb
 
 
+def transformVel(Tba, v, omega):
+    Rba, tba = makeRt(Tba)
+    return Rba @ v + skew(tba) @ Rba @ omega
+
+
 expSE2(np.array([-1, 1., 0.2]))
 
 if __name__ == '__main__':

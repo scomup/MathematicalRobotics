@@ -120,9 +120,9 @@ def plot_pose3(
     else:
         axes = fig.axes[0]
     plot_pose3_on_axes(axes, pose, axis_length=axis_length)
-    axes.set_xlabel(axis_labels[0])
-    axes.set_ylabel(axis_labels[1])
-    axes.set_zlabel(axis_labels[2])
+    # axes.set_xlabel(axis_labels[0])
+    # axes.set_ylabel(axis_labels[1])
+    # axes.set_zlabel(axis_labels[2])
     return fig
 
 
