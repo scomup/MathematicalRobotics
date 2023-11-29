@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from utilities import *
+from utilities.plot_tools import draw_cube, cube, draw_lines
 from guass_newton_method.guass_newton import *
 from robot_geometry.geometry_plot import *
 
@@ -56,42 +56,6 @@ def cross_cube(plane_point, plane_normal, cube_p, cube_size):
     return np.array(points)
 
 
-def cube(cube_p, cube_size):
-    # Calculate the remaining vertices of the cube
-    p1 = np.array([cube_p[0], cube_p[1], cube_p[2]])
-    p2 = np.array([cube_p[0], cube_p[1]+cube_size[1], cube_p[2]])
-    p3 = np.array([cube_p[0], cube_p[1]+cube_size[1], cube_p[2]+cube_size[2]])
-    p4 = np.array([cube_p[0], cube_p[1], cube_p[2]+cube_size[2]])
-    p5 = np.array([cube_p[0]+cube_size[0], cube_p[1], cube_p[2]])
-    p6 = np.array([cube_p[0]+cube_size[0], cube_p[1]+cube_size[1], cube_p[2]])
-    p7 = np.array([cube_p[0]+cube_size[0], cube_p[1]+cube_size[1], cube_p[2]+cube_size[2]])
-    p8 = np.array([cube_p[0]+cube_size[0], cube_p[1], cube_p[2]+cube_size[2]])
-
-    # Define the vertices of the cube
-    cube_vertices = np.array([p1, p2, p3, p4, p5, p6, p7, p8])
-    cube_edges = [[0, 1], [1, 2], [2, 3], [3, 0],
-                  [4, 5], [5, 6], [6, 7], [7, 4],
-                  [0, 4], [1, 5], [2, 6], [3, 7]]
-    return cube_vertices, cube_edges
-
-
-def draw_cube(ax, T, cube_p, cube_size, **kwargs):
-    cube_vertices, cube_edges = cube(cube_p, cube_size)
-    R, t = makeRt(T)
-    # Plot the cube
-    for edge in cube_edges:
-        p0 = R @ cube_vertices[edge[0]] + t
-        p1 = R @ cube_vertices[edge[1]] + t
-        ax.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], **kwargs)
-
-
-def draw_lines(ax, points):
-        n = points.shape[0]
-        for i in range(n):
-            idx = [i, (i + 1) % n]
-            ax.plot(points[idx, 0], points[idx, 1], points[idx, 2], 'b')
-
-
 if __name__ == '__main__':
     fig = plt.figure("plane", figsize=plt.figaspect(1))
     ax = fig.add_subplot(projection='3d')
@@ -116,5 +80,5 @@ if __name__ == '__main__':
         ax.scatter(points[:, 0], points[:, 1], points[:, 2], c='black')
         draw_lines(ax, points)
         set_axes_equal(ax)
-        ax.legend()
+        # ax.legend()
         plt.pause(0.1)

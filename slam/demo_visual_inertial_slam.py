@@ -10,7 +10,7 @@ from utilities.robust_kernel import *
 from imu_preintegration.preintegration import *
 from imu_preintegration.imu_factor import *
 from slam.demo_visual_slam2 import *
-from graph_optimization.plot_pose import *
+from utilities.plot_tools import *
 
 G = 9.81
 

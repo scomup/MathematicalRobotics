@@ -4,8 +4,6 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
-# from graph_optimization.plot_pose import *
-# from robot_geometry.demo_plane_cross_cube import draw_cube
 
 
 class InputIMU:

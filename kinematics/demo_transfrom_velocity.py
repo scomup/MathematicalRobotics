@@ -9,6 +9,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from utilities.gl_objects import *
+from transfrom_velocity import transformVelocity3D
 
 
 class GLTextViewWidget(gl.GLViewWidget):
@@ -42,7 +43,7 @@ class GLTextViewWidget(gl.GLViewWidget):
 
 
 class Gui3d(QMainWindow):
-    def __init__(self, robot_arm , traj_A, traj_B, va, dt):
+    def __init__(self, robot_arm, traj_A, traj_B, va, dt):
         self.time = 0.0
         self.robot_arm = robot_arm
         self.traj_A = traj_A
@@ -50,12 +51,12 @@ class Gui3d(QMainWindow):
         self.pre_A = np.eye(4)
         self.pre_B = np.eye(4)
         self.pre_time = 0.
-        self.va  = va
+        self.va = va
         self.dt = dt
         self.T = np.eye(4)
 
         super(Gui3d, self).__init__()
-        self.setGeometry(0, 0, 700, 900) 
+        self.setGeometry(0, 0, 700, 900)
         self.initUI()
 
     def initUI(self):
@@ -67,8 +68,6 @@ class Gui3d(QMainWindow):
         self.viewer = GLTextViewWidget()
         layout.addWidget(self.viewer, 1)
 
-
-
         self.label_text = QLabel()
         self.label_text.setText("time: %3.3f" % (self.time))
 
@@ -78,7 +77,7 @@ class Gui3d(QMainWindow):
         slider_x.valueChanged.connect(lambda val: self.setX(val))
 
         button = QPushButton("start")
-        self.start = False
+        self.start = True
         button.clicked.connect(self.button_cb)
 
         layout.addWidget(self.label_text)
@@ -88,7 +87,7 @@ class Gui3d(QMainWindow):
         timer = QtCore.QTimer(self)
         timer.setInterval(20)  # period, in milliseconds
         timer.timeout.connect(self.update)
-    
+
         self.viewer.setWindowTitle('Euler rotation')
         self.viewer.setCameraPosition(distance=40)
 
@@ -100,8 +99,6 @@ class Gui3d(QMainWindow):
         self.viewer.addItem(self.robot_arm)
         self.viewer.addItem(self.traj_A)
         self.viewer.addItem(self.traj_B)
-
-
         timer.start()
 
     def setX(self, vel):
@@ -109,7 +106,7 @@ class Gui3d(QMainWindow):
         self.label_text.setText("time: %3.3f " % (self.time))
 
     def button_cb(self):
-        self.start = not self.start 
+        self.start = not self.start
 
     def update(self):
         if (self.start):
@@ -142,16 +139,6 @@ class Gui3d(QMainWindow):
             self.traj_A.clear()
             self.traj_B.clear()
         self.viewer.update()
-
-
-def transformVelocity3D(Tba, va):
-    Rba, tba = makeRt(Tba)
-    M = np.eye(6)
-    M[0:3, 0:3] = Rba
-    M[0:3, 3:6] = skew(tba) @ Rba
-    M[3:6, 3:6] = Rba
-    vb = M @ va
-    return vb
 
 
 if __name__ == '__main__':

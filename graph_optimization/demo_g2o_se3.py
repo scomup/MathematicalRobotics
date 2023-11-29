@@ -1,9 +1,9 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from graph_solver import *
 from utilities.g2o_io import *
 from graph_optimization.demo_pose3d_graph import Pose3dEdge, Pose3dbetweenEdge, Pose3Vertex
-import matplotlib.pyplot as plt
-from graph_optimization.plot_pose import *
+from utilities.plot_tools import *
 
 
 def draw(figname, graph):

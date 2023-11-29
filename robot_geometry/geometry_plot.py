@@ -145,8 +145,23 @@ def draw_plane(ax, plane, center=np.array([0, 0]), size=[5, 5], res=0.5):
 
 
 if __name__ == '__main__':
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from utilities.math_tools import *
+
     fig = plt.figure("line")
     ax = fig.add_subplot(111, projection='3d')
+    omg = np.array([1, 2, 1])
+    t = np.array([1, 0, 0])
+    o = np.array([0, 0, 0])
+    a = - skew(omg) @ skew(omg) @ t
+    draw_arrow(ax, o, omg, 'omg')
+    draw_arrow(ax, o, t, 't')
+    draw_arrow(ax, t, a, 'a')
+    plt.show()
+
+    """
     a = np.array([-1, 1, 0])
     b = np.array([1, 2, 3])
     p = np.array([3, 0, 1])
@@ -178,3 +193,4 @@ if __name__ == '__main__':
     set_axes_equal(ax1)
 
     plt.show()
+    """

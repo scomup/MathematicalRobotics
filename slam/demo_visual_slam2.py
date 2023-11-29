@@ -7,7 +7,7 @@ import yaml
 from reprojection import *
 from graph_optimization.graph_solver import *
 from utilities.robust_kernel import *
-from graph_optimization.plot_pose import *
+from utilities.plot_tools import *
 
 
 class CamposeVertex:

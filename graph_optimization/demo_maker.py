@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
-from graph_optimization import plot_pose
+from utilities.plot_tools import *
 from graph_optimization.demo_pose3d_graph import Pose3dEdge, Pose3dbetweenEdge, Pose3Vertex
 
 FILE_PATH = os.path.join(os.path.dirname(__file__), '..')
@@ -45,7 +45,7 @@ def draw(figname, graph):
     for n in graph.vertices:
         if (not isinstance(n, Pose3Vertex)):
             continue
-        pose_trj.append(makeRt(expSE3(n.x))[1])
+        pose_trj.append(makeRt(n.x)[1])
     pose_trj = np.array(pose_trj)
     axes.scatter(pose_trj[:, 0], pose_trj[:, 1], c='blue', s=2, label='ndt optimize')
     e1_trj = []
@@ -53,9 +53,9 @@ def draw(figname, graph):
     for e in graph.edges:
         if (not isinstance(e, Pose3dEdge)):
             continue
-        t = makeRt(expSE3(graph.vertices[e.i].x))[1]
+        t = makeRt(graph.vertices[e.link[0]].x)[1]
         e1_trj.append(t)
-        t = makeRt(expSE3(e.z))[1]
+        t = makeRt(e.z)[1]
         e2_trj.append(t)
 
     e1_trj = np.array(e1_trj)
@@ -98,15 +98,15 @@ if __name__ == '__main__':
         if (T0 is None):
             T0 = T1
             last_marker_T = T1
-            T0_idx = graph.add_vertex(Pose3Vertex(logSE3(T0)))  # add vertex to graph
+            T0_idx = graph.add_vertex(Pose3Vertex(T0))  # add vertex to graph
             continue
         # pt = find_nearest(truth_data, p[0])
         # T1t = makeT(quaternion_to_matrix(pt[4:8])), pt[1:4])
 
-        T1_idx = graph.add_vertex(Pose3Vertex(logSE3(T1)))
+        T1_idx = graph.add_vertex(Pose3Vertex(T1))
         delta = np.linalg.inv(T0).dot(T1)
         # print(T0)
-        graph.add_edge(Pose3dbetweenEdge(T0_idx, T1_idx, logSE3(delta), omegaOdom))
+        graph.add_edge(Pose3dbetweenEdge([T0_idx, T1_idx], delta, omegaOdom))
         T0_idx = T1_idx
         T0 = T1
 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
             marker = find_nearest(truth_data, p[0])
             marker_T = makeT(quaternion_to_matrix(marker[4:8]), marker[1:4])
             # marker_T[0:3, 3] += np.random.normal(0, 0.01, 3)
-            graph.add_edge(Pose3dEdge(T1_idx, logSE3(marker_T), omegaMaker))  # add prior pose to graph
+            graph.add_edge(Pose3dEdge([T1_idx], marker_T, omegaMaker))  # add prior pose to graph
 
     # draw_graph_pose('blue', 'before ndt')
 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     for n in graph.vertices:
         if (not isinstance(n, Pose3Vertex)):
             continue
-        aft_trj.append(makeRt(expSE3(n.x))[1])
+        aft_trj.append(makeRt(n.x)[1])
     aft_trj = np.array(aft_trj)
     truth_trj = np.array(truth_trj)
     err = np.linalg.norm((truth_trj - aft_trj), axis=1)

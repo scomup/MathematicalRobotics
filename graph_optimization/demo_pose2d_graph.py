@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
-from graph_optimization.plot_pose import *
+from utilities.plot_tools import *
 from utilities.robust_kernel import *
 
 

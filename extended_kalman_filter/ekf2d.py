@@ -3,7 +3,7 @@ import numpy as np
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from graph_optimization.plot_pose import *
+from utilities.plot_tools import *
 
 
 def numericalDerivative(func, param, idx, plus=lambda a, b: a + b, minus=lambda a, b: a - b, delta=1e-5):
