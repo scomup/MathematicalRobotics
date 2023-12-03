@@ -1,11 +1,11 @@
 import numpy as np
-from graph_solver import *
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
 from utilities.plot_tools import *
 from utilities import plot_tools
+from graph_optimization.graph_solver import *
 
 
 class Pose3dEdge(BaseEdge):
@@ -29,20 +29,19 @@ class Pose3dbetweenEdge(BaseEdge):
         """
         The proof of Jocabian of SE3 is given in a graph_optimization.md (18)(19)
         """
-        T0 = vertices[self.link[0]].x
-        T1 = vertices[self.link[1]].x
-        T01 = np.linalg.inv(T0) @ T1
+        Ti = vertices[self.link[0]].x
+        Tj = vertices[self.link[1]].x
+        Tij = np.linalg.inv(Ti) @ Tj
 
-        r = logSE3(np.linalg.inv(self.z) @ T01)
+        r = logSE3(np.linalg.inv(self.z) @ Tij)
 
-        T10 = np.linalg.inv(T01)
-        R10, t10 = makeRt(T10)
+        Tji = np.linalg.inv(Tij)
+        Rji, tji = makeRt(Tji)
         J = np.zeros([6, 6])
-        J[0:3, 0:3] = -R10
-        J[0:3, 3:6] = -skew(t10).dot(R10)
-        J[3:6, 3:6] = -R10
+        J[0:3, 0:3] = -Rji
+        J[0:3, 3:6] = -skew(tji).dot(Rji)
+        J[3:6, 3:6] = -Rji
         return r, [J, np.eye(6)]
-
 
 class Pose3Vertex(BaseVertex):
     def __init__(self, x):

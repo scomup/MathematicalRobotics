@@ -9,19 +9,26 @@ def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.gca()
     vertices = []
-    edges = []
+    edges_odom = []
+    edges_loop = []
     for v in graph.vertices:
         vertices.append(v.x[0:2, 2])
     for e in graph.edges:
         if(len(e.link) != 2):
             continue
         i, j = e.link
-        edges.append([*graph.vertices[i].x[0:2, 2]])
-        edges.append([*graph.vertices[j].x[0:2, 2]])
+        if(np.abs(i-j)==1):
+            edges_odom.append([*graph.vertices[i].x[0:2, 2]])
+            edges_odom.append([*graph.vertices[j].x[0:2, 2]])
+        else:
+            edges_loop.append([*graph.vertices[i].x[0:2, 2]])
+            edges_loop.append([*graph.vertices[j].x[0:2, 2]])
     vertices = np.array(vertices)
-    edges = np.array(edges)
-    axes.scatter(vertices[:, 0], vertices[:, 1], s=2, color='r')
-    axes.plot(edges[:, 0], edges[:, 1], c='b', linewidth=1)
+    edges_odom = np.array(edges_odom)
+    edges_loop = np.array(edges_loop)
+    axes.scatter(vertices[:, 0], vertices[:, 1], s=2, color='k')
+    axes.plot(edges_odom[:, 0], edges_odom[:, 1], c='b', linewidth=1)
+    axes.plot(edges_loop[:, 0], edges_loop[:, 1], c='r', linewidth=1)
 
 if __name__ == '__main__':
 

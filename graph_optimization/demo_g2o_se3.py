@@ -10,17 +10,26 @@ def draw(figname, graph):
     fig = plt.figure(figname)
     axes = fig.add_subplot(projection='3d')
     vertices = []
-    edges = []
+    edges_odom = []
+    edges_loop = []
     for v in graph.vertices:
-        vertices.append((v.x)[0:3, 3])
+        vertices.append(v.x[0:3, 3])
     for e in graph.edges:
+        if(len(e.link) != 2):
+            continue
         i, j = e.link
-        edges.append([*(graph.vertices[i].x)[0:3, 3]])
-        edges.append([*(graph.vertices[j].x)[0:3, 3]])
+        if(np.abs(i-j)==1):
+            edges_odom.append([*graph.vertices[i].x[0:3, 3]])
+            edges_odom.append([*graph.vertices[j].x[0:3, 3]])
+        else:
+            edges_loop.append([*graph.vertices[i].x[0:3, 3]])
+            edges_loop.append([*graph.vertices[j].x[0:3, 3]])
     vertices = np.array(vertices)
-    axes.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2],  s=10, color='r')
-    edges = np.array(edges)
-    axes.plot(xs=edges[:, 0], ys=edges[:, 1], zs=edges[:, 2], c='b', linewidth=1)
+    edges_odom = np.array(edges_odom)
+    edges_loop = np.array(edges_loop)
+    axes.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2],  s=5, color='k')
+    axes.plot(xs=edges_odom[:, 0], ys=edges_odom[:, 1], zs=edges_odom[:, 2], c='b', linewidth=1)
+    axes.plot(xs=edges_loop[:, 0], ys=edges_loop[:, 1], zs=edges_loop[:, 2], c='r', linewidth=1)
     set_axes_equal(figname)
 
 
