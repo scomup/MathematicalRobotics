@@ -43,6 +43,7 @@ class Pose3dbetweenEdge(BaseEdge):
         J[3:6, 3:6] = -Rji
         return r, [J, np.eye(6)]
 
+
 class Pose3Vertex(BaseVertex):
     def __init__(self, x):
         super().__init__(x, 6)

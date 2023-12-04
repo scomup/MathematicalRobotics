@@ -18,7 +18,7 @@ def draw(figname, graph):
         if(len(e.link) != 2):
             continue
         i, j = e.link
-        if(np.abs(i-j)==1):
+        if(np.abs(i-j) == 1):
             edges_odom.append([*graph.vertices[i].x[0:3, 3]])
             edges_odom.append([*graph.vertices[j].x[0:3, 3]])
         else:
@@ -36,7 +36,8 @@ def draw(figname, graph):
 if __name__ == '__main__':
 
     graph = GraphSolver(use_sparse=True)
-
+    # parking-garage.g2o
+    # sphere2500.g2o
     edges, vertices = load_g2o_se3('data/g2o/sphere2500.g2o')
     kernel = None
     # kernel = HuberKernel(1)

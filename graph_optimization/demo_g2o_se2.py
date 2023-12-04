@@ -17,7 +17,7 @@ def draw(figname, graph):
         if(len(e.link) != 2):
             continue
         i, j = e.link
-        if(np.abs(i-j)==1):
+        if(np.abs(i-j) == 1):
             edges_odom.append([*graph.vertices[i].x[0:2, 2]])
             edges_odom.append([*graph.vertices[j].x[0:2, 2]])
         else:
