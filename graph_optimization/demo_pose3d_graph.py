@@ -39,7 +39,7 @@ class Pose3dbetweenEdge(BaseEdge):
         Rji, tji = makeRt(Tji)
         J = np.zeros([6, 6])
         J[0:3, 0:3] = -Rji
-        J[0:3, 3:6] = -skew(tji).dot(Rji)
+        J[0:3, 3:6] = -skew(tji) @ Rji
         J[3:6, 3:6] = -Rji
         return r, [J, np.eye(6)]
 
