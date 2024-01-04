@@ -11,8 +11,6 @@ def transform(x, p, calcJ=False):
         R = expSO3(x[3:6])
     else:
         R, t = makeRt(x)
-    t = x[0:3]
-    R = expSO3(x[3:6])
     r = R @ p + t
     if (calcJ is True):
         M = R @ skew(-p)
@@ -56,20 +54,19 @@ def projection(pc, K, calcJ=False):
         return r
 
 
-def reproj0(x_wc, pw, u, K, calcJ=False):
+def reproj0(x_cw, pw, u, K, calcJ=False):
     """
     reporject a wolrd point to camera frame.
-
-    r = projection(transform_inv(x_wc, pw), K) - u
+    r = projection(transform(x_cw, pw), K) - u
     """
     if (calcJ is True):
-        pc, dpcdTwc, dpcdpw = transform_inv(x_wc, pw, True)
+        pc, dpcdTwc, dpcdpw = transform(x_cw, pw, True)
         u_reproj, dudpc = projection(pc, K, True)
         dudTwc = dudpc @ dpcdTwc
         dudpw = dudpc @ dpcdpw
         return u_reproj-u, dudTwc, dudpw
     else:
-        pc = transform_inv(x_wc, pw)
+        pc = transform(x_cw, pw)
         u_reproj = projection(pc, K)
         return u_reproj-u
 
@@ -208,5 +205,16 @@ if __name__ == '__main__':
     r, J1, J2 = reproj(x, p, pim, K, xbc, True)
     J1m = numericalDerivative(reproj, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
     J2m = numericalDerivative(reproj, [x, p, pim, K, xbc], 1)
+    check(J1m, J1)
+    check(J2m, J2)
+
+    print('test reproj0 error')
+    pim = np.array([50., 60.])
+    x = np.array([0.1, 0.3, 0.5, 0.1, 0.2, 0.3])
+    xbc = np.array([-0.1, 0.3, -0.5, 0.1, -0.2, 0.3])
+    p = np.array([5., 6., 10.])
+    r, J1, J2 = reproj0(x, p, pim, K, True)
+    J1m = numericalDerivative(reproj0, [x, p, pim, K], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(reproj0, [x, p, pim, K], 1)
     check(J1m, J1)
     check(J2m, J2)

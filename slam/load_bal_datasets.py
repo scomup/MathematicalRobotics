@@ -44,6 +44,7 @@ class BALLoader:
                     obs.camera_id, obs.point_id, obs.u[0], obs.u[1] = map(float, f.readline().split())
                     obs.camera_id = int(obs.camera_id)
                     obs.point_id = int(obs.point_id)
+                    obs.u = -obs.u
 
                 # read cameras
                 self.cameras = [Camera() for _ in range(num_cameras)]

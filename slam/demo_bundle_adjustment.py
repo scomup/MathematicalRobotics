@@ -33,11 +33,42 @@ class ReprojEdge(BaseEdge):
         """
         The proof of Jocabian of SE2 is given in a graph_optimization.md (13)(14)
         """
-        Twc = vertices[self.link[0]].x
+        Tcw = vertices[self.link[0]].x
         pw = vertices[self.link[1]].x
-        u, k = self.z
-        r, JTwc, Jpw = reproj0(Twc, pw, u, k, True)
-        return r, [JTwc, Jpw]
+        u, K = self.z
+        r, JTcw, Jpw = reproj0(Tcw, pw, u, K, True)
+        """
+        R, t = makeRt(Tcw)
+        pc = R @ pw + t
+        fx = K[0, 0]
+        fy = K[1, 1]
+        x, y, z = pc
+        z_2 = z * z
+        tmp = np.zeros([2, 3])
+        tmp[0, 0] = fx
+        tmp[0, 1] = 0
+        tmp[0, 2] = -x / z * fx
+        tmp[1, 0] = 0
+        tmp[1, 1] = fy
+        tmp[1, 2] = -y / z * fy      
+        Jxi = -1. / z * tmp @ R
+        Jxj = np.zeros([2, 6])
+        Jxj[0, 3] = x * y / z_2 * fx
+        Jxj[0, 4] = -(1 + (x * x / z_2)) * fx
+        Jxj[0, 5] = y / z * fx
+        Jxj[0, 0] = -1. / z * fx
+        Jxj[0, 1] = 0
+        Jxj[0, 2] = x / z_2 * fx
+
+        Jxj[1, 3] = (1 + y * y / z_2) * fy
+        Jxj[1, 4] = -x * y / z_2 * fy
+        Jxj[1, 5] = -x / z * fy
+        Jxj[1, 0] = 0
+        Jxj[1, 1] = -1. / z * fy
+        Jxj[1, 2] = y / z_2 * fy
+        """
+
+        return r, [JTcw, Jpw]
     
 
 def undistort_point(u, K, dist_coeffs):
@@ -107,9 +138,13 @@ if __name__ == '__main__':
 
     print("Undistort points...")
     camera_size = len(loader.cameras)
+    kernel = PseudoHuberKernel(2)
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
-        graph.add_edge(ReprojEdge([obs.camera_id, camera_size + obs.point_id], [obs.u_undist, cam.K])) 
+        graph.add_edge(ReprojEdge(
+            [obs.camera_id, camera_size + obs.point_id],
+            [obs.u_undist, cam.K],
+            np.eye(2), kernel)) 
 
     print("solve...")
 
