@@ -4,25 +4,25 @@ epsilon = 1e-5
 
 
 def v2m(v):
+    """
+    covert a 3d pose vector(a 2d translation and a so2) to 2d transformation matrix
+    """
     return np.array([[np.cos(v[2]), -np.sin(v[2]), v[0]],
                      [np.sin(v[2]), np.cos(v[2]), v[1]],
                      [0, 0, 1]])
 
 
 def m2v(m):
+    """
+    covert a 2d transformation matrix to 3d pose vector(a 2d translation and a so2)
+    """
     return np.array([m[0, 2], m[1, 2], np.arctan2(m[1, 0], m[0, 0])])
 
 
-def expSO2(v):
-    v = np.atleast_1d(v)
-    return np.array([[np.cos(v[0]), -np.sin(v[0])], [np.sin(v[0]), np.cos(v[0])]])
-
-
-def logSO2(m):
-    return np.arctan2(m[1, 0], m[0, 0])
-
-
 def p2m(x):
+    """
+    covert a 6d pose vector(a 3d translation and a so3) to 3d transformation matrix
+    """
     t = x[0:3]
     R = expSO3(x[3:6])
     m = np.eye(4)
@@ -32,10 +32,22 @@ def p2m(x):
 
 
 def m2p(m):
+    """
+    covert a 3d transformation matrix to 6d pose vector(a 3d translation and a so3)
+    """
     x = np.zeros(6)
     x[0:3] = m[0:3, 3]
     x[3:6] = logSO3(m[0:3, 0:3])
     return x
+
+
+def expSO2(v):
+    v = np.atleast_1d(v)
+    return np.array([[np.cos(v[0]), -np.sin(v[0])], [np.sin(v[0]), np.cos(v[0])]])
+
+
+def logSO2(m):
+    return np.arctan2(m[1, 0], m[0, 0])
 
 
 def skew(vector):
