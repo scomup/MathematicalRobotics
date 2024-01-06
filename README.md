@@ -13,6 +13,7 @@ We want to select some widely used and practical algorithms. for each algorithm,
 ## Requirements 
 
 ```bash
+sudo apt-get install libsuitesparse-dev
 pip3 install -r requirements.txt
 ```
 

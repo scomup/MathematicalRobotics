@@ -2,11 +2,12 @@ import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import cho_solve, cho_factor
 from scipy.sparse import csc_matrix, csr_matrix, lil_matrix
+from sksparse.cholmod import cholesky
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
-
+import time
 
 class BaseVertex:
     def __init__(self, x, size):
@@ -45,14 +46,14 @@ class GraphSolver:
     A graph optimization solver.
     more information is written in graph_optimization.md
     """
-    def __init__(self, use_sparse=False):
+    def __init__(self, use_sparse=False, epsilon=1e-6):
         self.vertices = []
         self.is_no_constant = []
         self.edges = []
         self.loc = []
         self.psize = 0
         self.use_sparse = use_sparse
-        self.lam = 0
+        self.epsilon = epsilon
 
     def add_vertex(self, vertex, is_constant=False):
         self.vertices.append(vertex)
@@ -144,25 +145,21 @@ class GraphSolver:
         # plt.imshow(np.linalg.inv(H))
         # plt.plot(g)
         # plt.show()
-        # dx = np.linalg.solve(H, -g)
-        # much faster than np.linalg.solve!
-        # H += np.eye(self.psize) * self.lam
+
+        H.flat[::H.shape[0]+1] += self.epsilon  # Regularization
         if (self.use_sparse):
-            dx = spsolve(csr_matrix(H, dtype=float), -g)
+            dx = cholesky(csc_matrix(H)).solve_A(-g)
         else:
-            try:
-                # dx = -cho_solve(cho_factor(H), g)
-                dx = -np.linalg.solve(H, g)
-            except:
-                print('Bad Hassian matrix!')
-                dx = -np.linalg.pinv(H) @ g
+            dx = np.linalg.solve(H, -g)
         return dx, score
 
     def solve(self, show_info=True, min_score_change=0.01, step=0):
         last_score = np.inf
         iter = 0
         while(True):
+            start = time.time()
             dx, score = self.solve_once()
+            end = time.time()
             # import matplotlib.pyplot as plt
             # plt.plot(dx)
             # plt.show()
@@ -170,7 +167,8 @@ class GraphSolver:
                 dx = dx/np.max(dx) * step
             iter += 1
             if (show_info):
-                print('iter %d: %f' % (iter, score))
+                time_diff = end - start
+                print('iter %d: solve time: %f error: %f' % (iter, time_diff, score))
             if (last_score - score < min_score_change and iter > 5):
                 break
             self.update(dx)

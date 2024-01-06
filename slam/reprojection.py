@@ -44,11 +44,13 @@ def projection(pc, K, calcJ=False):
     fy = K[1, 1]
     cx = K[0, 2]
     cy = K[1, 2]
-    r = np.array([(pc[0]/pc[2] * fx + cx),
-                  (pc[1]/pc[2] * fy + cy)])
+    x, y, z = pc
+    z_2 = z * z
+    r = np.array([(x * fx / z + cx),
+                  (y * fy / z + cy)])
     if (calcJ is True):
-        J = np.array([[fx/pc[2],    0, -fx*pc[0]/pc[2]**2],
-                      [0, fy/pc[2], -fy*pc[1]/pc[2]**2]])
+        J = np.array([[fx / z,    0, -fx * x / z_2],
+                      [0, fy / z, -fy * y / z_2]])
         return r, J
     else:
         return r

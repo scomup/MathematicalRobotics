@@ -7,6 +7,13 @@ from graph_optimization.graph_solver import *
 from utilities.math_tools import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
+from scipy.linalg import lu_factor, lu_solve
+from scipy.linalg import lapack, solve
+from scipy.sparse.linalg import spsolve_triangular
+from os import environ
+environ['OMP_NUM_THREADS'] = '1'
+
+inds_cache = {}
 
 
 class CameraVertex(BaseVertex):
@@ -15,6 +22,18 @@ class CameraVertex(BaseVertex):
 
     def update(self, dx):
         self.x = self.x @ p2m(dx)
+
+
+class Pose3dEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(6), kernel=None):
+        super().__init__(link, z, omega, kernel)
+
+    def residual(self, vertices):
+        """
+        The proof of Jocabian of SE3 is given in a graph_optimization.md (18)(19)
+        """
+        Tzx = np.linalg.inv(self.z) @ vertices[self.link[0]].x
+        return m2p(Tzx), [np.eye(6)]
 
 
 class PointVertex(BaseVertex):
@@ -37,37 +56,6 @@ class ReprojEdge(BaseEdge):
         pw = vertices[self.link[1]].x
         u, K = self.z
         r, JTcw, Jpw = reproj0(Tcw, pw, u, K, True)
-        """
-        R, t = makeRt(Tcw)
-        pc = R @ pw + t
-        fx = K[0, 0]
-        fy = K[1, 1]
-        x, y, z = pc
-        z_2 = z * z
-        tmp = np.zeros([2, 3])
-        tmp[0, 0] = fx
-        tmp[0, 1] = 0
-        tmp[0, 2] = -x / z * fx
-        tmp[1, 0] = 0
-        tmp[1, 1] = fy
-        tmp[1, 2] = -y / z * fy      
-        Jxi = -1. / z * tmp @ R
-        Jxj = np.zeros([2, 6])
-        Jxj[0, 3] = x * y / z_2 * fx
-        Jxj[0, 4] = -(1 + (x * x / z_2)) * fx
-        Jxj[0, 5] = y / z * fx
-        Jxj[0, 0] = -1. / z * fx
-        Jxj[0, 1] = 0
-        Jxj[0, 2] = x / z_2 * fx
-
-        Jxj[1, 3] = (1 + y * y / z_2) * fy
-        Jxj[1, 4] = -x * y / z_2 * fy
-        Jxj[1, 5] = -x / z * fy
-        Jxj[1, 0] = 0
-        Jxj[1, 1] = -1. / z * fy
-        Jxj[1, 2] = y / z_2 * fy
-        """
-
         return r, [JTcw, Jpw]
     
 
@@ -100,8 +88,69 @@ def undistort_point(u, K, dist_coeffs):
 
     return u_undist
 
+from gui import *
 
-if __name__ == '__main__':   
+if __name__ == '__main__':  
+    """
+    cameras = np.load("cameras.npy")
+    points = np.load("points.npy")
+    app = QApplication([])
+    R = expSO3(np.array([np.pi/2, 0, 0]))
+    T = makeT(R, np.zeros(3))
+    axis = GLAxisItem(size=[1, 1, 1], width=2)
+    points = (R @ points.T).T
+    points_item = gl.GLScatterPlotItem(pos=points, size=0.01, color=(1,1,1,0.3), pxMode=False)
+    items = [points_item]
+    for pose in cameras:
+        cam_item = GLCameraFrameItem(size=0.2, width=2)
+        axis_item = GLAxisItem(size=[0.1, 0.1, 0.1], width=2)
+        new_T = T @ np.linalg.inv(p2m(pose))
+        cam_item.setTransform(new_T)
+        axis_item.setTransform(new_T)
+        items.append(cam_item)
+        items.append(axis_item)
+    window = Gui3d(static_obj=items)
+    window.show()
+    app.exec_()
+    """
+
+    """
+    H = np.load("H.npy")
+    g = np.load("g.npy")
+    start = time.time()
+
+    H += np.eye(H.shape[0])
+    # L = np.linalg.cholesky(H)
+    # x = cho_solve((L,True), g)
+
+    # x = np.linalg.solve(H, -g)
+    # dx = -cho_solve(cho_factor(H), g)
+
+    #lu, piv = lu_factor(H)
+    #x = lu_solve((lu, piv), g)
+
+    #x = -np.linalg.inv(H) @ g 
+
+    #H += np.eye(H.shape[0])
+    #x = fast_positive_definite_inverse(H) @ g
+    #H += np.eye(H.shape[0])
+    #x = solve(H, g, assume_a = "pos", overwrite_b = True)
+    #dx = spsolve(csr_matrix(H), -g)
+    from sksparse.cholmod import cholesky
+    
+
+    # Perform Cholesky factorization
+    H.flat[::H.shape[0]+1] +=  0.0001
+    factor = cholesky(csc_matrix(H))
+
+    dx = factor.solve_A(-g)
+    end = time.time()
+    time_diff = end - start
+    print("solve time: %f"%time_diff)
+    exit(0)
+    """
+    
+    
 
     print("Load dataset...")
     loader = BALLoader()
@@ -131,6 +180,7 @@ if __name__ == '__main__':
             graph.add_vertex(CameraVertex(T), is_constant=True)
         else:
             graph.add_vertex(CameraVertex(T))  # add vertex to graph
+            graph.add_edge(Pose3dEdge([i], T, np.eye(6) * 1)) 
 
     print("Add point vertex...")
     for pw in loader.points:
@@ -138,7 +188,7 @@ if __name__ == '__main__':
 
     print("Undistort points...")
     camera_size = len(loader.cameras)
-    kernel = PseudoHuberKernel(2)
+    kernel = HuberKernel(np.sqrt(5))
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
         graph.add_edge(ReprojEdge(
@@ -147,9 +197,24 @@ if __name__ == '__main__':
             np.eye(2), kernel)) 
 
     print("solve...")
+    graph.solve(True, min_score_change=0.5)
+    cameras = []
+    points = []
+    for i, v in enumerate(graph.vertices):
+        if (i < len(loader.cameras)):
+            cameras.append(m2p(v.x))
+        else:
+            points.append(v.x)
 
-    graph.solve(True)
+    cameras = np.array(cameras)
+    points = np.array(points)
+
+    np.save("cameras.npy", cameras)
+    np.save("points.npy", points)
+
+
     #ax.scatter(points[:, 0], points[:, 1], points[:, 2])
     #plt.show()
+    
 
 
