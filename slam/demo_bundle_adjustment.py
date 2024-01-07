@@ -10,10 +10,8 @@ from mpl_toolkits.mplot3d import axes3d, Axes3D
 from scipy.linalg import lu_factor, lu_solve
 from scipy.linalg import lapack, solve
 from scipy.sparse.linalg import spsolve_triangular
-from os import environ
-environ['OMP_NUM_THREADS'] = '1'
-
-inds_cache = {}
+from threading import Thread
+from gui import *
 
 
 class CameraVertex(BaseVertex):
@@ -88,99 +86,56 @@ def undistort_point(u, K, dist_coeffs):
 
     return u_undist
 
-from gui import *
+
+def solveBA(graph, viewer):
+    min_score_change = 0.1
+    last_score = np.inf
+    itr = 0
+    while(True):
+        viewer.setVertices(graph.vertices)
+
+        start = time.time()
+        dx, score = graph.solve_once()
+        end = time.time()
+        itr += 1
+        time_diff = end - start
+
+        info_text = 'iter %d: solve time: %f error: %f' % (itr, time_diff, score)
+        print(info_text)
+        viewer.setText(info_text)
+        if (last_score - score < min_score_change and itr > 5):
+            break
+        graph.update(dx)
+        last_score = score
 
 if __name__ == '__main__':  
-    """
-    cameras = np.load("cameras.npy")
-    points = np.load("points.npy")
-    app = QApplication([])
-    R = expSO3(np.array([np.pi/2, 0, 0]))
-    T = makeT(R, np.zeros(3))
-    axis = GLAxisItem(size=[1, 1, 1], width=2)
-    points = (R @ points.T).T
-    points_item = gl.GLScatterPlotItem(pos=points, size=0.01, color=(1,1,1,0.3), pxMode=False)
-    items = [points_item]
-    for pose in cameras:
-        cam_item = GLCameraFrameItem(size=0.2, width=2)
-        axis_item = GLAxisItem(size=[0.1, 0.1, 0.1], width=2)
-        new_T = T @ np.linalg.inv(p2m(pose))
-        cam_item.setTransform(new_T)
-        axis_item.setTransform(new_T)
-        items.append(cam_item)
-        items.append(axis_item)
-    window = Gui3d(static_obj=items)
-    window.show()
-    app.exec_()
-    """
-
-    """
-    H = np.load("H.npy")
-    g = np.load("g.npy")
-    start = time.time()
-
-    H += np.eye(H.shape[0])
-    # L = np.linalg.cholesky(H)
-    # x = cho_solve((L,True), g)
-
-    # x = np.linalg.solve(H, -g)
-    # dx = -cho_solve(cho_factor(H), g)
-
-    #lu, piv = lu_factor(H)
-    #x = lu_solve((lu, piv), g)
-
-    #x = -np.linalg.inv(H) @ g 
-
-    #H += np.eye(H.shape[0])
-    #x = fast_positive_definite_inverse(H) @ g
-    #H += np.eye(H.shape[0])
-    #x = solve(H, g, assume_a = "pos", overwrite_b = True)
-    #dx = spsolve(csr_matrix(H), -g)
-    from sksparse.cholmod import cholesky
-    
-
-    # Perform Cholesky factorization
-    H.flat[::H.shape[0]+1] +=  0.0001
-    factor = cholesky(csc_matrix(H))
-
-    dx = factor.solve_A(-g)
-    end = time.time()
-    time_diff = end - start
-    print("solve time: %f"%time_diff)
-    exit(0)
-    """
-    
-    
 
     print("Load dataset...")
     loader = BALLoader()
     filename = "data/bal/problem-49-7776-pre.txt"
     if loader.load_file(filename):
-        print("File loaded successfully!")
-        print("Number of cameras:", len(loader.cameras))
-        print("Number of points:", len(loader.points))
-        print("Number of observation:", len(loader.observations))
+        pass
     else:
         print("Error loading file.")
-    #fig = plt.figure('test')
-    #plt.axis('equal')
-    #ax = fig.add_subplot(projection='3d')
 
     print("Undistort points...")
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
         obs.u_undist = undistort_point(obs.u, cam.K, cam.dist_coeffs)
 
+    # Add noise
+    #loader.points += np.random.normal(0, 0.1, loader.points.shape)
     graph = GraphSolver(use_sparse=True)
 
     print("Add camera vertex...")
     for i, cam in enumerate(loader.cameras):
         T = makeT(cam.R, cam.t)
-        if(i == 0):
+        if(i == 0 or i == 1):
+            # Due to the scale uncertainty, we fix the first and second frames
             graph.add_vertex(CameraVertex(T), is_constant=True)
         else:
             graph.add_vertex(CameraVertex(T))  # add vertex to graph
-            graph.add_edge(Pose3dEdge([i], T, np.eye(6) * 1)) 
+            # graph.add_edge(Pose3dEdge([i], T, np.eye(6) * 1)) 
 
     print("Add point vertex...")
     for pw in loader.points:
@@ -196,25 +151,15 @@ if __name__ == '__main__':
             [obs.u_undist, cam.K],
             np.eye(2), kernel)) 
 
-    print("solve...")
-    graph.solve(True, min_score_change=0.5)
-    cameras = []
-    points = []
-    for i, v in enumerate(graph.vertices):
-        if (i < len(loader.cameras)):
-            cameras.append(m2p(v.x))
-        else:
-            points.append(v.x)
 
-    cameras = np.array(cameras)
-    points = np.array(points)
+    app = QApplication([])
+    viewer = BAViewer()
+    viewer.show()
 
-    np.save("cameras.npy", cameras)
-    np.save("points.npy", points)
+    t = Thread(target=solveBA, args=[graph, viewer])
+    t.start()
 
+    app.exec_()
 
-    #ax.scatter(points[:, 0], points[:, 1], points[:, 2])
-    #plt.show()
-    
 
 

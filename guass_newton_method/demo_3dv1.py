@@ -38,14 +38,14 @@ if __name__ == '__main__':
     T_cur = p2m(np.array([0., 0., 0., 0., 0., 0.]))
     cur_a = a.copy()
     last_score = None
-    iter = 0
+    itr = 0
     while(True):
         plt3d.update(cur_a, b)
         dx, score = gn.solve_once(T_cur)
         T_cur = gn.plus(T_cur, dx)
         cur_a = transform3d(T_cur, a.T).T
-        print('iter %d: %f' % (iter, score))
-        iter += 1
+        print('iter %d: %f' % (itr, score))
+        itr += 1
         if (last_score is None):
             last_score = score
             continue

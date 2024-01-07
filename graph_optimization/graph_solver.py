@@ -155,7 +155,7 @@ class GraphSolver:
 
     def solve(self, show_info=True, min_score_change=0.01, step=0):
         last_score = np.inf
-        iter = 0
+        itr = 0
         while(True):
             start = time.time()
             dx, score = self.solve_once()
@@ -165,11 +165,11 @@ class GraphSolver:
             # plt.show()
             if (step > 0 and np.max(dx) > step):
                 dx = dx/np.max(dx) * step
-            iter += 1
+            itr += 1
             if (show_info):
                 time_diff = end - start
-                print('iter %d: solve time: %f error: %f' % (iter, time_diff, score))
-            if (last_score - score < min_score_change and iter > 5):
+                print('iter %d: solve time: %f error: %f' % (itr, time_diff, score))
+            if (last_score - score < min_score_change and itr > 5):
                 break
             self.update(dx)
             last_score = score

@@ -63,7 +63,9 @@ class BALLoader:
                 # read points
                 for i in range(num_points):
                     self.points.append(np.array([float(f.readline()), float(f.readline()), float(f.readline())]))
-            return self.observations
+
+                self.points = np.array(self.points)
+                return True
 
         except (IOError, ValueError, IndexError):
             return False
