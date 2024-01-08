@@ -1,9 +1,5 @@
 from load_bal_datasets import BALLoader
-from reprojection import *
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from graph_optimization.graph_solver import *
+from projection import *
 from utilities.math_tools import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D
@@ -13,34 +9,6 @@ from scipy.sparse.linalg import spsolve_triangular
 from threading import Thread
 from gui import *
 
-
-class CameraVertex(BaseVertex):
-    def __init__(self, x):
-        super().__init__(x, 6)
-
-    def update(self, dx):
-        self.x = self.x @ p2m(dx)
-
-
-class PointVertex(BaseVertex):
-    def __init__(self, x):
-        super().__init__(x, 3)
-
-    def update(self, dx):
-        self.x = self.x + dx
-
-
-class ProjectEdge(BaseEdge):
-    def __init__(self, link, z, omega=np.eye(2), kernel=None):
-        super().__init__(link, z, omega, kernel)
-
-    def residual(self, vertices):
-        Tcw = vertices[self.link[0]].x
-        pw = vertices[self.link[1]].x
-        u, K = self.z
-        r, JTcw, Jpw = project_error0(Tcw, pw, u, K, True)
-        return r, [JTcw, Jpw]
-    
 
 def undistort_point(u, K, dist_coeffs):
     # Convert to homogeneous coordinates

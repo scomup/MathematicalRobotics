@@ -8,15 +8,29 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import threading
 from utilities.math_tools import *
-from reprojection import *
+from projection import *
 import ros_numpy
+from gui import *
+from threading import Thread
 
 
 class Frame:
     def __init__(self):
-        self.pose = np.eye(4)
-        self.feat_tracked = None
-        self.feat_tracked_idx = None
+        self.Twc = np.eye(4)
+        self.feats = None
+        self.feats_idx = None
+
+class Point:
+    def __init__(self):
+        self.pw = np.eye(3)
+        self.frames = []
+        self.rgb = np.zeros(3)
+
+
+def get_color(scalar, scalar_min=0, scalar_max=20):
+    r = scalar_max - scalar_min
+    v = (scalar - scalar_min) / r
+    return (255 * (1 - v), 0, 255 * v)
 
 
 def rgb2gray(im):
@@ -43,7 +57,7 @@ def opticalFlowTrack(img0, img1, features0, back_check, horizontal_check):
             diff = features0[i][0][1] - features1[i][0][1]
             horizontal_err = np.sqrt(diff*diff)
             dist = features0[i][0][0] - features1[i][0][0]
-            if (dist < 0):
+            if (dist < 10):
                 status[i][0] = 0
                 continue
             if (horizontal_err/dist > 0.1):
@@ -51,126 +65,188 @@ def opticalFlowTrack(img0, img1, features0, back_check, horizontal_check):
     return features1, status
 
 
-class TrackImage():
-    def __init__(self):
+class TrackImage:
+    def __init__(self, viewer):
         image_l_sub = message_filters.Subscriber('/kitti/camera_color_left/image_raw', Image)
         image_r_sub = message_filters.Subscriber('/kitti/camera_color_right/image_raw', Image)
         ts = message_filters.ApproximateTimeSynchronizer([image_l_sub, image_r_sub], 10, 1/30.)
-        self.img_old = None
-        self.feat_tracked = None
+        self.imgs_old = None
+        # self.feat_tracked = None
         self.points = {}
         fx = 718.856
         fy = 718.856
         cx = 607.1928
         cy = 185.2157
-        self.x_c1c2 = np.array([0, 0, 0, 0.2, 0, 0])
         self.K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1.]])
-        self.lock = threading.Lock()
-        self.new_img = False
         self.frames = []
+        self.kernel = HuberKernel(np.sqrt(5))
+        self.viewer = viewer
+        self.cam = GLCameraFrameItem(size=0.2, width=1)
+        self.viewer.addItem(self.cam)
+
         ts.registerCallback(self.callback)
 
-    def add_new_points(self, image_r, image_l):
+    def add_new_points(self, imgs, frame):
+        new_points_num = 400
+        radius = 20
+
+        # if (frame.feats is not None and frame.feats.shape[0] > new_points_num/2):
+        #     return
+
+        image_r, image_l = imgs
         edge_mask = np.ones(image_r.shape, dtype=np.uint8) * 255
 
-        if (self.feat_tracked is not None):
-            for p in self.feat_tracked:
-                cv2.circle(edge_mask, center=tuple(p[0].astype(int)), radius=20, color=0, thickness=-1)
-    
+        if (frame.feats is not None):
+            new_points_num -= frame.feats.shape[0]
+            for p in frame.feats:
+                cv2.circle(edge_mask, center=tuple(p[0].astype(int)), radius=radius, color=0, thickness=-1)
+
+        if (new_points_num <= 0):
+            return
         # find new feature.
-        right_features = cv2.goodFeaturesToTrack(image_r, 200, 0.01, 20, mask=edge_mask)
-        
+        feats_r = cv2.goodFeaturesToTrack(image_r, new_points_num, 0.01, minDistance=radius, mask=edge_mask)
+
         # ckeck feature in left image.
-        left_features, status = opticalFlowTrack(image_r, image_l, right_features, False, True)
-        right_features = right_features[np.where(status.flatten())]
-        left_features = left_features[np.where(status.flatten())]
+        feats_l, status = opticalFlowTrack(image_r, image_l, feats_r, False, True)
+        feats_r = feats_r[np.where(status.flatten())]
+        feats_l = feats_l[np.where(status.flatten())]
 
-        # add new frame.
-        frame = Frame()
+        # add new feats to frame.
         base_idx = 0
-        if (self.feat_tracked is not None):
-            last_frame = self.frames[-1]
-            self.feat_tracked = np.vstack([self.feat_tracked, right_features])
-            base_idx = last_frame.features_idx[-1] + 1
-            frame.features = right_features
-            frame.features_idx = np.append(last_frame.features_idx, 
-                base_idx + np.arange(right_features.shape[0]))
+        if (frame.feats is not None):
+            print("add %d new points\n"%feats_r.shape[0])
+            frame.feats = np.vstack([frame.feats, feats_r])
+            base_idx = frame.feats_idx[-1] + 1
+            frame.feats_idx = np.append(frame.feats_idx, base_idx + np.arange(feats_r.shape[0]))
         else:
-            self.feat_tracked = right_features
-            frame.features = right_features
-            frame.features_idx = np.arange(right_features.shape[0])
-
-        self.frames.append(frame)
+            frame.feats = feats_r
+            frame.feats_idx = np.arange(feats_r.shape[0])
 
         # add new world points.
         Kinv = np.linalg.inv(self.K)
         baseline = 0.2
         focal = self.K[0, 0]
-        for i in range(right_features.shape[0]):
-            u = right_features[i][0][0]
-            v = right_features[i][0][1]
-            disp = right_features[i][0][0] - left_features[i][0][0]
-            p3d = Kinv.dot(np.array([u, v, 1.]))
+        for i in range(feats_r.shape[0]):
+            u = feats_r[i][0][0]
+            v = feats_r[i][0][1]
+            disp = feats_r[i][0][0] - feats_l[i][0][0]
+            pc = Kinv.dot(np.array([u, v, 1.]))
             depth = (baseline * focal) / (disp)
-            p3d *= depth
-            self.points.update({i + base_idx: {'pos':p3d, 'frames:':[0], 'pt':[right_features[i][0]]}})
+            pc *= depth
+            point = Point()
+            point.frames.append(len(self.frames))
+            Rwc, twc = makeRt(frame.Twc)
+            point.pw = Rwc @ pc + twc
+            point.rgb = self.imgs_color[0][tuple(feats_r[i][0][::-1].astype(np.int32))].astype(float)
+            self.points.update({i + base_idx: point})
 
+    def update_points(self, feats_idx, feats_tracked):
+        # update points
+        for i, idx in enumerate(feats_idx):
+            self.points[idx].frames.append(len(self.frames))
+            try:
+                self.points[idx].rgb = self.imgs_color[0][tuple(feats_tracked[i][0][::-1].astype(np.int32))].astype(float)
+            except:
+                pass
+
+    def calc_camera_pose(self, guess_Twc, frame):
+        Tcw = np.linalg.inv(guess_Twc)
+        graph = GraphSolver()
+
+        # Add camera vertex
+        graph.add_vertex(CameraVertex(Tcw))
+    
+        #Add point vertex
+        for i, idx in enumerate(frame.feats_idx):
+            pw = self.points[idx].pw
+            pidx = graph.add_vertex(PointVertex(pw), is_constant=True)
+            u = frame.feats[i][0]
+            graph.add_edge(ProjectEdge([0, pidx], [u, self.K], np.eye(2), None)) 
+
+        # solve
+        graph.solve(True, 0.1)
+        new_Tcw = graph.vertices[0].x
+        frame.Twc = np.linalg.inv(new_Tcw)
+        roll = -np.pi/2
+        R = np.array([[1, 0, 0],
+                    [0, np.cos(roll), -np.sin(roll)],
+                    [0, np.sin(roll), np.cos(roll)]])
+        T = np.eye(4)
+        T[0:3,0:3] = R
+
+        self.cam.setTransform(T @ frame.Twc)
 
     def callback(self, image_r_msg, image_l_msg):
-        if (self.new_img is True):
-            return
+        print("here!")
         image_r = ros_numpy.numpify(image_r_msg)
         image_l = ros_numpy.numpify(image_l_msg)
         gray_r = rgb2gray(image_r)
         gray_l = rgb2gray(image_l)
-
-
-        if self.img_old is None:
-            self.add_new_points(gray_r, gray_l)
-            self.img_old = [gray_r, gray_l]
+        self.imgs_color = [image_r, image_l]
+        imgs = [gray_r, gray_l]
+        # first frame.
+        if self.imgs_old is None:
+            frame = Frame()
+            self.add_new_points(imgs, frame)
+            self.imgs_old = imgs
+            self.frames.append(frame)
             return
+        last_frame = self.frames[-1]
+        feat_tracked_cur, status = opticalFlowTrack(self.imgs_old[0], imgs[0], last_frame.feats, True, False)
 
-        img_cur = [gray_r, gray_l]
-        self.feat_tracked_cur, status = opticalFlowTrack(self.img_old[0], img_cur[0], self.feat_tracked, True, False)
         # draw tracking
-        self.draw(img_cur[0], status)
+        # self.draw_tracking(imgs[0], feat_tracked_cur, last_frame.feats, last_frame.feats_idx, status)
 
-        self.feat_tracked = self.feat_tracked_cur[np.where(status.flatten())]
+        feat_tracked = feat_tracked_cur[np.where(status.flatten())]
+        feats_idx = last_frame.feats_idx[np.where(status.flatten())]
 
+        # update points
+        self.update_points(feats_idx, feat_tracked)
+
+        # add new frame
         frame = Frame()
-        frame.features_idx = self.frames[-1].features_idx[np.where(status.flatten())]
-        frame.features = self.feat_tracked
+        frame.feats_idx = feats_idx
+        frame.feats = feat_tracked
+        self.calc_camera_pose(last_frame.Twc, frame)
+
+        # add new points to new frame
+        self.add_new_points(imgs, frame)
         self.frames.append(frame)
+        self.imgs_old = imgs
+        
+        points = []
+        for p in self.points:
+            points.append(self.points[p].pw)
+        points = np.array(points)
+        roll = -np.pi/2
+        R = np.array([[1, 0, 0],
+                    [0, np.cos(roll), -np.sin(roll)],
+                    [0, np.sin(roll), np.cos(roll)]])
+        self.viewer.cloud.setData(pos=(R @ points.T).T)
 
-        self.add_new_points(gray_r, gray_l)
 
-        self.img_old = img_cur
-
-
-    def draw(self, img, status):
+    def draw_tracking(self, img, feat_cur, feat_prv, feats_prv_idx, status):
         image_show = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-
-        print(self.feat_tracked.shape)
-        for i in range(self.feat_tracked_cur.shape[0]):
+        image_show = np.copy(self.imgs_color[0])
+        for i in range(feat_cur.shape[0]):
             if (status[i][0] == 0):
                 continue
-            cv2.circle(image_show, tuple(self.feat_tracked_cur[i][0].astype(int)), 2, (255, 0, 0), 2)
+            hint_frame_num = len(self.points[feats_prv_idx[i]].frames)
+            color = get_color(hint_frame_num)
+            cv2.circle(image_show, tuple(feat_cur[i][0].astype(int)), 2, color, 2)
             cv2.arrowedLine(image_show,
-                            tuple(self.feat_tracked_cur[i][0].astype(int)),
-                            tuple(self.feat_tracked[i][0].astype(int)), (0, 255, 0), 1, 8, 0, 0.2)
+                            tuple(feat_cur[i][0].astype(int)),
+                            tuple(feat_prv[i][0].astype(int)), (0, 255, 0), 1, 8, 0, 0.2)
         cv2.imshow('image', image_show)
         cv2.waitKey(1)
 
 
 if __name__ == '__main__':
-    m = np.zeros([3, 3])
-    m[0, 2] = 1.
-    m[1, 0] = -1.
-    m[2, 1] = -1.
-    v = logSO3(m)
     args = rospy.myargv()
     rospy.init_node('controller_manager', anonymous=True)
-    n = TrackImage()
-    r = rospy.Rate(10)  # 10hz
-    while not rospy.is_shutdown():
-        r.sleep()
+    app = QApplication([])
+    viewer = BAViewer()
+    viewer.show()
+    n = TrackImage(viewer)
+    app.exec_()
+

@@ -3,6 +3,35 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.math_tools import *
+from graph_optimization.graph_solver import *
+
+
+class CameraVertex(BaseVertex):
+    def __init__(self, x):
+        super().__init__(x, 6)
+
+    def update(self, dx):
+        self.x = self.x @ p2m(dx)
+
+
+class PointVertex(BaseVertex):
+    def __init__(self, x):
+        super().__init__(x, 3)
+
+    def update(self, dx):
+        self.x = self.x + dx
+
+
+class ProjectEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(2), kernel=None):
+        super().__init__(link, z, omega, kernel)
+
+    def residual(self, vertices):
+        Tcw = vertices[self.link[0]].x
+        pw = vertices[self.link[1]].x
+        u, K = self.z
+        r, JTcw, Jpw = project_error0(Tcw, pw, u, K, True)
+        return r, [JTcw, Jpw]
 
 
 def transform(x, p, calcJ=False):
