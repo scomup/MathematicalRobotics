@@ -109,6 +109,7 @@ class GraphSolver:
     def solve_once(self):
         H = np.zeros([self.psize, self.psize])
         g = np.zeros([self.psize])
+        # H = lil_matrix((self.psize, self.psize))
 
         score = 0
         for edge in self.edges:
@@ -160,9 +161,6 @@ class GraphSolver:
             start = time.time()
             dx, score = self.solve_once()
             end = time.time()
-            # import matplotlib.pyplot as plt
-            # plt.plot(dx)
-            # plt.show()
             if (step > 0 and np.max(dx) > step):
                 dx = dx/np.max(dx) * step
             itr += 1

@@ -22,18 +22,6 @@ class CameraVertex(BaseVertex):
         self.x = self.x @ p2m(dx)
 
 
-class Pose3dEdge(BaseEdge):
-    def __init__(self, link, z, omega=np.eye(6), kernel=None):
-        super().__init__(link, z, omega, kernel)
-
-    def residual(self, vertices):
-        """
-        The proof of Jocabian of SE3 is given in a graph_optimization.md (18)(19)
-        """
-        Tzx = np.linalg.inv(self.z) @ vertices[self.link[0]].x
-        return m2p(Tzx), [np.eye(6)]
-
-
 class PointVertex(BaseVertex):
     def __init__(self, x):
         super().__init__(x, 3)
@@ -42,18 +30,15 @@ class PointVertex(BaseVertex):
         self.x = self.x + dx
 
 
-class ReprojEdge(BaseEdge):
+class ProjectEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(2), kernel=None):
         super().__init__(link, z, omega, kernel)
 
     def residual(self, vertices):
-        """
-        The proof of Jocabian of SE2 is given in a graph_optimization.md (13)(14)
-        """
         Tcw = vertices[self.link[0]].x
         pw = vertices[self.link[1]].x
         u, K = self.z
-        r, JTcw, Jpw = reproj0(Tcw, pw, u, K, True)
+        r, JTcw, Jpw = project_error0(Tcw, pw, u, K, True)
         return r, [JTcw, Jpw]
     
 
@@ -88,7 +73,7 @@ def undistort_point(u, K, dist_coeffs):
 
 
 def solveBA(graph, viewer):
-    min_score_change = 0.1
+    min_score_change = 1.
     last_score = np.inf
     itr = 0
     while(True):
@@ -104,6 +89,7 @@ def solveBA(graph, viewer):
         print(info_text)
         viewer.setText(info_text)
         if (last_score - score < min_score_change and itr > 5):
+            print('Solved!')
             break
         graph.update(dx)
         last_score = score
@@ -135,7 +121,6 @@ if __name__ == '__main__':
             graph.add_vertex(CameraVertex(T), is_constant=True)
         else:
             graph.add_vertex(CameraVertex(T))  # add vertex to graph
-            # graph.add_edge(Pose3dEdge([i], T, np.eye(6) * 1)) 
 
     print("Add point vertex...")
     for pw in loader.points:
@@ -146,7 +131,7 @@ if __name__ == '__main__':
     kernel = HuberKernel(np.sqrt(5))
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
-        graph.add_edge(ReprojEdge(
+        graph.add_edge(ProjectEdge(
             [obs.camera_id, camera_size + obs.point_id],
             [obs.u_undist, cam.K],
             np.eye(2), kernel)) 

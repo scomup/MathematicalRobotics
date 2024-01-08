@@ -39,7 +39,7 @@ def transform_inv(x, p, calcJ=False):
         return r
 
 
-def projection(pc, K, calcJ=False):
+def project(pc, K, calcJ=False):
     fx = K[0, 0]
     fy = K[1, 1]
     cx = K[0, 2]
@@ -56,39 +56,39 @@ def projection(pc, K, calcJ=False):
         return r
 
 
-def reproj0(x_cw, pw, u, K, calcJ=False):
+def project_error0(x_cw, pw, u, K, calcJ=False):
     """
-    reporject a wolrd point to camera frame.
-    r = projection(transform(x_cw, pw), K) - u
+    project a world point into camera coordinates by Tcw.
+    r = project(transform(x_cw, pw), K) - u
     """
     if (calcJ is True):
         pc, dpcdTwc, dpcdpw = transform(x_cw, pw, True)
-        u_reproj, dudpc = projection(pc, K, True)
+        u_proj, dudpc = project(pc, K, True)
         dudTwc = dudpc @ dpcdTwc
         dudpw = dudpc @ dpcdpw
-        return u_reproj-u, dudTwc, dudpw
+        return u_proj-u, dudTwc, dudpw
     else:
         pc = transform(x_cw, pw)
-        u_reproj = projection(pc, K)
-        return u_reproj-u
+        u_proj = project(pc, K)
+        return u_proj-u
 
 
-def reproj(x_wb, pw, u, K, x_bc=np.zeros(6), calcJ=False):
+def project_error(x_wb, pw, u, K, x_bc=np.zeros(6), calcJ=False):
     """
-    reporject a wolrd point to camera frame.
+    project a world point into camera coordinates by Twb.
     """
     if (calcJ is True):
         x_wc, dTwcdTwb, _ = pose_plus(x_wb, x_bc, True)
         pc, dpcdTwc, dpcdpw = transform_inv(x_wc, pw, True)
-        u_reproj, dudpc = projection(pc, K, True)
+        u_proj, dudpc = project(pc, K, True)
         dudTwb = dudpc @ dpcdTwc @ dTwcdTwb
         dudpw = dudpc @ dpcdpw
-        return u_reproj-u, dudTwb, dudpw
+        return u_proj-u, dudTwb, dudpw
     else:
         x_wc = pose_plus(x_wb, x_bc)
         pc = transform_inv(x_wc, pw)
-        u_reproj = projection(pc, K)
-        return u_reproj-u
+        u_proj = project(pc, K)
+        return u_proj-u
 
 
 def pose_plus(x1, x2, calcJ=False):
@@ -194,29 +194,29 @@ if __name__ == '__main__':
     check(J1m, J1)
     check(J2m, J2)
 
-    print('test projection error')
-    r, J = projection(p, K, True)
-    Jm = numericalDerivative(projection, [p, K], 0)
+    print('test project error')
+    r, J = project(p, K, True)
+    Jm = numericalDerivative(project, [p, K], 0)
     check(Jm, J)
 
-    print('test reproj error')
+    print('test project_error error')
     pim = np.array([50., 60.])
     x = np.array([0.1, 0.3, 0.5, 0.1, 0.2, 0.3])
     xbc = np.array([-0.1, 0.3, -0.5, 0.1, -0.2, 0.3])
     p = np.array([5., 6., 10.])
-    r, J1, J2 = reproj(x, p, pim, K, xbc, True)
-    J1m = numericalDerivative(reproj, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(reproj, [x, p, pim, K, xbc], 1)
+    r, J1, J2 = project_error(x, p, pim, K, xbc, True)
+    J1m = numericalDerivative(project_error, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(project_error, [x, p, pim, K, xbc], 1)
     check(J1m, J1)
     check(J2m, J2)
 
-    print('test reproj0 error')
+    print('test project_error0 error')
     pim = np.array([50., 60.])
     x = np.array([0.1, 0.3, 0.5, 0.1, 0.2, 0.3])
     xbc = np.array([-0.1, 0.3, -0.5, 0.1, -0.2, 0.3])
     p = np.array([5., 6., 10.])
-    r, J1, J2 = reproj0(x, p, pim, K, True)
-    J1m = numericalDerivative(reproj0, [x, p, pim, K], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(reproj0, [x, p, pim, K], 1)
+    r, J1, J2 = project_error0(x, p, pim, K, True)
+    J1m = numericalDerivative(project_error0, [x, p, pim, K], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(project_error0, [x, p, pim, K], 1)
     check(J1m, J1)
     check(J2m, J2)
