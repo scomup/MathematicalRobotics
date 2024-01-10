@@ -70,7 +70,7 @@ class BALLoader:
         except (IOError, ValueError, IndexError):
             return False
 
-if __name__ == '__main__':   
+if __name__ == '__main__':
     # Example usage:
     loader = BALLoader()
     filename = "data/bal/problem-49-7776-pre.txt"

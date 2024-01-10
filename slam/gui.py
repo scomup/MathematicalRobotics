@@ -89,7 +89,7 @@ class GL2DTextItem(gl.GLGraphicsItem.GLGraphicsItem):
                     self.font.setPointSize(value)
                 setattr(self, arg, value)
         self.update()
-    
+
     def paint(self):
         if (self.switch == 0):
             return
@@ -139,6 +139,7 @@ class GLAxisItem(gl.GLGraphicsItem.GLGraphicsItem):
         glVertex3f(axis_x[0], axis_x[1], axis_x[2])
         glEnd()
 
+
 class GLCameraFrameItem(gl.GLGraphicsItem.GLGraphicsItem):
     def __init__(self, T=np.eye(4), size=1, width=1, glOptions='translucent'):
         gl.GLGraphicsItem.GLGraphicsItem.__init__(self)
@@ -159,12 +160,12 @@ class GLCameraFrameItem(gl.GLGraphicsItem.GLGraphicsItem):
         hsize = self.size / 2
 
         # Draw the square base of the pyramid
-        frame_points =  np.array([[-hsize, -hsize, 0, 1],
+        frame_points = np.array([[-hsize, -hsize, 0, 1],
                                 [hsize, -hsize, 0, 1],
                                 [hsize, hsize, 0, 1],
                                 [-hsize, hsize, 0, 1],
                                 [0, 0, hsize, 1]])
-        frame_points = (self.T @ frame_points.T).T[:,0:3]
+        frame_points = (self.T @ frame_points.T).T[:, 0:3]
         glColor4f(0, 0, 1, 1)
         glVertex3f(*frame_points[0])
         glVertex3f(*frame_points[1])
@@ -184,6 +185,7 @@ class GLCameraFrameItem(gl.GLGraphicsItem.GLGraphicsItem):
         glVertex3f(*frame_points[4])
         glVertex3f(*frame_points[3])
         glEnd()
+
 
 class MyViewWidget(gl.GLViewWidget):
     def __init__(self):
@@ -207,6 +209,7 @@ class MyViewWidget(gl.GLViewWidget):
             if(pitch_abs <= 45.0 or pitch_abs == 90):
                 camera_mode = 'view'
             self.pan(diff.x(), diff.y(), 0, relative=camera_mode)
+
 
 class BAViewer(QMainWindow):
     def __init__(self):
@@ -236,9 +239,9 @@ class BAViewer(QMainWindow):
         g.setSpacing(1, 1)
         self.viewer.addItem(g)
 
-        self.cloud = gl.GLScatterPlotItem(size=0.02, color=(1,1,1,0.5), pxMode=False)
+        self.cloud = gl.GLScatterPlotItem(size=0.02, color=(1, 1, 1, 0.5), pxMode=False)
         self.viewer.addItem(self.cloud)
-        
+
         self.text = GL2DTextItem(text="", pos=(50, 50), size=20, color=QtCore.Qt.GlobalColor.white)
         self.viewer.addItem(self.text)
 
@@ -263,10 +266,10 @@ class BAViewer(QMainWindow):
     def setVertices(self, vertices):
         roll = np.pi/2
         R = np.array([[1, 0, 0],
-                    [0, np.cos(roll), -np.sin(roll)],
-                    [0, np.sin(roll), np.cos(roll)]])
+                     [0, np.cos(roll), -np.sin(roll)],
+                     [0, np.sin(roll), np.cos(roll)]])
         T = np.eye(4)
-        T[0:3,0:3] = R
+        T[0:3, 0:3] = R
         # T: transform camera coordinate to normal coordinate
         points = []
         for i, v in enumerate(vertices):
@@ -274,15 +277,15 @@ class BAViewer(QMainWindow):
                 points.append(v.x)
             elif (type(v).__name__ == 'CameraVertex'):
                 pose = T @ np.linalg.inv(v.x)
-                if not i in self.cameras:
+                if i not in self.cameras:
                     cam_item = GLCameraFrameItem(T=pose, size=0.1, width=2)
                     self.addItem(cam_item)
-                    self.cameras.update({i:cam_item})
+                    self.cameras.update({i: cam_item})
                 else:
                     self.cameras[i].setTransform(pose)
         points = np.array(points)
         points = (R @ points.T).T
-        z = points[:,2]
+        z = points[:, 2]
         color = rainbow(z, scalar_min=-2, scalar_max=5, alpha=0.5)
         self.cloud.setData(pos=points, color=color)
         self.viewer.update()
