@@ -34,6 +34,27 @@ class ProjectEdge(BaseEdge):
         return r, [JTcw, Jpw]
 
 
+class CamerabetweenEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(6), kernel=None):
+        super().__init__(link, z, omega, kernel)
+        self.color = color
+
+    def residual(self, vertices):
+        Ti = vertices[self.link[0]].x
+        Tj = vertices[self.link[1]].x
+        Tij = np.linalg.inv(Ti) @ Tj
+
+        r = m2p(np.linalg.inv(self.z) @ Tij)
+
+        Tji = np.linalg.inv(Tij)
+        Rji, tji = makeRt(Tji)
+        J = np.zeros([6, 6])
+        J[0:3, 0:3] = -Rji
+        J[3:6, 3:6] = -Rji
+        J[0:3, 3:6] = -skew(tji) @ Rji
+        return r, [J, np.eye(6)]
+
+
 def transform(x, p, calcJ=False):
     if x.shape[0] == 6:
         t = x[0:3]
@@ -152,7 +173,7 @@ def pose_minus(x1, x2, calcJ=False):
         Jx2 = np.zeros([6, 6])
         Jx2[0:3, 0:3] = -R.T
         Jx2[3:6, 3:6] = -R.T
-        Jx2[0:3, 3:6] = R.T @ skew(t)
+        Jx2[0:3, 3:6] = -skew(t) @ R.T
         return r, Jx1, Jx2
     else:
         return r

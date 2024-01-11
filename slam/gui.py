@@ -46,6 +46,96 @@ def rainbow(scalars, scalar_min=0, scalar_max=255, alpha=1):
     return colors
 
 
+class CloudPlotItem(gl.GLGraphicsItem.GLGraphicsItem):
+    def __init__(self, **kwds):
+        super().__init__()
+        glopts = kwds.pop('glOptions', 'additive')
+        self.setGLOptions(glopts)
+        self.points_capacity = 0
+        self.valid_point_num = 0
+        self.valid_point_num_in_buf = 0  # the number of point have been upload to gpu buffer
+        self.pos = np.empty((0, 3), np.float32)
+        self.color = np.empty((0, 4), np.float32)
+        self.use_color_buffer = False
+        self.flat_color = [1, 1, 1]
+        self.alpha = 1.
+        self.size = 10
+        self.need_update_buffer_capacity = True
+        self.setData(**kwds)
+
+    def setData(self, **kwds):
+        if 'pos' in kwds:
+            pos = kwds.pop('pos')
+            self.pos = np.ascontiguousarray(pos, dtype=np.float32)
+            self.valid_point_num = pos.shape[0]
+        if 'alpha' in kwds:
+            self.alpha = kwds.pop('alpha')
+        if 'flat_color' in kwds:
+            self.flat_color = kwds.pop('flat_color')
+        if 'color' in kwds:
+            self.color = kwds.pop('color')
+            self.color[:, 3] = self.alpha
+            self.use_color_buffer = True
+        if 'size' in kwds:
+            self.size = kwds.pop('size')
+
+    def updateRenderBuffer(self):
+        # Create a vertex buffer object
+        if self.need_update_buffer_capacity:
+            glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+            glBufferData(GL_ARRAY_BUFFER, self.pos.nbytes, self.pos, GL_DYNAMIC_DRAW)
+            # Create a color buffer object
+            if self.use_color_buffer:
+                glBindBuffer(GL_ARRAY_BUFFER, self.cbo)
+                glBufferData(GL_ARRAY_BUFFER, self.color.nbytes, self.color, GL_DYNAMIC_DRAW)
+            self.need_update_buffer_capacity = False
+        else:
+            new_point_num = self.valid_point_num - self.valid_point_num_in_buf
+            # Add new pos to object buffer
+            glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+            glBufferSubData(GL_ARRAY_BUFFER, self.valid_point_num_in_buf * 3 * 4,
+                            new_point_num * 3 * 4, self.pos[self.valid_point_num_in_buf:, :])
+            if self.use_color_buffer:
+                # Add new color to color buffer
+                glBindBuffer(GL_ARRAY_BUFFER, self.cbo)
+                glBufferSubData(GL_ARRAY_BUFFER, self.valid_point_num_in_buf * 4 * 4,
+                                new_point_num * 4 * 4, self.color[self.valid_point_num_in_buf:, :])
+        self.valid_point_num_in_buf = self.valid_point_num
+
+    def initializeGL(self):
+        self.vbo = glGenBuffers(1)
+        self.cbo = glGenBuffers(1)
+
+    def paint(self):
+        self.setupGLState()
+        if self.valid_point_num == 0:
+            return
+        self.updateRenderBuffer()
+
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        if(self.use_color_buffer):
+            glBindBuffer(GL_ARRAY_BUFFER, self.cbo)
+            glColorPointer(4, GL_FLOAT, 0, None)
+            glEnableClientState(GL_COLOR_ARRAY)
+        else:
+            glColor4f(self.flat_color[0], self.flat_color[1], self.flat_color[2], self.alpha)
+
+        # draw points
+        glPointSize(self.size)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointer(3, GL_FLOAT, 0, None)
+        glDrawArrays(GL_POINTS, 0, self.valid_point_num_in_buf)
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+        if(self.use_color_buffer):
+            glDisableClientState(GL_COLOR_ARRAY)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+
 class GL2DTextItem(gl.GLGraphicsItem.GLGraphicsItem):
     """Draws text over opengl 3D."""
 
@@ -164,7 +254,7 @@ class GLCameraFrameItem(gl.GLGraphicsItem.GLGraphicsItem):
                                 [hsize, -hsize, 0, 1],
                                 [hsize, hsize, 0, 1],
                                 [-hsize, hsize, 0, 1],
-                                [0, 0, hsize, 1]])
+                                [0, 0, -hsize, 1]])
         frame_points = (self.T @ frame_points.T).T[:, 0:3]
         glColor4f(0, 0, 1, 1)
         glVertex3f(*frame_points[0])
@@ -232,14 +322,14 @@ class BAViewer(QMainWindow):
         timer.timeout.connect(self.update)
 
         self.viewer.setWindowTitle('Bundle Adjustment Viewer')
-        self.viewer.setCameraPosition(distance=10)
+        self.viewer.setCameraPosition(distance=40)
 
         g = gl.GLGridItem()
         g.setSize(50, 50)
         g.setSpacing(1, 1)
         self.viewer.addItem(g)
 
-        self.cloud = gl.GLScatterPlotItem(size=0.02, color=(1, 1, 1, 0.5), pxMode=False)
+        self.cloud = CloudPlotItem(size=3, alpha=1)
         self.viewer.addItem(self.cloud)
 
         self.text = GL2DTextItem(text="", pos=(50, 50), size=20, color=QtCore.Qt.GlobalColor.white)
@@ -263,14 +353,13 @@ class BAViewer(QMainWindow):
             except:
                 pass
 
-    def setVertices(self, vertices):
-        roll = np.pi/2
+    def setVertices(self, vertices, colors=None):
+        T = np.eye(4)
+        roll = -np.pi/2
         R = np.array([[1, 0, 0],
                      [0, np.cos(roll), -np.sin(roll)],
                      [0, np.sin(roll), np.cos(roll)]])
-        T = np.eye(4)
         T[0:3, 0:3] = R
-        # T: transform camera coordinate to normal coordinate
         points = []
         for i, v in enumerate(vertices):
             if (type(v).__name__ == 'PointVertex'):
@@ -278,16 +367,18 @@ class BAViewer(QMainWindow):
             elif (type(v).__name__ == 'CameraVertex'):
                 pose = T @ np.linalg.inv(v.x)
                 if i not in self.cameras:
-                    cam_item = GLCameraFrameItem(T=pose, size=0.1, width=2)
+                    cam_item = GLCameraFrameItem(T=pose, size=0.4, width=2)
                     self.addItem(cam_item)
                     self.cameras.update({i: cam_item})
                 else:
                     self.cameras[i].setTransform(pose)
         points = np.array(points)
-        points = (R @ points.T).T
+        points = (T[0:3, 0:3] @ points.T).T
         z = points[:, 2]
-        color = rainbow(z, scalar_min=-2, scalar_max=5, alpha=0.5)
-        self.cloud.setData(pos=points, color=color)
+        if colors is None:
+            colors = rainbow(z, scalar_min=-2, scalar_max=5, alpha=0.5)
+
+        self.cloud.setData(pos=points.astype(np.float32), color=colors.astype(np.float32))
         self.viewer.update()
 
     def setText(self, text):

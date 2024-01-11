@@ -15,9 +15,7 @@ from threading import Thread
 from os import listdir
 from os.path import isfile, join
 import struct
-
-
-PATH = '/home/liu/bag/kitti/2011_10_03/2011_10_03_drive_0027_sync/'
+import time
 
 
 def get_color(scalar, scalar_min=0, scalar_max=20):
@@ -78,15 +76,7 @@ class Point:
 
 
 def read_bin(bin):
-    size_float = 4
-    points = []
-    with open(bin, "rb") as f:
-        byte = f.read(size_float * 4)
-        while byte:
-            x, y, z, intensity = struct.unpack("ffff", byte)
-            points.append([x, y, z, intensity])
-            byte = f.read(size_float * 4)
-    points = np.asarray(points)
+    points = np.fromfile(bin, dtype=np.float32).reshape([-1, 4])
     return points
 
 
@@ -111,43 +101,38 @@ def opticalFlowTrack(img0, img1, us0, back_check, horizontal_check):
 
 
 class TrackImage:
-    def __init__(self):
-        img_folder = PATH + 'image_02/data/'
-        vel_folder = PATH + 'velodyne_points/data/'
-        img_files = sorted([f for f in listdir(img_folder) if isfile(join(img_folder, f))])
-        vel_files = sorted([f for f in listdir(vel_folder) if isfile(join(vel_folder, f))])
+    def __init__(self, path, s, num):
+        self.img_folder = path + 'image_02/data/'
+        self.vel_folder = path + 'velodyne_points/data/'
+        self.oxts_folder = path + 'oxts/data/'
+        self.img_files = sorted([f for f in listdir(self.img_folder) if isfile(join(self.img_folder, f))])[s:s+num]
+        self.vel_files = sorted([f for f in listdir(self.vel_folder) if isfile(join(self.vel_folder, f))])[s:s+num]
+        self.oxts_files = sorted([f for f in listdir(self.oxts_folder) if isfile(join(self.oxts_folder, f))])[s:s+num]
 
         self.gray_old = None
         # self.feat_tracked = None
-        self.points = {}
-        fx = 718.856
-        fy = 718.856
-        cx = 607.1928
-        cy = 185.2157
-        self.K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1.]])
+        self.points = []
+        self.K = np.eye(3)
         self.frames = []
-        self.kernel = HuberKernel(np.sqrt(5))
+        # self.kernel = HuberKernel(np.sqrt(5))
+        self.kernel = HuberKernel(np.sqrt(3))
         self.points_num = 0
+        self.skip = 1
+        self.max_dist = 50
+        self.Tcv = np.eye(4)
+        self.Tci = np.eye(4)
+        self.Twc = np.eye(4)
 
-        Rcv = np.array([7.967514e-03, -9.999679e-01, -8.462264e-04,
-                        -2.771053e-03, 8.241710e-04, -9.999958e-01,
-                        9.999644e-01, 7.969825e-03, -2.764397e-03]).reshape([3, 3])
-        tcv = np.array([-1.377769e-02, -5.542117e-02, -2.918589e-01])
-
-        Tcv = makeT(Rcv, tcv)
-        Tvc = np.linalg.inv(Tcv)
-
-        # ts.registerCallback(self.callback)
-
-        for ifn, vfn in zip(img_files, vel_files):
-            img = cv2.imread(img_folder+ifn)
-            vel = read_bin(vel_folder+vfn).astype(np.float32)
+    def run(self):
+        for ifn, vfn, ofn in zip(self.img_files, self.vel_files, self.oxts_files):
+            img = cv2.imread(self.img_folder+ifn)
+            vel = read_bin(self.vel_folder+vfn).astype(np.float32)
             vel[:, 3] = 1
-            cloud = (Tcv @ vel.T).T[:, :3]
-            self.run_once(img, cloud)
+            oxts = np.loadtxt(self.oxts_folder+ofn)
+            cloud = (self.Tcv @ vel.T).T[:, :3]
+            self.run_once(img, cloud, oxts)
 
     def add_new_points(self, img, cloud, frame):
-        max_dist = 50
         mask_radius = 20
 
         mask = np.ones(img.shape[:2], dtype=np.uint8) * 255
@@ -161,7 +146,9 @@ class TrackImage:
 
         image_show = np.copy(img)
         board = 40
-        colors = rainbow(cloud[:, 2], 0, max_dist)
+
+        cloud = cloud[::self.skip]
+        colors = rainbow(cloud[:, 2], 0, self.max_dist)
 
         idx = 0
         for pc, color in zip(cloud, colors):
@@ -169,8 +156,6 @@ class TrackImage:
             idx += 1
 
             dist = np.linalg.norm(pc)
-            if (idx % 16 != 0):
-                continue
             if (u[0] <= board or u[0] > w - board):
                 continue
             if (u[1] <= board or u[1] > h - board):
@@ -180,13 +165,10 @@ class TrackImage:
             # only in front of the camera
             if(pc[2] < 0):
                 continue
-            if(dist > max_dist):
+            if(dist > self.max_dist):
                 continue
 
             point = Point()
-            point.frames.append(len(self.frames))
-            point.frames_u.append(u)
-
             Rwc, twc = makeRt(np.linalg.inv(frame.Tcw))
             point.pw = Rwc @ pc + twc
             point.frames.append(len(self.frames))
@@ -196,7 +178,7 @@ class TrackImage:
             frame.us.append(u)
             frame.points_idx.append(len(self.points))
 
-            self.points.update({len(self.points): point})
+            self.points.append(point)
 
             # cv2.circle(image_show, (int(u[0]), int(u[1])), 2, (int(color[0]), int(color[1]), int(color[2])), 2)
             # image_show[int(u[1]), int(u[0])] = color.astype(np.uint8)
@@ -214,8 +196,9 @@ class TrackImage:
             except:
                 pass
 
-    def calc_camera_pose(self, guess_Tcw, frame):
-        Tcw = np.copy(guess_Tcw)
+    def calc_camera_pose(self, frame, oxts):
+        """
+        Tcw = np.linalg.inv(self.Twc)
         graph = GraphSolver()
         # -----------------
         # Calcuate the pose of new frame
@@ -232,13 +215,27 @@ class TrackImage:
             u = frame.us[i]
             r = project_error0(Tcw, pw, u, self.K)
             graph.add_edge(ProjectEdge([0, pidx], [u, self.K], np.eye(2), self.kernel))
-
         # solve
-        graph.solve(True, min_score_change=0.1, step=0.2)
+        graph.solve(True)
 
         frame.Tcw = graph.vertices[0].x
+        self.Twc = np.linalg.inv(frame.Tcw)
+        """
+        dt = 0.1
+        Rwc, twc = makeRt(self.Twc)
+        Rci = self.Tci[0:3, 0:3]
+        vi = np.array(oxts[8:11])
+        omgi = np.array(oxts[17:20])
+        vc = Rci @ vi
+        omgc = Rci @ omgi
 
-    def run_once(self, image, cloud):
+        twc = twc + (Rwc @ vc) * dt
+        Rwc = Rwc @ expSO3(omgc * dt)
+
+        self.Twc = makeT(Rwc, twc)
+        frame.Tcw = np.linalg.inv(self.Twc)
+
+    def run_once(self, image, cloud, oxts):
         gray = rgb2gray(image)
         # first frame.
         if self.gray_old is None:
@@ -263,7 +260,7 @@ class TrackImage:
         frame = Frame()
         frame.points_idx = points_idx.tolist()
         frame.us = us_tracked.tolist()
-        self.calc_camera_pose(last_frame.Tcw, frame)
+        self.calc_camera_pose(frame, oxts)
         self.draw_reproj(image, frame)
 
         # add new points to new frame
@@ -282,7 +279,7 @@ class TrackImage:
             cv2.arrowedLine(image_show,
                             (int(feat_prv[i][0]), int(feat_prv[i][1])),
                             (int(feat_cur[i][0]), int(feat_cur[i][1])), (0, 255, 0), 1, 8, 0, 0.2)
-        cv2.imshow('image', image_show)
+        cv2.imshow('feature tracking', image_show)
         cv2.waitKey(1)
 
     def draw_reproj(self, img, frame):
@@ -300,10 +297,81 @@ class TrackImage:
             cv2.arrowedLine(image_show,
                             (int(u_reproj[0]), int(u_reproj[1])),
                             (int(u[0]), int(u[1])), (0, 255, 0), 1, 8, 0, 0.2)
-        cv2.imshow('draw_reproj', image_show)
-        cv2.waitKey(0)
+        cv2.imshow('feature reprojection', image_show)
+        cv2.waitKey(1)
 
+    def save(self, fn, min_obs_num):
+        points_lookup = np.full(len(self.points), -1)
+        good_points = 0
+        for i, v in enumerate(self.points):
+            if (len(v.frames) >= min_obs_num):
+                points_lookup[i] = good_points
+                good_points += 1
+        obs = []
+        for i, j in enumerate(points_lookup):
+            if (j == -1):
+                continue
+            p = self.points[i]
+            for k, u in zip(p.frames, p.frames_u):
+                obs.append([k, j, u[0], u[1]])  # frame id, point id, u
+        # len(self.frames), good_points, len(obs)
+
+        cam_info = ' '.join(str(x) for x in [self.K[0, 0], self.K[1, 1], self.K[0, 2], self.K[1, 2], 0, 0])
+        with open(fn, 'w') as file:
+            header = [len(self.frames), good_points, len(obs)]
+            header_str = ' '.join(str(x) for x in header) + '\n'
+            file.writelines(header_str)
+
+            for o in obs:
+                o_str = ' '.join(str(x) for x in o) + '\n'
+                file.writelines(o_str)
+
+            for cam in self.frames:
+                cam_str = ' '.join(str(x) for x in m2p(cam.Tcw)) + ' ' + cam_info + '\n'
+                file.writelines(cam_str)
+
+            for i, j in enumerate(points_lookup):
+                if (j == -1):
+                    continue
+                p = self.points[i]
+                p_info = p.pw.tolist() + p.rgb.tolist()
+                p_str = ' '.join(str(x) for x in p_info) + '\n'
+                file.writelines(p_str)
 
 if __name__ == '__main__':
     args = rospy.myargv()
-    n = TrackImage()
+
+    path = '/home/liu/bag/kitti/2011_10_03/2011_10_03_drive_0027_sync/'
+    start_frame = 130
+    frame_num = 100
+    # set the camera info
+    fx = 718.856
+    fy = 718.856
+    cx = 607.1928
+    cy = 185.2157
+
+    n = TrackImage(path=path, s=start_frame, num=frame_num)
+    n.skip = 16
+    # set the vel to cam matrix
+    # get the data from kitti calib_velo_to_cam.txt
+    Rcv = np.array([7.967514e-03, -9.999679e-01, -8.462264e-04,
+                    -2.771053e-03, 8.241710e-04, -9.999958e-01,
+                    9.999644e-01, 7.969825e-03, -2.764397e-03]).reshape([3, 3])
+    tcv = np.array([-1.377769e-02, -5.542117e-02, -2.918589e-01])
+    Tcv = makeT(Rcv, tcv)
+    n.Tcv = Tcv
+    # set the vel to cam matrix
+    # get the data from kitti calib_imu_to_velo.txt
+    Rvi = np.array([9.999976e-01, 7.553071e-04, -2.035826e-03,
+                    -7.854027e-04, 9.998898e-01, -1.482298e-02,
+                    2.024406e-03, 1.482454e-02, 9.998881e-01]).reshape([3, 3])
+    tvi = np.array([-8.086759e-01, 3.195559e-01, -7.997231e-01])
+    Tvi = makeT(Rvi, tvi)
+    Tci = Tcv @ Tvi
+    n.Tci = Tci
+
+    n.K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1.]])
+
+    n.run()
+    n.save('data/ba/kitti_ba_dataset.txt', 5)
+    print(len(n.points))
