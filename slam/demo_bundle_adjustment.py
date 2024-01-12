@@ -100,22 +100,21 @@ if __name__ == '__main__':
 
     print("Add camera vertex...")
     for i, cam in enumerate(loader.cameras):
-        Tcw = makeT(cam.R, cam.t)
-        Twc = np.linalg.inv(Tcw)
-        # Twc = np.eye(4)
+        Twc = makeT(cam.R, cam.t)
         if(i == 0):
             # Due to the scale uncertainty, we fix the first and second frames
             graph.add_vertex(CameraVertex(Twc), is_constant=True)
         else:
             graph.add_vertex(CameraVertex(Twc))  # add vertex to graph
+            graph.add_edge(CameraVertex(Twc))
 
-    print("Add camera betweenedge...")
-    for i in range(len(graph.vertices) - 1):
-        j = i + 1
-        Twi = graph.vertices[i].x
-        Twj = graph.vertices[j].x
-        Tij = np.linalg.inv(Twi) @ Twj
-        graph.add_edge(CamerabetweenEdge([i, j], Tij, np.eye(6) * 1e5))
+    # print("Add camera betweenedge...")
+    # for i in range(len(graph.vertices) - 1):
+    #     j = i + 1
+    #     Twi = graph.vertices[i].x
+    #     Twj = graph.vertices[j].x
+    #     Tij = np.linalg.inv(Twi) @ Twj
+    #     graph.add_edge(CamerabetweenEdge([i, j], Tij, np.eye(6) * 1e5))
 
     print("Add point vertex...")
     for pw in loader.points:
@@ -131,6 +130,9 @@ if __name__ == '__main__':
             [obs.camera_id, camera_size + obs.point_id],
             [obs.u_undist, cam.K],
             np.eye(2), kernel))
+
+        # r = project_error(graph.vertices[obs.camera_id].x, graph.vertices[camera_size + obs.point_id].x, obs.u_undist, cam.K)
+        # print(r)
 
     t1 = Thread(target=solveBA, args=[graph, viewer, loader.colors])
     t2 = Thread(target=runQt, args=[app])

@@ -413,11 +413,11 @@ class BAViewer(QMainWindow):
 
     def setVertices(self, vertices, colors=None):
         T = np.eye(4)
-        roll = -np.pi/2
-        R = np.array([[1, 0, 0],
-                     [0, np.cos(roll), -np.sin(roll)],
-                     [0, np.sin(roll), np.cos(roll)]])
-        T[0:3, 0:3] = R
+        # roll = -np.pi/2
+        # R = np.array([[1, 0, 0],
+        #              [0, np.cos(roll), -np.sin(roll)],
+        #              [0, np.sin(roll), np.cos(roll)]])
+        # T[0:3, 0:3] = R
         points = []
         for i, v in enumerate(vertices):
             if (type(v).__name__ == 'PointVertex'):

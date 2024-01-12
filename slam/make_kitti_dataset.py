@@ -118,7 +118,7 @@ class TrackImage:
         self.kernel = HuberKernel(np.sqrt(3))
         self.points_num = 0
         self.skip = 1
-        self.max_dist = 50
+        self.max_dist = 5
         self.Tcv = np.eye(4)
         self.Tci = np.eye(4)
         self.Twc = np.eye(4)
@@ -180,11 +180,6 @@ class TrackImage:
 
             self.points.append(point)
 
-            # cv2.circle(image_show, (int(u[0]), int(u[1])), 2, (int(color[0]), int(color[1]), int(color[2])), 2)
-            # image_show[int(u[1]), int(u[0])] = color.astype(np.uint8)
-
-        # cv2.imshow('draw_new', image_show)
-        # cv2.waitKey(0)
 
     def update_points(self, image, feats_idx, feats_tracked):
         # update points

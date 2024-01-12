@@ -55,6 +55,16 @@ class CamerabetweenEdge(BaseEdge):
         return r, [J, np.eye(6)]
 
 
+class CameraEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(6), kernel=None):
+        super().__init__(link, z, omega, kernel)
+
+    def residual(self, vertices):
+        T = vertices[self.link[0]].x
+        r = m2p(T)
+        return r, [np.eye(6)]
+
+
 def transform(x, p, calcJ=False):
     if x.shape[0] == 6:
         t = x[0:3]
