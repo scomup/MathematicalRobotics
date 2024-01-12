@@ -44,7 +44,7 @@ def solveBA(graph, viewer, colors):
     min_score_change = 1.
     last_score = np.inf
     itr = 0
-    step = 0
+    step = 50
     while(True):
         viewer.setVertices(graph.vertices, colors)
 
@@ -64,6 +64,13 @@ def solveBA(graph, viewer, colors):
             dx = dx/np.max(dx) * step
         graph.update(dx)
         last_score = score
+    graph.report()
+
+
+def runQt(app):
+    while(True):
+        app.processEvents()
+
 
 if __name__ == '__main__':
     print("Load dataset...")
@@ -85,7 +92,7 @@ if __name__ == '__main__':
         obs.u_undist = undistort_point(obs.u, cam.K, cam.dist_coeffs)
 
     # Add noise
-    # loader.points += np.random.normal(0, 0.1, loader.points.shape)
+    # loader.points += np.random.normal(0, 0.5, loader.points.shape)
     graph = GraphSolver(use_sparse=True)
     app = QApplication([])
     viewer = BAViewer()
@@ -93,29 +100,31 @@ if __name__ == '__main__':
 
     print("Add camera vertex...")
     for i, cam in enumerate(loader.cameras):
-        T = makeT(cam.R, cam.t)
-        if(i == 0 or i == 1):
+        Tcw = makeT(cam.R, cam.t)
+        Twc = np.linalg.inv(Tcw)
+        # Twc = np.eye(4)
+        if(i == 0):
             # Due to the scale uncertainty, we fix the first and second frames
-            graph.add_vertex(CameraVertex(T), is_constant=True)
+            graph.add_vertex(CameraVertex(Twc), is_constant=True)
         else:
-            graph.add_vertex(CameraVertex(T))  # add vertex to graph
+            graph.add_vertex(CameraVertex(Twc))  # add vertex to graph
 
-    # for i in range(len(graph.vertices) - 1):
-    #     j = i + 1
-    #     Tiw = graph.vertices[i].x
-    #     Tjw = graph.vertices[j].x
-    #     Tij = np.linalg.inv(Tiw) @ Tjw
+    print("Add camera betweenedge...")
+    for i in range(len(graph.vertices) - 1):
+        j = i + 1
+        Twi = graph.vertices[i].x
+        Twj = graph.vertices[j].x
+        Tij = np.linalg.inv(Twi) @ Twj
+        graph.add_edge(CamerabetweenEdge([i, j], Tij, np.eye(6) * 1e5))
 
     print("Add point vertex...")
     for pw in loader.points:
         graph.add_vertex(PointVertex(pw))
 
     viewer.setVertices(graph.vertices, loader.colors)
-    # app.exec_()
-
     print("Undistort points...")
     camera_size = len(loader.cameras)
-    kernel = HuberKernel(np.sqrt(5))
+    kernel = HuberKernel(np.sqrt(2))
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
         graph.add_edge(ProjectEdge(
@@ -123,7 +132,9 @@ if __name__ == '__main__':
             [obs.u_undist, cam.K],
             np.eye(2), kernel))
 
-    t = Thread(target=solveBA, args=[graph, viewer, loader.colors])
-    t.start()
+    t1 = Thread(target=solveBA, args=[graph, viewer, loader.colors])
+    t2 = Thread(target=runQt, args=[app])
+    t2.start()
+    t1.start()
 
     app.exec_()

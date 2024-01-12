@@ -27,17 +27,17 @@ class ProjectEdge(BaseEdge):
         super().__init__(link, z, omega, kernel)
 
     def residual(self, vertices):
-        Tcw = vertices[self.link[0]].x
+        Twc = vertices[self.link[0]].x
         pw = vertices[self.link[1]].x
         u, K = self.z
-        r, JTcw, Jpw = project_error0(Tcw, pw, u, K, True)
-        return r, [JTcw, Jpw]
+        r, JTwc, Jpw = project_error(Twc, pw, u, K, True)
+        r2 = project_error0(np.linalg.inv(Twc), pw, u, K, False)
+        return r, [JTwc, Jpw]
 
 
 class CamerabetweenEdge(BaseEdge):
     def __init__(self, link, z, omega=np.eye(6), kernel=None):
         super().__init__(link, z, omega, kernel)
-        self.color = color
 
     def residual(self, vertices):
         Ti = vertices[self.link[0]].x
@@ -51,7 +51,7 @@ class CamerabetweenEdge(BaseEdge):
         J = np.zeros([6, 6])
         J[0:3, 0:3] = -Rji
         J[3:6, 3:6] = -Rji
-        J[0:3, 3:6] = -skew(tji) @ Rji
+        J[0:3, 3:6] = Rji @ skew(tji)
         return r, [J, np.eye(6)]
 
 
@@ -123,9 +123,25 @@ def project_error0(x_cw, pw, u, K, calcJ=False):
         return u_proj-u
 
 
-def project_error(x_wb, pw, u, K, x_bc=np.zeros(6), calcJ=False):
+def project_error(x_wc, pw, u, K, calcJ=False):
     """
-    project a world point into camera coordinates by Twb.
+    project a world point into camera coordinates by Twc.
+    """
+    if (calcJ is True):
+        pc, dpcdTwc, dpcdpw = transform_inv(x_wc, pw, True)
+        u_proj, dudpc = project(pc, K, True)
+        dudTwb = dudpc @ dpcdTwc
+        dudpw = dudpc @ dpcdpw
+        return u_proj-u, dudTwb, dudpw
+    else:
+        pc = transform_inv(x_wc, pw)
+        u_proj = project(pc, K)
+        return u_proj-u
+
+
+def project_error_with_bc(x_wc, pw, u, K, x_bc=np.zeros(6), calcJ=False):
+    """
+    project a world point into camera coordinates by Twb and Tbc.
     """
     if (calcJ is True):
         x_wc, dTwcdTwb, _ = pose_plus(x_wb, x_bc, True)
@@ -173,7 +189,7 @@ def pose_minus(x1, x2, calcJ=False):
         Jx2 = np.zeros([6, 6])
         Jx2[0:3, 0:3] = -R.T
         Jx2[3:6, 3:6] = -R.T
-        Jx2[0:3, 3:6] = -skew(t) @ R.T
+        Jx2[0:3, 3:6] = R.T @ skew(t)
         return r, Jx1, Jx2
     else:
         return r
@@ -252,18 +268,16 @@ if __name__ == '__main__':
     print('test project_error error')
     pim = np.array([50., 60.])
     x = np.array([0.1, 0.3, 0.5, 0.1, 0.2, 0.3])
-    xbc = np.array([-0.1, 0.3, -0.5, 0.1, -0.2, 0.3])
     p = np.array([5., 6., 10.])
-    r, J1, J2 = project_error(x, p, pim, K, xbc, True)
-    J1m = numericalDerivative(project_error, [x, p, pim, K, xbc], 0, pose_plus, delta=1e-8)
-    J2m = numericalDerivative(project_error, [x, p, pim, K, xbc], 1)
+    r, J1, J2 = project_error(x, p, pim, K, True)
+    J1m = numericalDerivative(project_error, [x, p, pim, K], 0, pose_plus, delta=1e-8)
+    J2m = numericalDerivative(project_error, [x, p, pim, K], 1)
     check(J1m, J1)
     check(J2m, J2)
 
     print('test project_error0 error')
     pim = np.array([50., 60.])
     x = np.array([0.1, 0.3, 0.5, 0.1, 0.2, 0.3])
-    xbc = np.array([-0.1, 0.3, -0.5, 0.1, -0.2, 0.3])
     p = np.array([5., 6., 10.])
     r, J1, J2 = project_error0(x, p, pim, K, True)
     J1m = numericalDerivative(project_error0, [x, p, pim, K], 0, pose_plus, delta=1e-8)

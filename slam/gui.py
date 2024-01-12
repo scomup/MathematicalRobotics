@@ -7,6 +7,10 @@ from OpenGL.GL import *
 from PyQt5.QtGui import QKeyEvent, QIntValidator, QDoubleValidator
 import numpy as np
 from PyQt5 import QtGui, QtCore
+import threading
+import time
+
+CAPACITY = 10000000
 
 
 def rainbow(scalars, scalar_min=0, scalar_max=255, alpha=1):
@@ -60,14 +64,41 @@ class CloudPlotItem(gl.GLGraphicsItem.GLGraphicsItem):
         self.flat_color = [1, 1, 1]
         self.alpha = 1.
         self.size = 10
+        self.mutex = threading.Lock()
         self.need_update_buffer_capacity = True
+        self.need_update_buffer = True
         self.setData(**kwds)
 
+    def setSize(self, size):
+        self.size = size
+
+    def getSize(self):
+        return self.size
+
+    def clear(self):
+        self.mutex.acquire()
+        self.valid_point_num = 0
+        self.valid_point_num_in_buf = 0
+        self.need_update_buffer = True
+        self.mutex.release()
+
+    def setAlpha(self, alpha):
+        self.alpha = alpha
+        if self.use_color_buffer:
+            self.color[:, 3] = self.alpha
+            glBindBuffer(GL_ARRAY_BUFFER, self.cbo)
+            glBufferData(GL_ARRAY_BUFFER, self.color.nbytes, self.color, GL_DYNAMIC_DRAW)
+
+    def getAlpha(self):
+        return self.alpha
+
     def setData(self, **kwds):
+        self.mutex.acquire()
         if 'pos' in kwds:
             pos = kwds.pop('pos')
             self.pos = np.ascontiguousarray(pos, dtype=np.float32)
             self.valid_point_num = pos.shape[0]
+            self.need_update_buffer_capacity = True
         if 'alpha' in kwds:
             self.alpha = kwds.pop('alpha')
         if 'flat_color' in kwds:
@@ -78,8 +109,42 @@ class CloudPlotItem(gl.GLGraphicsItem.GLGraphicsItem):
             self.use_color_buffer = True
         if 'size' in kwds:
             self.size = kwds.pop('size')
+        self.need_update_buffer = True
+        self.mutex.release()
+
+    def appendData(self, pos, color, update_buffer=True):
+        self.mutex.acquire()
+        # time_start = time.time()
+        p_size = pos.shape[0]
+        if (self.valid_point_num + p_size > self.points_capacity):
+            # update cpu buffer capacity size
+            self.points_capacity += CAPACITY
+            print("update cpu buffer capacity to %d points." % self.points_capacity)
+            new_pos = np.empty((self.points_capacity, 3), np.float32)
+            new_color = np.empty((self.points_capacity, 4), np.float32)
+            new_pos[0:self.valid_point_num, :] = self.pos[0:self.valid_point_num, :]
+            new_color[0:self.valid_point_num, :] = self.color[0:self.valid_point_num, :]
+            self.pos = new_pos
+            self.color = new_color
+            self.need_update_buffer_capacity = True  # gpu buffer capacity
+        self.pos[self.valid_point_num:self.valid_point_num + p_size] = pos
+        if(color.shape[0] == p_size):
+            color[:, 3] = self.alpha
+            self.color[self.valid_point_num:self.valid_point_num + p_size] = color
+            self.use_color_buffer = True
+        else:
+            self.use_color_buffer = False
+        self.valid_point_num += p_size
+        self.need_update_buffer = update_buffer
+        # time_end = time.time()
+        # elapsed = time_end - time_start
+        # print("appendData %f [ms]" % (elapsed * 1000.))
+        self.mutex.release()
 
     def updateRenderBuffer(self):
+        if(not self.need_update_buffer):
+            return
+        self.mutex.acquire()
         # Create a vertex buffer object
         if self.need_update_buffer_capacity:
             glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
@@ -101,6 +166,8 @@ class CloudPlotItem(gl.GLGraphicsItem.GLGraphicsItem):
                 glBufferSubData(GL_ARRAY_BUFFER, self.valid_point_num_in_buf * 4 * 4,
                                 new_point_num * 4 * 4, self.color[self.valid_point_num_in_buf:, :])
         self.valid_point_num_in_buf = self.valid_point_num
+        self.need_update_buffer = False
+        self.mutex.release()
 
     def initializeGL(self):
         self.vbo = glGenBuffers(1)
@@ -317,10 +384,6 @@ class BAViewer(QMainWindow):
         self.viewer = MyViewWidget()
         layout.addWidget(self.viewer, 1)
 
-        timer = QtCore.QTimer(self)
-        timer.setInterval(20)  # period, in milliseconds
-        timer.timeout.connect(self.update)
-
         self.viewer.setWindowTitle('Bundle Adjustment Viewer')
         self.viewer.setCameraPosition(distance=40)
 
@@ -337,11 +400,6 @@ class BAViewer(QMainWindow):
 
         axis = GLAxisItem(size=1, width=2)
         self.viewer.addItem(axis)
-
-        timer.start()
-
-    def update(self):
-        self.viewer.update()
 
     def addItem(self, item):
         self.viewer.addItem(item)
@@ -365,7 +423,7 @@ class BAViewer(QMainWindow):
             if (type(v).__name__ == 'PointVertex'):
                 points.append(v.x)
             elif (type(v).__name__ == 'CameraVertex'):
-                pose = T @ np.linalg.inv(v.x)
+                pose = T @ v.x
                 if i not in self.cameras:
                     cam_item = GLCameraFrameItem(T=pose, size=0.4, width=2)
                     self.addItem(cam_item)
@@ -379,7 +437,7 @@ class BAViewer(QMainWindow):
             colors = rainbow(z, scalar_min=-2, scalar_max=5, alpha=0.5)
 
         self.cloud.setData(pos=points.astype(np.float32), color=colors.astype(np.float32))
-        self.viewer.update()
+        # self.viewer.update()
 
     def setText(self, text):
         self.text.setData(text=text)
