@@ -106,7 +106,6 @@ if __name__ == '__main__':
             graph.add_vertex(CameraVertex(Twc), is_constant=True)
         else:
             graph.add_vertex(CameraVertex(Twc))  # add vertex to graph
-            graph.add_edge(CameraVertex(Twc))
 
     # print("Add camera betweenedge...")
     # for i in range(len(graph.vertices) - 1):
@@ -130,9 +129,6 @@ if __name__ == '__main__':
             [obs.camera_id, camera_size + obs.point_id],
             [obs.u_undist, cam.K],
             np.eye(2), kernel))
-
-        # r = project_error(graph.vertices[obs.camera_id].x, graph.vertices[camera_size + obs.point_id].x, obs.u_undist, cam.K)
-        # print(r)
 
     t1 = Thread(target=solveBA, args=[graph, viewer, loader.colors])
     t2 = Thread(target=runQt, args=[app])
