@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import cho_solve, cho_factor
-from scipy.sparse import csc_matrix, csr_matrix, lil_matrix
+from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, eye
 from sksparse.cholmod import cholesky
 import sys
 import os
@@ -39,6 +39,50 @@ class BaseEdge:
         for v_i in self.link:
             J.append(0)  # dr_dxi
         return r, J
+
+
+class Hassian:
+    """
+    A more memory-efficient Hessian for big graph.
+    """
+    def __init__(self, graph):
+        self.H_dict = {}
+        self.graph = graph
+        self.m = len(self.graph.vertices)
+
+    def add(self, i, j, h):
+        """
+        Because the Hessian matrix is symmetric,
+        we only need to store the upper triangular part.
+        """
+        if i >= j:
+            key = int(i * self.m + j)
+            if key in self.H_dict:
+                self.H_dict[key] += h
+            else:
+                self.H_dict.update({key: h})
+
+    def matrix(self):
+        if (not self.graph.use_sparse):
+            H = np.zeros([self.graph.psize, self.graph.psize])
+        else:
+            H = lil_matrix((self.graph.psize, self.graph.psize))
+        for key, h in self.H_dict.items():
+            v_i = int(key / self.m)
+            v_j = int(key % self.m)
+            s_i = self.graph.loc[v_i]
+            e_i = self.graph.loc[v_i] + self.graph.vertices[v_i].size
+            s_j = self.graph.loc[v_j]
+            e_j = self.graph.loc[v_j] + self.graph.vertices[v_j].size
+            H[s_i:e_i, s_j:e_j] = h
+            if v_i < v_j:
+                H[s_j:e_j, s_i:e_i] = h.T
+        # Regularization
+        if (not self.graph.use_sparse):
+            H.flat[::H.shape[0]+1] += self.graph.epsilon
+        else:
+            H = csc_matrix(H) + eye(self.graph.psize) * self.graph.epsilon
+        return H
 
 
 class GraphSolver:
@@ -107,9 +151,9 @@ class GraphSolver:
         print("---------------------")
 
     def solve_once(self):
-        H = np.zeros([self.psize, self.psize])
+        start = time.time()
         g = np.zeros([self.psize])
-        # H = lil_matrix((self.psize, self.psize))
+        H = Hassian(self)
 
         score = 0
         for edge in self.edges:
@@ -133,26 +177,43 @@ class GraphSolver:
                 if (self.is_no_constant[v_i]):
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
                 for j, v_j in enumerate(edge.link):
-                    s_i = self.loc[v_i]
-                    e_i = self.loc[v_i] + self.vertices[v_i].size
-                    s_j = self.loc[v_j]
-                    e_j = self.loc[v_j] + self.vertices[v_j].size
                     jacobian_j = jacobian[j]
                     if (self.is_no_constant[v_j] and self.is_no_constant[v_i]):
-                        H[s_i:e_i, s_j:e_j] += rho[1] * jacobian_i.T @ omega @ jacobian_j
+                        if v_i >= v_j:
+                            h = rho[1] * jacobian_i.T @ omega @ jacobian_j
+                            H.add(v_i, v_j, h)
             score += rho[0]
-        # import matplotlib.pyplot as plt
-        # plt.imshow(np.abs(H), vmax=np.average(np.abs(H)[np.nonzero(np.abs(H))]))
-        # plt.imshow(np.linalg.inv(H))
-        # plt.plot(g)
-        # plt.show()
 
-        H.flat[::H.shape[0]+1] += self.epsilon  # Regularization
+        H = H.matrix()
+
         if (self.use_sparse):
-            dx = cholesky(csc_matrix(H)).solve_A(-g)
+            dx = cholesky(H).solve_A(-g)
         else:
             dx = np.linalg.solve(H, -g)
         return dx, score
+
+    def make_H(self, H_dict):
+        if (not self.use_sparse):
+            H = np.zeros([self.psize, self.psize])
+        else:
+            H = lil_matrix((self.psize, self.psize))
+        m = len(self.vertices)
+        for key, h in H_dict.items():
+            v_i = int(key / m)
+            v_j = int(key % m)
+            s_i = self.loc[v_i]
+            e_i = self.loc[v_i] + self.vertices[v_i].size
+            s_j = self.loc[v_j]
+            e_j = self.loc[v_j] + self.vertices[v_j].size
+            H[s_i:e_i, s_j:e_j] = h
+            if v_i < v_j:
+                H[s_j:e_j, s_i:e_i] = h.T
+        # Regularization
+        if (not self.use_sparse):
+            H.flat[::H.shape[0]+1] += self.epsilon
+        else:
+            H = csc_matrix(H) + eye(self.psize) * self.epsilon
+        return H
 
     def solve(self, show_info=True, min_score_change=0.01, step=0):
         last_score = np.inf
