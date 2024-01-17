@@ -38,7 +38,8 @@ if __name__ == '__main__':
     graph = GraphSolver(use_sparse=True)
     # parking-garage.g2o
     # sphere2500.g2o
-    edges, vertices = load_g2o_se3('data/g2o/sphere2500.g2o')
+    path = os.path.dirname(os.path.abspath(__file__))
+    edges, vertices = load_g2o_se3(path+'/../data/g2o/sphere2500.g2o')
     kernel = None
     # kernel = HuberKernel(1)
     for vertex in vertices:

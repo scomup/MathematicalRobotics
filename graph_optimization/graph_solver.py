@@ -41,6 +41,50 @@ class BaseEdge:
         return r, J
 
 
+class Hassian:
+    """
+    A more memory-efficient Hessian for big graph.
+    """
+    def __init__(self, graph):
+        self.H_dict = {}
+        self.graph = graph
+        self.m = len(self.graph.vertices)
+
+    def add(self, i, j, h):
+        """
+        Because the Hessian matrix is symmetric,
+        we only need to store the upper triangular part.
+        """
+        if i >= j:
+            key = int(i * self.m + j)
+            if key in self.H_dict:
+                self.H_dict[key] += h
+            else:
+                self.H_dict.update({key: h})
+
+    def matrix(self):
+        if (not self.graph.use_sparse):
+            H = np.zeros([self.graph.psize, self.graph.psize])
+        else:
+            H = lil_matrix((self.graph.psize, self.graph.psize))
+        for key, h in self.H_dict.items():
+            v_i = int(key / self.m)
+            v_j = int(key % self.m)
+            s_i = self.graph.loc[v_i]
+            e_i = self.graph.loc[v_i] + self.graph.vertices[v_i].size
+            s_j = self.graph.loc[v_j]
+            e_j = self.graph.loc[v_j] + self.graph.vertices[v_j].size
+            H[s_i:e_i, s_j:e_j] = h
+            if v_i < v_j:
+                H[s_j:e_j, s_i:e_i] = h.T
+        # Regularization
+        if (not self.graph.use_sparse):
+            H.flat[::H.shape[0]+1] += self.graph.epsilon
+        else:
+            H = csc_matrix(H) + eye(self.graph.psize) * self.graph.epsilon
+        return H
+
+
 class GraphSolver:
     """
     A graph optimization solver.
@@ -109,8 +153,7 @@ class GraphSolver:
     def solve_once(self):
         start = time.time()
         g = np.zeros([self.psize])
-        H_dict = {}
-        m = len(self.vertices)
+        H = Hassian(self)
 
         score = 0
         for edge in self.edges:
@@ -136,16 +179,12 @@ class GraphSolver:
                 for j, v_j in enumerate(edge.link):
                     jacobian_j = jacobian[j]
                     if (self.is_no_constant[v_j] and self.is_no_constant[v_i]):
-                        h = rho[1] * jacobian_i.T @ omega @ jacobian_j
                         if v_i >= v_j:
-                            key = int(v_i * m + v_j)
-                            if key in H_dict:
-                                H_dict[key] += h
-                            else:
-                                H_dict.update({key: h})
+                            h = rho[1] * jacobian_i.T @ omega @ jacobian_j
+                            H.add(v_i, v_j, h)
             score += rho[0]
 
-        H = self.make_H(H_dict)
+        H = H.matrix()
 
         if (self.use_sparse):
             dx = cholesky(H).solve_A(-g)

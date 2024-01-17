@@ -37,7 +37,9 @@ if __name__ == '__main__':
     # intel.g2o
     # manhattanOlson3500.g2o
     # ringCity.g2o
-    edges, vertices = load_g2o_se2('data/g2o/manhattanOlson3500.g2o')
+    path = os.path.dirname(os.path.abspath(__file__))
+
+    edges, vertices = load_g2o_se2(path+'/../data/g2o/manhattanOlson3500.g2o')
 
     for vertex in vertices:
         if(vertex[0] == 0):
