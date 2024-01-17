@@ -1,4 +1,4 @@
-from load_ba_datasets import BALLoader, KITTILoader
+from load_ba_datasets import BALLoader
 from projection import *
 from utilities.math_tools import *
 import matplotlib.pyplot as plt
@@ -40,13 +40,13 @@ def undistort_point(u, K, dist_coeffs):
     return u_undist
 
 
-def solveBA(graph, viewer, colors):
+def solveBA(graph, viewer):
     min_score_change = 1.
     last_score = np.inf
     itr = 0
-    step = 50
+    step = 0
     while(True):
-        viewer.setVertices(graph.vertices, colors)
+        viewer.setVertices(graph.vertices)
 
         start = time.time()
         dx, score = graph.solve_once()
@@ -75,13 +75,13 @@ def runQt(app):
 if __name__ == '__main__':
     print("Load dataset...")
 
-    # loader = BALLoader()
-    # filename = "data/ba/problem-49-7776-pre.txt"
+    loader = BALLoader()
+    path = os.path.dirname(os.path.abspath(__file__)) + '/../data/ba/'
+    # filename = "problem-49-7776-pre.txt"  # Ladybug
+    filename = "problem-170-49267-pre.txt"  # Trafalgar
+    # filename = "problem-427-310384-pre.txt"  # Venice
 
-    loader = KITTILoader()
-    filename = "data/ba/kitti_ba_dataset.txt"
-
-    if loader.load_file(filename):
+    if loader.load_file(path + filename):
         pass
     else:
         print("Error loading file.")
@@ -92,45 +92,39 @@ if __name__ == '__main__':
         obs.u_undist = undistort_point(obs.u, cam.K, cam.dist_coeffs)
 
     # Add noise
-    # loader.points += np.random.normal(0, 0.5, loader.points.shape)
+    loader.points += np.random.normal(0, 0.05, loader.points.shape)
     graph = GraphSolver(use_sparse=True)
     app = QApplication([])
     viewer = BAViewer()
     viewer.show()
 
-    print("Add camera vertex...")
+    print("Add camera vertex... (piror pose for camera)")
     for i, cam in enumerate(loader.cameras):
         Twc = makeT(cam.R, cam.t)
         if(i == 0):
-            # Due to the scale uncertainty, we fix the first and second frames
             graph.add_vertex(CameraVertex(Twc), is_constant=True)
         else:
-            graph.add_vertex(CameraVertex(Twc))  # add vertex to graph
-
-    # print("Add camera betweenedge...")
-    # for i in range(len(graph.vertices) - 1):
-    #     j = i + 1
-    #     Twi = graph.vertices[i].x
-    #     Twj = graph.vertices[j].x
-    #     Tij = np.linalg.inv(Twi) @ Twj
-    #     graph.add_edge(CamerabetweenEdge([i, j], Tij, np.eye(6) * 1e5))
+            cid = graph.add_vertex(CameraVertex(Twc))  # add vertex to graph
+            graph.add_edge(CameraEdge([cid], Twc, np.eye(6) * 1e5))  # add piror pose
 
     print("Add point vertex...")
     for pw in loader.points:
         graph.add_vertex(PointVertex(pw))
 
-    viewer.setVertices(graph.vertices, loader.colors)
-    print("Undistort points...")
+    viewer.setVertices(graph.vertices)
+    # app.exec_()
+    print("Add edges...")
     camera_size = len(loader.cameras)
-    kernel = HuberKernel(np.sqrt(2))
+    kernel = HuberKernel(np.sqrt(5))
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
+        graph_pid = camera_size + obs.point_id
         graph.add_edge(ProjectEdge(
-            [obs.camera_id, camera_size + obs.point_id],
+            [obs.camera_id, graph_pid],
             [obs.u_undist, cam.K],
             np.eye(2), kernel))
-
-    t1 = Thread(target=solveBA, args=[graph, viewer, loader.colors])
+    print("start BA...")
+    t1 = Thread(target=solveBA, args=[graph, viewer])
     t2 = Thread(target=runQt, args=[app])
     t2.start()
     t1.start()

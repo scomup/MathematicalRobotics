@@ -13,41 +13,6 @@ import time
 CAPACITY = 10000000
 
 
-def rainbow(scalars, scalar_min=0, scalar_max=255, alpha=1):
-    range = scalar_max - scalar_min
-    values = 1.0 - (scalars - scalar_min) / range
-    # values = (scalars - scalar_min) / range  # using inverted color
-    colors = np.zeros([scalars.shape[0], 4], dtype=np.float32)
-    values = np.clip(values, 0, 1)
-
-    h = values * 5.0 + 1.0
-    i = np.floor(h).astype(int)
-    f = h - i
-    f[np.logical_not(i % 2)] = 1 - f[np.logical_not(i % 2)]
-    n = 1 - f
-
-    # idx = i <= 1
-    colors[i <= 1, 0] = n[i <= 1]
-    colors[i <= 1, 1] = 0
-    colors[i <= 1, 2] = 1
-
-    colors[i == 2, 0] = 0
-    colors[i == 2, 1] = n[i == 2]
-    colors[i == 2, 2] = 1
-
-    colors[i == 3, 0] = 0
-    colors[i == 3, 1] = 1
-    colors[i == 3, 2] = n[i == 3]
-
-    colors[i == 4, 0] = n[i == 4]
-    colors[i == 4, 1] = 1
-    colors[i == 4, 2] = 0
-
-    colors[i >= 5, 0] = 1
-    colors[i >= 5, 1] = n[i >= 5]
-    colors[i >= 5, 2] = 0
-    colors[:, 3] = alpha
-    return colors
 
 
 class CloudPlotItem(gl.GLGraphicsItem.GLGraphicsItem):
@@ -321,7 +286,7 @@ class GLCameraFrameItem(gl.GLGraphicsItem.GLGraphicsItem):
                                 [hsize, -hsize, 0, 1],
                                 [hsize, hsize, 0, 1],
                                 [-hsize, hsize, 0, 1],
-                                [0, 0, -hsize, 1]])
+                                [0, 0, hsize, 1]])
         frame_points = (self.T @ frame_points.T).T[:, 0:3]
         glColor4f(0, 0, 1, 1)
         glVertex3f(*frame_points[0])
@@ -382,20 +347,21 @@ class BAViewer(QMainWindow):
         centerWidget.setLayout(layout)
 
         self.viewer = MyViewWidget()
-        layout.addWidget(self.viewer, 1)
-
         self.viewer.setWindowTitle('Bundle Adjustment Viewer')
-        self.viewer.setCameraPosition(distance=40)
+        self.viewer.setBackgroundColor(255, 255, 255, 255)
+        self.viewer.setCameraParams(distance=5, center=QtGui.QVector3D(0, 0, 0), azimuth=-43, elevation=20)
+
+        layout.addWidget(self.viewer, 1)
 
         g = gl.GLGridItem()
         g.setSize(50, 50)
         g.setSpacing(1, 1)
         self.viewer.addItem(g)
 
-        self.cloud = CloudPlotItem(size=3, alpha=1)
+        self.cloud = CloudPlotItem(size=3, alpha=0.2, flat_color=[0, 0, 0])
         self.viewer.addItem(self.cloud)
 
-        self.text = GL2DTextItem(text="", pos=(50, 50), size=20, color=QtCore.Qt.GlobalColor.white)
+        self.text = GL2DTextItem(text="", pos=(50, 50), size=20, color=QtCore.Qt.GlobalColor.black)
         self.viewer.addItem(self.text)
 
         axis = GLAxisItem(size=1, width=2)
@@ -411,13 +377,13 @@ class BAViewer(QMainWindow):
             except:
                 pass
 
-    def setVertices(self, vertices, colors=None):
+    def setVertices(self, vertices):
         T = np.eye(4)
-        # roll = -np.pi/2
-        # R = np.array([[1, 0, 0],
-        #              [0, np.cos(roll), -np.sin(roll)],
-        #              [0, np.sin(roll), np.cos(roll)]])
-        # T[0:3, 0:3] = R
+        roll = np.pi/2
+        R = np.array([[1, 0, 0],
+                     [0, np.cos(roll), -np.sin(roll)],
+                     [0, np.sin(roll), np.cos(roll)]])
+        T[0:3, 0:3] = R
         points = []
         for i, v in enumerate(vertices):
             if (type(v).__name__ == 'PointVertex'):
@@ -425,7 +391,7 @@ class BAViewer(QMainWindow):
             elif (type(v).__name__ == 'CameraVertex'):
                 pose = T @ v.x
                 if i not in self.cameras:
-                    cam_item = GLCameraFrameItem(T=pose, size=0.4, width=2)
+                    cam_item = GLCameraFrameItem(T=pose, size=0.05, width=2)
                     self.addItem(cam_item)
                     self.cameras.update({i: cam_item})
                 else:
@@ -433,10 +399,8 @@ class BAViewer(QMainWindow):
         points = np.array(points)
         points = (T[0:3, 0:3] @ points.T).T
         z = points[:, 2]
-        if colors is None:
-            colors = rainbow(z, scalar_min=-2, scalar_max=5, alpha=0.5)
 
-        self.cloud.setData(pos=points.astype(np.float32), color=colors.astype(np.float32))
+        self.cloud.setData(pos=points.astype(np.float32))
         # self.viewer.update()
 
     def setText(self, text):

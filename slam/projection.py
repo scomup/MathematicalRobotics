@@ -60,9 +60,18 @@ class CameraEdge(BaseEdge):
         super().__init__(link, z, omega, kernel)
 
     def residual(self, vertices):
-        T = vertices[self.link[0]].x
+        T = np.linalg.inv(self.z) @ vertices[self.link[0]].x
         r = m2p(T)
         return r, [np.eye(6)]
+
+
+class PointEdge(BaseEdge):
+    def __init__(self, link, z, omega=np.eye(3), kernel=None):
+        super().__init__(link, z, omega, kernel)
+
+    def residual(self, vertices):
+        r = vertices[self.link[0]].x - self.z
+        return r, [np.eye(3)]
 
 
 def transform(x, p, calcJ=False):
