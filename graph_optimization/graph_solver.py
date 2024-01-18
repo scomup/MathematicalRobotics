@@ -1,13 +1,14 @@
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import cho_solve, cho_factor
-from scipy.sparse import csc_matrix, csr_matrix, lil_matrix, eye
+from scipy.sparse import csc_matrix, csr_matrix, coo_matrix, eye
 from sksparse.cholmod import cholesky
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utilities.robust_kernel import *
 import time
+
 
 class BaseVertex:
     def __init__(self, x, size):
@@ -46,43 +47,61 @@ class Hassian:
     A more memory-efficient Hessian for big graph.
     """
     def __init__(self, graph):
-        self.H_dict = {}
-        self.graph = graph
-        self.m = len(self.graph.vertices)
+        self.use_sparse = graph.use_sparse
+        self.psize = graph.psize
+        self.loc = graph.loc
+        self.epsilon = graph.epsilon
+        if (not self.use_sparse):
+            self.H = np.zeros([self.psize, self.psize])
+        else:
+            self.H_dict = {}
+            self.m = len(graph.vertices)
 
-    def add(self, i, j, h):
+    def add(self, i, j, s_i, e_i, s_j, e_j, h):
         """
         Because the Hessian matrix is symmetric,
         we only need to store the upper triangular part.
         """
         if i >= j:
-            key = int(i * self.m + j)
-            if key in self.H_dict:
-                self.H_dict[key] += h
+            if (not self.use_sparse):
+                self.H[s_i:e_i, s_j:e_j] += h
+                if (i != j):
+                    self.H[s_j:e_j, s_i:e_i] += h.T
             else:
-                self.H_dict.update({key: h})
+                key = int(i * self.m + j)
+                if key in self.H_dict:
+                    self.H_dict[key] += h
+                else:
+                    self.H_dict.update({key: h})
 
     def matrix(self):
-        if (not self.graph.use_sparse):
-            H = np.zeros([self.graph.psize, self.graph.psize])
+        if (not self.use_sparse):
+            self.H.flat[::self.H.shape[0]+1] += self.epsilon
+            return self.H
         else:
-            H = lil_matrix((self.graph.psize, self.graph.psize))
-        for key, h in self.H_dict.items():
-            v_i = int(key / self.m)
-            v_j = int(key % self.m)
-            s_i = self.graph.loc[v_i]
-            e_i = self.graph.loc[v_i] + self.graph.vertices[v_i].size
-            s_j = self.graph.loc[v_j]
-            e_j = self.graph.loc[v_j] + self.graph.vertices[v_j].size
-            H[s_i:e_i, s_j:e_j] = h
-            if v_i < v_j:
-                H[s_j:e_j, s_i:e_i] = h.T
-        # Regularization
-        if (not self.graph.use_sparse):
-            H.flat[::H.shape[0]+1] += self.graph.epsilon
-        else:
-            H = csc_matrix(H) + eye(self.graph.psize) * self.graph.epsilon
-        return H
+            rows = []
+            cols = []
+            values = []
+            for key, h in self.H_dict.items():
+                v_i = int(key / self.m)
+                v_j = int(key % self.m)
+                s_i = self.loc[v_i]
+                s_j = self.loc[v_j]
+                row, col = np.nonzero(h)
+                val = h[row, col].tolist()
+                row = (row + s_i).tolist()
+                col = (col + s_j).tolist()
+                cols += col
+                rows += row
+                values += val
+                if (v_i != v_j):
+                    # Convert to symmetric matrix
+                    cols += row
+                    rows += col
+                    values += val
+            H = coo_matrix((values, (rows, cols)), shape=(self.psize, self.psize))
+            H_regularized = csc_matrix(H) + eye(self.psize) * self.epsilon
+            return H_regularized
 
 
 class GraphSolver:
@@ -177,11 +196,13 @@ class GraphSolver:
                 if (self.is_no_constant[v_i]):
                     g[s_i:e_i] += rho[1] * jacobian_i.T @ omega @ r
                 for j, v_j in enumerate(edge.link):
+                    s_j = self.loc[v_j]
+                    e_j = self.loc[v_j] + self.vertices[v_j].size
                     jacobian_j = jacobian[j]
                     if (self.is_no_constant[v_j] and self.is_no_constant[v_i]):
                         if v_i >= v_j:
                             h = rho[1] * jacobian_i.T @ omega @ jacobian_j
-                            H.add(v_i, v_j, h)
+                            H.add(v_i, v_j, s_i, e_i, s_j, e_j, h)
             score += rho[0]
 
         H = H.matrix()
@@ -191,29 +212,6 @@ class GraphSolver:
         else:
             dx = np.linalg.solve(H, -g)
         return dx, score
-
-    def make_H(self, H_dict):
-        if (not self.use_sparse):
-            H = np.zeros([self.psize, self.psize])
-        else:
-            H = lil_matrix((self.psize, self.psize))
-        m = len(self.vertices)
-        for key, h in H_dict.items():
-            v_i = int(key / m)
-            v_j = int(key % m)
-            s_i = self.loc[v_i]
-            e_i = self.loc[v_i] + self.vertices[v_i].size
-            s_j = self.loc[v_j]
-            e_j = self.loc[v_j] + self.vertices[v_j].size
-            H[s_i:e_i, s_j:e_j] = h
-            if v_i < v_j:
-                H[s_j:e_j, s_i:e_i] = h.T
-        # Regularization
-        if (not self.use_sparse):
-            H.flat[::H.shape[0]+1] += self.epsilon
-        else:
-            H = csc_matrix(H) + eye(self.psize) * self.epsilon
-        return H
 
     def solve(self, show_info=True, min_score_change=0.01, step=0):
         last_score = np.inf
