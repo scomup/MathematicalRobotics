@@ -6,12 +6,17 @@ from utilities.math_tools import *
 from graph_optimization.graph_solver import *
 
 
+"""
+Use SE(3) to represent the pose of the camera.
+"""
+
+
 class CameraVertex(BaseVertex):
     def __init__(self, x):
         super().__init__(x, 6)
 
     def update(self, dx):
-        self.x = self.x @ p2m(dx)
+        self.x = self.x @ expSE3(dx)
 
 
 class PointVertex(BaseVertex):
@@ -31,7 +36,6 @@ class ProjectEdge(BaseEdge):
         pw = vertices[self.link[1]].x
         u, K = self.z
         r, JTwc, Jpw = project_error(Twc, pw, u, K, True)
-        r2 = project_error0(np.linalg.inv(Twc), pw, u, K, False)
         return r, [JTwc, Jpw]
 
 
@@ -44,7 +48,7 @@ class CamerabetweenEdge(BaseEdge):
         Tj = vertices[self.link[1]].x
         Tij = np.linalg.inv(Ti) @ Tj
 
-        r = m2p(np.linalg.inv(self.z) @ Tij)
+        r = expSE3(np.linalg.inv(self.z) @ Tij)
 
         Tji = np.linalg.inv(Tij)
         Rji, tji = makeRt(Tji)
@@ -61,7 +65,7 @@ class CameraEdge(BaseEdge):
 
     def residual(self, vertices):
         T = np.linalg.inv(self.z) @ vertices[self.link[0]].x
-        r = m2p(T)
+        r = logSE3(T)
         return r, [np.eye(6)]
 
 
@@ -76,12 +80,13 @@ class PointEdge(BaseEdge):
 
 def transform(x, p, calcJ=False):
     if x.shape[0] == 6:
-        t = x[0:3]
-        R = expSO3(x[3:6])
+        T = expSE3(x)
     else:
-        R, t = makeRt(x)
+        T = x
+    R, t = makeRt(T)
     r = R @ p + t
     if (calcJ is True):
+        R, t = makeRt(T)
         M = R @ skew(-p)
         dTdx = np.hstack([R, M])
         dTdp = R
@@ -92,15 +97,15 @@ def transform(x, p, calcJ=False):
 
 def transform_inv(x, p, calcJ=False):
     if x.shape[0] == 6:
-        t = x[0:3]
-        Rinv = expSO3(-x[3:6])
+        T = expSE3(x)
     else:
-        R, t = makeRt(x)
-        Rinv = np.linalg.inv(R)
-    r = Rinv @ (p - t)
+        T = x
+    Tinv = np.linalg.inv(T)
+    Rinv, tinv = makeRt(Tinv)
+    r = Rinv @ p + tinv
     if (calcJ is True):
         M1 = -np.eye(3)
-        M2 = skew(Rinv @ (p-t))
+        M2 = skew(r)
         dTdx = np.hstack([M1, M2])
         dTdp = Rinv
         return r, dTdx, dTdp
@@ -177,15 +182,13 @@ def project_error_with_bc(x_wc, pw, u, K, x_bc=np.zeros(6), calcJ=False):
 
 
 def pose_plus(x1, x2, calcJ=False):
-    t1 = x1[0:3]
-    R1 = expSO3(x1[3:6])
-    t2 = x2[0:3]
-    R2 = expSO3(x2[3:6])
-    R = R1 @ R2
-    t = R1 @ t2 + t1
-    x3 = np.hstack([t, logSO3(R)])
+    T1 = expSE3(x1)
+    T2 = expSE3(x2)
+    x3 = logSE3(T1 @ T2)
     if (calcJ is True):
         J1 = np.zeros([6, 6])
+        R1, t1 = makeRt(T1)
+        R2, t2 = makeRt(T2)
         J1[0:3, 0:3] = R2.T
         J1[3:6, 3:6] = R2.T
         J1[0:3, 3:6] = R2.T @ skew(-t2)
@@ -196,14 +199,12 @@ def pose_plus(x1, x2, calcJ=False):
 
 
 def pose_minus(x1, x2, calcJ=False):
-    t1 = x1[0:3]
-    R1 = expSO3(x1[3:6])
-    t2 = x2[0:3]
-    R2 = expSO3(x2[3:6])
-    R = R2.T @ R1
-    t = R2.T @ (t1 - t2)
-    r = pose_plus(pose_inv(x2), x1)
+    T1 = expSE3(x1)
+    T2 = expSE3(x2)
+    T = np.linalg.inv(T2) @ T1
+    r = logSE3(T)
     if (calcJ is True):
+        R, t = makeRt(T)
         Jx1 = np.eye(6)
         Jx2 = np.zeros([6, 6])
         Jx2[0:3, 0:3] = -R.T
@@ -216,13 +217,13 @@ def pose_minus(x1, x2, calcJ=False):
 
 def pose_inv(x, calcJ=False):
     if x.shape[0] == 6:
-        t = x[0:3]
-        R = expSO3(x[3:6])
+        T = expSE3(x)
     else:
-        R, t = makeRt(x)
-    Rinv = np.linalg.inv(R)
-    xinv = np.hstack([Rinv @ (-t), logSO3(Rinv)])
+        T = x
+    Tinv = np.linalg.inv(T)
+    xinv = logSE3(Tinv)
     if (calcJ is True):
+        R, t = makeRt(T)
         J1 = np.zeros([6, 6])
         J1[0:3, 0:3] = -R
         J1[3:6, 3:6] = -R
@@ -246,7 +247,7 @@ if __name__ == '__main__':
     print('test pose_plus and pose_minus')
     x1 = np.array([0.1, 0.3, 0.5, 0.1, 0.2, 0.3])
     x2 = np.array([0.2, 0.1, -0.2, -0.1, -0.2, -0.1])
-    x3m = m2p(p2m(x1) @ (p2m(x2)))
+    x3m = logSE3(expSE3(x1) @ (expSE3(x2)))
     x3, J1, J2 = pose_plus(x1, x2, True)
     x2m = pose_minus(x3, x1)
     check(x3m, x3)
