@@ -8,6 +8,9 @@ from scipy.linalg import lapack, solve
 from scipy.sparse.linalg import spsolve_triangular
 from threading import Thread
 from gui import *
+import signal
+
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 def undistort_point(u, K, dist_coeffs):
@@ -47,6 +50,7 @@ def solveBA(graph, viewer):
     step = 0
     while(True):
         viewer.setVertices(graph.vertices)
+        draw_reproj(graph)
 
         start = time.time()
         dx, score = graph.solve_once()
@@ -64,6 +68,8 @@ def solveBA(graph, viewer):
             dx = dx/np.max(dx) * step
         graph.update(dx)
         last_score = score
+        if (itr >= 10):
+            break
     graph.report()
 
 
@@ -72,13 +78,51 @@ def runQt(app):
         app.processEvents()
 
 
+def draw_reproj(graph):
+    draw_frame_num = 6
+    col = 2
+    row = int(draw_frame_num/col)
+    draw_frame_num = col * row
+    plt.close('all')
+    fig, axes = plt.subplots(col, row, num='reprojection')
+
+    img_pts = [[] for i in range(draw_frame_num)]
+    reproj_pts = [[] for i in range(draw_frame_num)]
+    for e in graph.edges:
+        if (type(e).__name__ != 'ReprojEdge'):
+            continue
+        cam_id = e.link[0]
+        points_id = e.link[1]
+        if(cam_id >= draw_frame_num):
+            continue
+        u, K = e.z
+        Twc = graph.vertices[cam_id].x
+        pw = graph.vertices[points_id].x
+        u_reproj = reproject(transform_inv(Twc, pw), K)
+        img_pts[cam_id].append(u)
+        reproj_pts[cam_id].append(u_reproj)
+    img_pts = [np.array(i) for i in img_pts]
+    reproj_pts = [np.array(i) for i in reproj_pts]
+
+    for i in range(draw_frame_num):
+        ax = axes[int(i / row), int(i % row)]
+        ax.set_xlim(np.min(img_pts[i][:, 0]), np.max(img_pts[i][:, 0]))
+        ax.set_ylim(np.min(img_pts[i][:, 1]), np.max(img_pts[i][:, 1]))
+        ax.invert_yaxis()
+        ax.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False)
+        ax.scatter(img_pts[i][:, 0], img_pts[i][:, 1], color='r', s=1, alpha=0.5)
+        ax.scatter(reproj_pts[i][:, 0], reproj_pts[i][:, 1], color='c', s=1, alpha=0.5)
+        ax.set_title("camera%d" % i)
+    plt.pause(0.1)
+
+
 if __name__ == '__main__':
     print("Load dataset...")
 
     loader = BALLoader()
     path = os.path.dirname(os.path.abspath(__file__)) + '/../data/ba/'
-    # filename = "problem-49-7776-pre.txt"  # Ladybug
-    filename = "problem-170-49267-pre.txt"  # Trafalgar
+    filename = "problem-49-7776-pre.txt"  # Ladybug
+    # filename = "problem-170-49267-pre.txt"  # Trafalgar
     # filename = "problem-427-310384-pre.txt"  # Venice
 
     if loader.load_file(path + filename):
@@ -119,14 +163,15 @@ if __name__ == '__main__':
     for obs in loader.observations:
         cam = loader.cameras[obs.camera_id]
         graph_pid = camera_size + obs.point_id
-        graph.add_edge(ProjectEdge(
+        graph.add_edge(ReprojEdge(
             [obs.camera_id, graph_pid],
             [obs.u_undist, cam.K],
             np.eye(2), kernel))
     print("start BA...")
-    t1 = Thread(target=solveBA, args=[graph, viewer])
+    # t1 = Thread(target=solveBA, args=[graph, viewer])
+    # t1.start()
     t2 = Thread(target=runQt, args=[app])
     t2.start()
-    t1.start()
+    solveBA(graph, viewer)
 
     app.exec_()
