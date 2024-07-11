@@ -93,15 +93,21 @@ dataset: [Venice: problem-427-310384-pre](https://grail.cs.washington.edu/projec
 python3 -m mathR.robot_geometry.demo_p2line_matching
 ```
 <img src="./imgs/point_to_line_ICP.png" alt="demop2l" width="70%" height="auto">
+
 ### point to plane ICP
+
 ```bash
 python3 -m mathR.robot_geometry.demo_p2plane_matching
 ```
+
 <img src="./imgs/point_to_plane_ICP.png" alt="demop2p" width="70%" height="auto">
+
 ### plane cross a cube
+
 ```bash
 python3 -m mathR.robot_geometry.demo_plane_cross_cube
 ```
+
 <img src="./imgs/plane_cross_cube.gif" alt="demopcc" width="70%" height="auto">
 
 
