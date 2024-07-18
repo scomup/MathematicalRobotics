@@ -10,8 +10,7 @@ setup(
         'scipy',
         'pyqtgraph',
         'pyopengl',
-        'scikit-sparse',
-        'libsuitesparse-dev'
+        'scikit-sparse'
         ],
     entry_points={},
 )
