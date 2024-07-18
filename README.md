@@ -12,9 +12,21 @@ We want to select some widely used and practical algorithms. for each algorithm,
 
 ## Install 
 
+1. Install `libsuitesparse-dev`, if you want to use the sparse solver.
 ```bash
+sudo apt-get install -y libsuitesparse-dev
+```
+2. Install `mathR` (this repository)
+```bash
+git clone https://github.com/scomup/MathematicalRobotics.git
 cd MathematicalRobotics
 pip3 install -e .
+```
+
+Or Install `mathR` directly from the git URL.
+
+```bash
+pip install -e git+https://github.com/scomup/MathematicalRobotics.git#egg=mathR
 ```
 
 # Demo Lists
