@@ -63,9 +63,8 @@ if __name__ == '__main__':
     Pwa_prime = Pwb_prime @ Tba
     Pwa_prime_real = Pwa @ expSE3(va * dt)
 
-    check(Pwa_prime_real, Pwa_prime)
+    print('%s test TransformVelocity3D' % check(Pwa_prime_real, Pwa_prime))
 
-    print('test transformVelocity2D')
     # Translational and angular velocities of A in its local Frame [v_x, v_y, omega_x, omega_y]
     va = np.array([1, 1, 0.3])
     # The rigid transform matrix frame A a to frame B
@@ -88,4 +87,4 @@ if __name__ == '__main__':
 
     Pwa_prime = Pwb @ expSE2(vb * dt) @ Tba
 
-    check(Pwa_prime_real, Pwa_prime)
+    print('%s test transformVelocity2D' % check(Pwa_prime_real, Pwa_prime))
