@@ -1,6 +1,5 @@
-
 import numpy as np
-from ekf import State2D
+from mathR.filter.ekf import State2D
 
 # Simulation parameters
 dt = 0.1

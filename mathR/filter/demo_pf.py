@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from ekf import State2D, Odometry2DModel, GPSModel, EKF
-from particle_filter import ParticleFilter
-from draw_cov import draw_confidence_ellipses
+from mathR.filter.ekf import State2D, Odometry2DModel, GPSModel, EKF
+from mathR.filter.particle_filter import ParticleFilter
+from mathR.filter.draw_cov import draw_confidence_ellipses
 from matplotlib.patches import FancyArrow
 from matplotlib.collections import PatchCollection
 from mathR.filter.plt_tools import remove_history_cov, remove_history_arrows, remove_history_particles
-from config import dt, total_time, steps, initial_state, initial_cov, odometry_noise, measurement_noise, arrow_size, mean_arrow_size, mean_arrow_config, arrow_config
+from mathR.filter.config import dt, total_time, steps, initial_state, initial_cov, odometry_noise, measurement_noise, arrow_size, mean_arrow_size, mean_arrow_config, arrow_config
 
-gps_update = False  # Configuration switch for GPS updates
+gps_update = True  # Configuration switch for GPS updates
 
 def main():
     global running, gps_update

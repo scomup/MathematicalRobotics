@@ -1,8 +1,8 @@
 import numpy as np
-from mathR.guass_newton_method.guass_newton import *
+from mathR.gauss_newton_method.gauss_newton import *
 from mathR.utilities.robust_kernel import *
 from mathR.utilities.math_tools import *
-from mathR.guass_newton_method.demo_3d import Plot3D
+from mathR.gauss_newton_method.demo_3d import Plot3D
 
 
 def residual(T, param):
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     for i in range(a.shape[0]):
         params.append([a[i], b[i]])
 
-    gn = guassNewton(6, residual, params, plus)
+    gn = GaussNewton(6, residual, params, plus)
     T_cur = p2m(np.array([0., 0., 0., 0., 0., 0.]))
     cur_a = a.copy()
     last_score = None

@@ -11,6 +11,10 @@ setup(
         'pyqtgraph',
         'pyopengl',
         'scikit-sparse'
+    ],
+    entry_points={
+        'console_scripts': [
+            'ekf_demo=mathR.filter.ekf_demo:main',
         ],
-    entry_points={},
+    },
 )

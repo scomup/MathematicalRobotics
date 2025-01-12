@@ -310,7 +310,7 @@ class FindNearest3D:
 
 
 if __name__ == '__main__':
-    def numericalDerivative(func, param, idx, TYPE=None):
+    def numerical_derivative(func, param, idx, TYPE=None):
         if TYPE is None:
             TYPE = type(param[idx])
         delta = 1e-5
@@ -332,8 +332,8 @@ if __name__ == '__main__':
     delta = NavDelta(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.5, 0.6, 0.7]))
     print('test state retract')
     r, Ja, Jb = state_i.retract(delta, True)
-    Jam = numericalDerivative(NavState.retract, [state_i, delta], 0, NavDelta)
-    Jbm = numericalDerivative(NavState.retract, [state_i, delta], 1)
+    Jam = numerical_derivative(NavState.retract, [state_i, delta], 0, NavDelta)
+    Jbm = numerical_derivative(NavState.retract, [state_i, delta], 1)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -347,8 +347,8 @@ if __name__ == '__main__':
     state_i = NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))
     state_j = NavState(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.5, 0.6, 0.7]))
     r, Ja, Jb = state_i.local(state_j, True)
-    Jam = numericalDerivative(NavState.local, [state_i, state_j], 0, NavDelta)
-    Jbm = numericalDerivative(NavState.local, [state_i, state_j], 1, NavDelta)
+    Jam = numerical_derivative(NavState.local, [state_i, state_j], 0, NavDelta)
+    Jbm = numerical_derivative(NavState.local, [state_i, state_j], 1, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -361,8 +361,8 @@ if __name__ == '__main__':
     delta_j = NavDelta(expSO3(np.array([0.2, 0.3, 0.4])), np.array([0.4, 0.5, 0.6]), np.array([0.5, 0.6, 0.7]))
     print('test delta retract')
     r, Ja, Jb = delta_i.retract(delta_j, True)
-    Jam = numericalDerivative(NavDelta.retract, [delta_i, delta_j], 0)
-    Jbm = numericalDerivative(NavDelta.retract, [delta_i, delta_j], 1)
+    Jam = numerical_derivative(NavDelta.retract, [delta_i, delta_j], 0)
+    Jbm = numerical_derivative(NavDelta.retract, [delta_i, delta_j], 1)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -374,8 +374,8 @@ if __name__ == '__main__':
 
     print('test delta local')
     r, Ja, Jb = delta_i.local(delta_j, True)
-    Jam = numericalDerivative(NavDelta.local, [delta_i, delta_j], 0)
-    Jbm = numericalDerivative(NavDelta.local, [delta_i, delta_j], 1)
+    Jam = numerical_derivative(NavDelta.local, [delta_i, delta_j], 0)
+    Jbm = numerical_derivative(NavDelta.local, [delta_i, delta_j], 1)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -391,9 +391,9 @@ if __name__ == '__main__':
     gyo = Vector([1.01, 0.5, 0.23])
     dt = 1.
     r, Jold, Jacc, Jgyo = delta_i.update(acc, gyo, dt, True)
-    Joldm = numericalDerivative(NavDelta.update, [delta_i, acc, gyo, dt], 0)
-    Jaccm = numericalDerivative(NavDelta.update, [delta_i, acc, gyo, dt], 1)
-    Jgyom = numericalDerivative(NavDelta.update, [delta_i, acc, gyo, dt], 2)
+    Joldm = numerical_derivative(NavDelta.update, [delta_i, acc, gyo, dt], 0)
+    Jaccm = numerical_derivative(NavDelta.update, [delta_i, acc, gyo, dt], 1)
+    Jgyom = numerical_derivative(NavDelta.update, [delta_i, acc, gyo, dt], 2)
     if (np.linalg.norm(Joldm - Jold) < 0.0001):
         print('OK')
     else:
@@ -414,8 +414,8 @@ if __name__ == '__main__':
     imu.d_tij = 1
     r, Ja, Jb = imu.calcDelta(xi, state_i, True)
 
-    Jam = numericalDerivative(imu.calcDelta, [xi, state_i], 0)
-    Jbm = numericalDerivative(imu.calcDelta, [xi, state_i], 1, NavDelta)
+    Jam = numerical_derivative(imu.calcDelta, [xi, state_i], 0)
+    Jbm = numerical_derivative(imu.calcDelta, [xi, state_i], 1, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     state_i = NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))
 
     xi, Ja = imu.biasCorrect(bias, True)
-    Jam = numericalDerivative(imu.biasCorrect, [bias], 0)
+    Jam = numerical_derivative(imu.biasCorrect, [bias], 0)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -449,8 +449,8 @@ if __name__ == '__main__':
     state_i = NavState(expSO3(np.array([0.1, 0.2, 0.3])), np.array([0.2, 0.3, 0.4]), np.array([0.4, 0.5, 0.6]))
 
     state_j, Ja, Jb = imu.predict(state_i, bias, True)
-    Jam = numericalDerivative(imu.predict, [state_i, bias], 0, NavDelta)
-    Jbm = numericalDerivative(imu.predict, [state_i, bias], 1)
+    Jam = numerical_derivative(imu.predict, [state_i, bias], 0, NavDelta)
+    Jbm = numerical_derivative(imu.predict, [state_i, bias], 1)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:

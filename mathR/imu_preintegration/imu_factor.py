@@ -119,7 +119,7 @@ def to2d(x):
 if __name__ == '__main__':
     import copy
 
-    def numericalDerivative(func, param, idx, TYPE_INPUT=None, TYPE_RETURN=None):
+    def numerical_derivative(func, param, idx, TYPE_INPUT=None, TYPE_RETURN=None):
         if TYPE_INPUT is None:
             TYPE_INPUT = type(param[idx].x)
         delta = 1e-5
@@ -153,9 +153,9 @@ if __name__ == '__main__':
     r, J = edge.residual(vertices)
     Ja, Jb, Jc = J
 
-    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
-    Jcm = numericalDerivative(edge.residual, vertices, 2, Vector, NavDelta)
+    Jam = numerical_derivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jbm = numerical_derivative(edge.residual, vertices, 1, NavDelta, NavDelta)
+    Jcm = numerical_derivative(edge.residual, vertices, 2, Vector, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -179,8 +179,8 @@ if __name__ == '__main__':
     edge = NavitransEdge([0, 1], z)
     r, J = edge.residual(vertices)
     Ja, Jb = J
-    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
+    Jam = numerical_derivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jbm = numerical_derivative(edge.residual, vertices, 1, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -201,8 +201,8 @@ if __name__ == '__main__':
     edge = NavitransEdge([0, 1], z)
     r, J = edge.residual(vertices)
     Ja, Jb = J
-    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, NavDelta)
+    Jam = numerical_derivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jbm = numerical_derivative(edge.residual, vertices, 1, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -216,8 +216,8 @@ if __name__ == '__main__':
     edge = PosvelEdge([0, 1], 1)
     r, J = edge.residual(vertices)
     Ja, Jb = J
-    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, Vector)
-    Jbm = numericalDerivative(edge.residual, vertices, 1, NavDelta, Vector)
+    Jam = numerical_derivative(edge.residual, vertices, 0, NavDelta, Vector)
+    Jbm = numerical_derivative(edge.residual, vertices, 1, NavDelta, Vector)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     edge = NaviEdge([0], z)
     r, J = edge.residual(vertices)
     Ja = J[0]
-    Jam = numericalDerivative(edge.residual, vertices, 0, NavDelta, NavDelta)
+    Jam = numerical_derivative(edge.residual, vertices, 0, NavDelta, NavDelta)
     if (np.linalg.norm(Jam - Ja) < 0.0001):
         print('OK')
     else:

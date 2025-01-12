@@ -43,6 +43,7 @@ class Hassian:
     """
     A more memory-efficient Hessian for big graph.
     """
+
     def __init__(self, graph):
         self.use_sparse = graph.use_sparse
         self.psize = graph.psize
@@ -96,7 +97,8 @@ class Hassian:
                     cols += row
                     rows += col
                     values += val
-            H = coo_matrix((values, (rows, cols)), shape=(self.psize, self.psize))
+            H = coo_matrix((values, (rows, cols)),
+                           shape=(self.psize, self.psize))
             H_regularized = csc_matrix(H) + eye(self.psize) * self.epsilon
             return H_regularized
 
@@ -106,6 +108,7 @@ class GraphSolver:
     A graph optimization solver.
     more information is written in graph_optimization.md
     """
+
     def __init__(self, use_sparse=False, epsilon=1e-6):
         self.vertices = []
         self.is_no_constant = []
@@ -213,7 +216,7 @@ class GraphSolver:
     def solve(self, show_info=True, min_score_change=0.01, step=0):
         last_score = np.inf
         itr = 0
-        while(True):
+        while True:
             start = time.time()
             dx, score = self.solve_once()
             end = time.time()
@@ -222,7 +225,8 @@ class GraphSolver:
             itr += 1
             if (show_info):
                 time_diff = end - start
-                print('iter %d: solve time: %f error: %f' % (itr, time_diff, score))
+                print('iter %d: solve time: %f error: %f' %
+                      (itr, time_diff, score))
             if (last_score - score < min_score_change and itr > 5):
                 break
             self.update(dx)

@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from ekf import State2D, Odometry2DModel, GPSModel, EKF
-from draw_cov import draw_confidence_ellipses
+from mathR.filter.ekf import State2D, Odometry2DModel, GPSModel, EKF
+from mathR.filter.draw_cov import draw_confidence_ellipses
 from matplotlib.patches import FancyArrow
 from matplotlib.widgets import Button
 from mathR.filter.plt_tools import remove_history_cov, remove_history_arrows
-from config import dt, total_time, steps, initial_state, initial_cov, odometry_noise, measurement_noise, arrow_size, mean_arrow_size, mean_arrow_config, arrow_config
+from mathR.filter.config import dt, total_time, steps, initial_state, initial_cov, odometry_noise, measurement_noise, arrow_size, mean_arrow_size, mean_arrow_config, arrow_config
 
 def main():
     # Ground truth state
@@ -60,7 +60,7 @@ def main():
         gps_measurement = true_state.pos + np.random.multivariate_normal(np.zeros(2), measurement_model.R)
 
         # EKF correct step
-        # ekf.correct(gps_measurement)
+        ekf.correct(gps_measurement)
 
         # Store estimated state
         estimated_trajectory.append(ekf.x.pos.copy())

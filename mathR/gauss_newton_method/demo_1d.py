@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mathR.guass_newton_method.guass_newton import *
+from mathR.gauss_newton_method.gauss_newton import *
 from mathR.utilities.robust_kernel import *
 
 

@@ -1,4 +1,4 @@
-from pyqtgraph.Qt import QtCore
+from PyQt5 import QtCore
 import pyqtgraph.opengl as gl
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLabel, QApplication, QPushButton
 from OpenGL.GL import *

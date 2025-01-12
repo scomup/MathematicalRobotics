@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mathR.utilities.math_tools import *
-from mathR.guass_newton_method.guass_newton import *
+from mathR.gauss_newton_method.gauss_newton import *
 from mathR.robot_geometry.geometry_plot import *
 from mathR.robot_geometry.basic_geometry import *
 from mathR.utilities.robust_kernel import *
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     for i in src:
         params.append([i, center, direction])
 
-    gn = guassNewton(6, residual, params, plus, kernel=HuberKernel(2))
+    gn = GaussNewton(6, residual, params, plus, kernel=HuberKernel(2))
 
     T = gn.solve(T, step=0.1)
 

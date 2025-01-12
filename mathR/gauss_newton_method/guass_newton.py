@@ -1,10 +1,10 @@
 import numpy as np
 
 
-class guassNewton:
+class GaussNewton:
     """
-    A guass newton solver.
-    more information is written in guass_newton_method.md
+    A gauss newton solver.
+    more information is written in gauss_newton_method.md
     """
     def __init__(self, x_size, residual, params, plus=None, kernel=None):
         self.residual = residual

@@ -284,7 +284,7 @@ def transform3d(x, p, x2T=lambda x: x):
     return tp
 
 
-def numericalDerivative(func, param, idx, plus=lambda a, b: a + b, minus=lambda a, b: a - b, delta=1e-5):
+def numerical_derivative(func, param, idx, plus=lambda a, b: a + b, minus=lambda a, b: a - b, delta=1e-5):
     r = func(*param)
     m = r.shape[0]
     n = param[idx].shape[0]
@@ -406,8 +406,8 @@ def matrix_to_quaternion(matrix):
     return np.array([x, y, z, w])
 
 
-def check(a, b):
-    if (np.all(np.abs(a - b) < 0.0001)):
+def check(a, b, th=0.0001):
+    if (np.all(np.abs(a - b) < th)):
         return '\033[32m'+'[OK]'+'\033[0m'
     else:
         return '\033[31m'+'[NG]'+'\033[0m'
@@ -440,7 +440,7 @@ if __name__ == '__main__':
     def residual(x, a):
         """
         residual function of 3D rotation (SO3)
-        guass_newton_method.md (7)
+        gauss_newton_method.md (7)
         """
         R = expSO3(x)
         r = R.dot(a)
@@ -449,17 +449,17 @@ if __name__ == '__main__':
     def plus(x1, x2):
         """
         The increment of SO3
-        guass_newton_method.md (5)
+        gauss_newton_method.md (5)
         """
         return logSO3(expSO3(x1).dot(expSO3(x2)))
 
     a = np.array([1., 2., 3.])
     """
     The jocabian of 3D rotation (SO3)
-    guass_newton_method.md (9)
+    gauss_newton_method.md (9)
     """
     J = -R.dot(skew(a))
-    J_numerical = numericalDerivative(residual, [x, a], 0, plus)
+    J_numerical = numerical_derivative(residual, [x, a], 0, plus)
 
     print('%s test numerical derivative' % check(J, J_numerical))
     x1 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
@@ -474,4 +474,4 @@ if __name__ == '__main__':
         # return np.concatenate([r_trans, r_rot])
         return np.concatenate([r_trans, r_rot])
 
-    J_numerical = numericalDerivative(minus, [x1, x2], 1, plus, minus)
+    J_numerical = numerical_derivative(minus, [x1, x2], 1, plus, minus)

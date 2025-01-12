@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mathR.guass_newton_method.guass_newton import *
+from mathR.gauss_newton_method.gauss_newton import *
 from mathR.utilities.robust_kernel import *
 
 
@@ -23,13 +23,13 @@ if __name__ == '__main__':
 
     x = np.array([0., 0])
     plt.scatter(a, b, c='black')
-    gn = guassNewton(2, residual, params, None, None)
+    gn = GaussNewton(2, residual, params, None, None)
     x1 = gn.solve(x)
-    gn = guassNewton(2, residual, params, None, CauchyKernel(1))
+    gn = GaussNewton(2, residual, params, None, CauchyKernel(1))
     x2 = gn.solve(x)
-    gn = guassNewton(2, residual, params, None, HuberKernel(1))
+    gn = GaussNewton(2, residual, params, None, HuberKernel(1))
     x3 = gn.solve(x)
-    gn = guassNewton(2, residual, params, None, GaussianKernel(0.01))
+    gn = GaussNewton(2, residual, params, None, GaussianKernel(0.01))
     x4 = gn.solve(x)
     plt.plot(a, a*x1[0] + x1[1], label='None')
     plt.plot(a, a*x2[0] + x2[1], label='Cauchy')

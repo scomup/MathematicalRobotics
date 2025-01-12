@@ -14,7 +14,7 @@ $$
 
 
 
-We need to find an optimal set of vertices (i.e. $V$) to minimize the overall cost. As mentioned in [guass_newton_method.md](./guass_newton_method.md), once we can compute the Hessian matrix $H$ and gradient $g$, we can solve this problem.
+We need to find an optimal set of vertices (i.e. $V$) to minimize the overall cost. As mentioned in [gauss_newton_method.md](./gauss_newton_method.md), once we can compute the Hessian matrix $H$ and gradient $g$, we can solve this problem.
 
 ### The hessian matrix $H$
 Assuming the number of vertices in the graph is n and the number of edges is m, the block sizes of J, r, H, and g are m x n, m x 1, n x n, and n x 1, respectively. We notice that the size of H and g is independent of m.
