@@ -1,8 +1,8 @@
 import numpy as np
-from mathR.gauss_newton_method.gauss_newton import *
+from mathR.optimization.gauss_newton import *
 from mathR.utilities.robust_kernel import *
 from mathR.utilities.math_tools import *
-from mathR.gauss_newton_method.demo_3d import Plot3D
+from mathR.optimization.demo_3d import Plot3D
 
 
 def residual(T, param):

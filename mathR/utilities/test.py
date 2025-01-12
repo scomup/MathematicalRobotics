@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mathR.utilities import *
-from mathR.gauss_newton_method.gauss_newton import *
+from mathR.optimization.gauss_newton import *
 from mathR.robot_geometry.geometry_plot import *
 
 

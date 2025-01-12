@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from demo_p2line_matching import transform, plus
 from mathR.utilities.math_tools import *
-from mathR.gauss_newton_method.gauss_newton import *
+from mathR.optimization.gauss_newton import *
 from mathR.graph_optimization.graph_solver import *
 from mathR.robot_geometry.geometry_plot import *
 from mathR.robot_geometry.basic_geometry import *

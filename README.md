@@ -46,7 +46,7 @@ We provide some demos on Lie-group-based point matching using our Gauss-Newton i
 This demo solves a 2D point matching problem using the Gauss-Newton method.
 
 ```bash
-python3 -m mathR.gauss_newton_method.demo_2d
+python3 -m mathR.optimization.demo_2d
 ```
 <img src="./imgs/demo2d.gif" alt="demo2d" width="70%" height="auto">
 
@@ -56,7 +56,7 @@ python3 -m mathR.gauss_newton_method.demo_2d
 This demo solves a 3D point matching problem using the Gauss-Newton method.
 
 ```bash
-python3 -m mathR.gauss_newton_method.demo_3d
+python3 -m mathR.optimization.demo_3d
 ```
 <img src="./imgs/demo3d.gif" alt="demo3d" width="70%" height="auto">
 
@@ -64,7 +64,7 @@ python3 -m mathR.gauss_newton_method.demo_3d
 This demo solve a linear regression problem. It highlights how different noise kernel models (e.g., Gaussian, Huber, etc.) influence the optimization results.
 
 ```bash
-python3 -m mathR.gauss_newton_method.demo_line
+python3 -m mathR.optimization.demo_line
 ```
 
 <img src="./imgs/demo_line.png" alt="demo_line" width="50%" height="auto">
