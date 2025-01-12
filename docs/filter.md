@@ -1,54 +1,50 @@
-# Bayesian Filter
-A Bayesian filter represents the uncertain state of a system (for example, a robot’s position or velocity) as a probability distribution and estimates it sequentially. First, it predicts the next state based on the past state distribution and control input, and then corrects that prediction using new observation data.
+# Filter
+
+## Bayesian Filter
+
+A Bayesian filter estimates the uncertain state of a system. It operates sequentially by predicting the next state from the past state distribution and control input, and then correcting that prediction using new observation data.
 
 **Prediction Step**  
-In the prediction step of a Bayesian filter, the “past state” and the associated “control input or operation” are used to probabilistically predict the “next state.” This process is expressed by:
+In this step, the “past state” and “control input” are used to predict the “next state” probabilistically:
 
 $$ \bar{p}(x_t) = \int p(x_t \mid u, x_{t-1}) p(x_{t-1}) \, dx_{t-1} \tag{1} $$
 
-- **Motion model** $p(x_t \mid u, x_{t-1})$: This represents the probability of arriving at state $x_t$ if the old state was $x_{t-1}$ and you applied control input $u$. It’s designed based on the physical properties and principles of the system.
-- **Past state distribution** $p(x_{t-1})$: The probability distribution that the old state was actually $x_{t-1}$. It is obtained from the previous step’s filtering update.
+- **Motion model** $p(x_t \mid u, x_{t-1})$: The probability of reaching state $x_t$ from $x_{t-1}$ with control input $u$.
+- **Past state distribution** $p(x_{t-1})$: The probability distribution of the previous state, derived from the last update.
 
-The integral in (1) can be seen as an application of the law of total probability, meaning you consider all possible $x_{t-1}$ to find $\bar{p}(x_t)$.
-
-Also, the prediction step of a Bayesian filter relies on the assumption that knowing the current state $x_{t-1}$ and control $u$ is sufficient to predict the next state $x_t$, without needing earlier states ($x_{t-2}, x_{t-3}, \dots$). This is the Markov property.
+This step uses the Markov property, assuming $x_t$ depends only on $x_{t-1}$ and $u$.
 
 **Correction Step**  
-In the correction step of a Bayesian filter, the “predicted state distribution” is updated with the “observed data” to compute a more reliable probability distribution for the current state. This process is expressed by:
+This step updates the “predicted state distribution” using new observation data to improve the current state estimate:
 
 $$ p(x_t \mid z_t) = \eta \, p(z_t \mid x_t) \, \bar{p}(x_t) \tag{2} $$
 
-Breaking this down:
+- **Predicted distribution** $\bar{p}(x_t)$: The prior distribution from the prediction step.
+- **Observation model** $p(z_t \mid x_t)$: The probability of observations $z_t$ given state $x_t$, incorporating sensor data.
+- **Normalization constant** $\eta$: Ensures the total probability is 1.
 
-- **Predicted distribution** $\bar{p}(x_t)$: The prior distribution over $x_t$ from the prediction step.
-- **Observation model** $p(z_t \mid x_t)$: The probability of observations $z_t$ given state $x_t$. This incorporates sensor data.
-- **Normalization constant** $\eta$: A factor ensuring the total probability integrates to 1.
+Using Bayes' theorem, this step refines the prior with new observation $z_t$, yielding the posterior $p(x_t \mid z_t)$. This updated state passes forward as the prior in the next cycle, continuously refining the system's state estimate in real time.
 
-This follows Bayes' theorem, using the new observation $z_t$ to update the prior distribution $\bar{p}(x_t)$ and yield the posterior $p(x_t \mid z_t)$. By integrating the observation data with the prior belief, the uncertainty around the current state is reduced, yielding a more accurate estimation.
+# Features of Each Filtering Technique
 
-After correction, $p(x_t \mid z_t)$ is passed forward as the prior $\bar{p}(x_{t+1})$ in the next prediction step. Repeating the prediction and correction steps continuously updates the system’s state in real time.
-
-**Features of Each Filtering Technique**  
 In a Bayesian filter, distributions $p(x)$, $p(x_t \mid x_{t-1}, u)$, and $p(z_t \mid x_t)$ are all probabilities. You must model them accurately for proper computation.
 
 Differences in how these distributions are modeled lead to two main filtering approaches:
 
 - **Extended Kalman Filter (EKF)**:
   - Assumes state uncertainty follows a Gaussian (normal) distribution.
-  - Suitable for linear or slightly nonlinear systems, with efficient computation and low processing overhead.
   - Cannot handle cases where the Gaussian assumption significantly fails.
 
 - **Particle Filter (PF)**:
   - Does not assume a Gaussian form; instead, uses many sampled points (“particles”) to represent the uncertainty.
-  - Flexible and can handle nonlinear or complex distributions.
-  - Computationally more expensive, since processing increases with the number of samples.
+  - Flexible and can handle nonlinear or complex distributions but is computationally more expensive since processing increases with the number of samples.
 
-### Extended Kalman Filter (EKF)
-We now dive into the details of the Extended Kalman Filter. In many systems, using a Gaussian to represent uncertainty works well, and the lower computation overhead is crucial in fields like robotics and control systems.
+## Extended Kalman Filter (EKF)
 
-We'll examine EKF in detail, with visuals and equations to build up a thorough understanding.
+In many systems, using a Gaussian to represent uncertainty works well.
 
-#### Prediction Step  
+### Prediction Step  
+
 Assume at time $t-1$ the state’s probability distribution is Gaussian:
 
 $$ p(x_{t-1}) = \mathcal{N}(\bar{x}_{t-1}, P_{t-1}) \tag{3} $$
@@ -71,7 +67,7 @@ $$ p(u) = \mathcal{N}(\bar{u}, Q) \tag{6} $$
 
 Here $Q$ is the covariance of the control input $u$:
 
-$$ Q = \mathbb{E}((u-\bar{u})(u-\bar{u})^T) = \mathbb{E}(\Delta u, \Delta u^T) \tag{7} $$
+$$ Q = \mathbb{E}((u - \bar{u})(u - \bar{u})^T) = \mathbb{E}(\Delta u, \Delta u^T) \tag{7} $$
 
 Ignoring error, the predicted mean is:
 
@@ -102,11 +98,20 @@ $$
 
 Substituting this into equation (10) yields:
 
-$$ \bar{P}_t = F_x P_{t-1} F_x^T + F_u Q F_u^T \tag{13} $$
+$$
+\bar{P} _t = F_x \mathrm{E}(\Delta \mathbf{x} \Delta \mathbf{x}^T) F_x^T + 2 F_x \mathrm{E}(\Delta \mathbf{x} \Delta \mathbf{u}^T) F_u^T + F_u \mathrm{E}(\Delta \mathbf{u} \Delta \mathbf{u}^T) F_u^T
+$$
 
-### Correction Step:
+Since \( x \) and \( u \) are independent, \( \mathrm{E}(\Delta \mathbf{x} \Delta \mathbf{u}^T) = 0 \). Furthermore, substituting equations (4) and (7) yields:
 
-In the Extended Kalman Filter (EKF) correction step, the predicted state $\bar{x}_t$ is adjusted using the observation data to estimate a more accurate state $\hat{x}_t$. Here, the hat symbol ($\hat{\quad}$) denotes the corrected value.
+$$
+\bar{P}_t = F_x P _{t-1} F_x^T + F_u Q F_u^T
+\tag{14}
+$$
+
+### Correction Step
+
+In the correction step, the predicted state $\bar{x}_t$ is adjusted using the observation data to estimate a more accurate state $\hat{x}_t$. Here, the hat symbol ($\hat{\quad}$) denotes the corrected value.
 
 To obtain the corrected state $\hat{x}_t$, the update $\Delta{x}_t$ is first defined based on the predicted state $\bar{x}_t$ from the prediction step:
 
@@ -120,14 +125,12 @@ The correction step calculation requires two main components:
 1. The formula for the update $\Delta{x}_t$ to compute $\hat{x}_t$.
 2. The formula for the corrected covariance matrix $\hat{P}_t$ (which represents the uncertainty in $\hat{x}_t$).
 
-We will derive these two formulas from theory in this section.
+In this section, we will derive these two equations from theory.
 
-#### Step 1: Define the Observation Model
-
-The sensor observation is based on the true state $x_t$, and the observation equation $h$ provides the observation $z$. This observation includes some error $v$, represented by a covariance matrix $R$.
+Firstly, let's define the sensor observation model. The sensor observation is based on the true state \( x_t \), and the observation equation \( h \) gives the observation \( z \). This observation includes an error \( v \), represented by a covariance \( R \).
 
 $$
-p(z|x_t) = \mathcal{N}(h(x_t), R)
+p(z \mid x_t) = \mathcal{N}(h(x_t), R)
 \tag{16}
 $$
 
@@ -136,73 +139,67 @@ z = h(x_t) + v
 \tag{17}
 $$
 
-From the predicted state $\bar{x}_t$, the corresponding observation can be predicted. The difference between the actual observation $z$ and the predicted observation $h(\bar{x}_t)$ is referred to as the observation residual $y$:
+From the predicted state \( \bar{x}_t \), the corresponding observation can also be predicted. The difference between the actual observation \( z \) and the predicted observation \( h(\bar{x}_t) \) is defined as the observation residual \( y \).
 
 $$
 y \equiv z - h(\bar{x}_t)
 \tag{18}
 $$
 
-#### Step 2: Calculate the Covariance of the Observation Residual $y$
-
-The covariance matrix of the residual $y$ is defined as $S$, and it is derived as follows:
+The covariance matrix of the observation residual \( y \) is defined as \( S \) and can be derived as follows:
 
 $$
 \begin{aligned}
-S &= E(yy^T) \\\\
-&= E((H\Delta{x}_t + v)(H\Delta{x}_t + v)^T) \\\\
-&= E(H\Delta{x}_t\Delta{x}_t^TH^T) + E(vv^T) \\\\
-&= H\bar{P}_tH^T + R
+S &= E(yy^T) \\
+&= E((H\Delta{x}_t + v)(H\Delta{x}_t + v)^T) \\
+&= E(H\Delta{x}_t \Delta{x}_t^T H^T) + E(vv^T) \\
+&= H\bar{P}_t H^T + R
 \end{aligned}
 \tag{19}
 $$
 
-The calculation above uses the linear approximation of $h$ (i.e., $h(x_t) \approx h(\bar{x}_t) + H \Delta{x}_t$), where $H$ is the Jacobian matrix of the observation model.
+The above calculation uses the linearization of \( h \) (i.e., \( h(x_t) \approx h(\bar{x}_t) + H \Delta{x}_t \)), where \( H \) is the Jacobian matrix of the observation model.
 
-#### Step 3: Minimize the Overall Error
-
-The ideal $\Delta{x}_t$ is obtained by minimizing the discrepancy between the observation residual $y$ and the prediction error $\Delta{x}_t$. Therefore, an objective function can be formulated to minimize the total error with respect to $\Delta{x}_t$ as shown in Equation (20):
+The ideal \( \Delta{x}_t \) is obtained by minimizing the discrepancy between the observation residual \( y \) and the prediction error \( \Delta{x}_t \). Therefore, an objective function can be formulated to minimize the total error with respect to \( \Delta{x}_t \), as shown in Equation (20):
 
 $$
 \begin{aligned}
-\text{argmin} \quad F(\bar{x}+\Delta{x}_t) &= \lVert y \rVert ^2_S + \lVert \Delta{x}_t \rVert^2_P \\\\ 
-&= \lVert z - h(\bar{x}_t) \rVert^2_S + \lVert x - \bar{x}_t \rVert^2_P \\\\ 
-&= ( z - h(\bar{x}_t))S^{-1}( z - h(\bar{x}_t))^T + ( x - \bar{x}_t )P^{-1}( x - \bar{x}_t )^T
+\text{argmin} \quad F(\bar{x} + \Delta{x}_t) &= \lVert y \rVert^2_S + \lVert \Delta{x}_t \rVert^2_P \\
+&= \lVert z - h(\bar{x}_t) \rVert^2_S + \lVert x - \bar{x}_t \rVert^2_P \\
+&= (z - h(\bar{x}_t)) S^{-1} (z - h(\bar{x}_t))^T + (x - \bar{x}_t) P^{-1} (x - \bar{x}_t)^T
 \end{aligned}
 \tag{20}
 $$
 
-By differentiating the objective function with respect to $\Delta{x}_t$ and setting it to zero, the optimal $\Delta{x}_t$ can be found:
+By differentiating the objective function with respect to \( \Delta{x}_t \) and setting it to zero, the optimal \( \Delta{x}_t \) can be found:
 
 $$
 \begin{aligned}
-0 &= 2 H^TS^{-1}(z - h(\bar{x}_t)) + 2 P^{-1}\Delta{x}_t \\\\
-\Delta{x}_t &= PH^TS^{-1}(z - h(\bar{x}_t)) \\\\
-\Delta{x}_t &= PH^TS^{-1}y
+0 &= 2 H^T S^{-1} (z - h(\bar{x}_t)) + 2 P^{-1} \Delta{x}_t \\
+\Delta{x}_t &= P H^T S^{-1} (z - h(\bar{x}_t)) \\
+\Delta{x}_t &= P H^T S^{-1} y
 \end{aligned}
 \tag{21}
 $$
 
-The term $PH^TS^{-1}$ is defined as the **Kalman Gain** $K$:
+The term \( P H^T S^{-1} \) is defined as the **Kalman Gain** \( K \):
 
 $$
-K \equiv PH^TS^{-1}
+K \equiv P H^T S^{-1}
 \tag{22}
 $$
 
-By substituting Equation (21) and (22) into Equation (15), the corrected state $\hat{x}_t$ can be computed as:
+By substituting Equations (21) and (22) into Equation (15), the corrected state \( \hat{x}_t \) can be calculated as follows:
 
 $$
-\hat{x}_t = \bar{x}_t + Ky
+\hat{x}_t = \bar{x}_t + K y
 \tag{23}
 $$
 
-#### Step 4: Update the Covariance Matrix
-
-Next, we evaluate the corrected covariance matrix $\hat{P}_t$. The corrected covariance is computed based on the mean square error between the true state $x_t$ and the corrected state $\hat{x}_t$:
+Next, we evaluate the corrected covariance matrix \( \hat{P}_t \). The corrected covariance matrix is computed based on the mean square error between the true state \( x_t \) and the corrected state \( \hat{x}_t \):
 
 $$
-\hat{P}_t = E((x_t-\hat{x}_t)(x_t-\hat{x}_t)^T)
+\hat{P}_t = E((x_t - \hat{x}_t) (x_t - \hat{x}_t)^T)
 \tag{24}
 $$
 
@@ -210,41 +207,62 @@ Expanding this equation:
 
 $$
 \begin{aligned}
-\hat{P}_t &= E((x_t-\bar{x}_t-Ky)(x_t-\bar{x}_t-Ky)^T) \\\\
-&= E\left[(x_t - \bar{x}_t)(x_t - \bar{x}_t)^T - (x_t - \bar{x}_t)(Ky)^T - (Ky)(x_t - \bar{x}_t)^T + (Ky)(Ky)^T\right]
+\hat{P}_t &= E((x_t - \bar{x}_t - K y) (x_t - \bar{x}_t - K y)^T) \\
+&= E\left[(x_t - \bar{x}_t) (x_t - \bar{x}_t)^T - (x_t - \bar{x}_t) (K y)^T - (K y) (x_t - \bar{x}_t)^T + (K y) (K y)^T\right]
 \end{aligned}
 \tag{25}
 $$
 
-- **First term**: $ E[(x_t - \bar{x}_t)(x_t - \bar{x}_t)^T] = \bar{P}_t $
-- **Second and third terms**: 
+* First term: \( E[(x_t - \bar{x}_t) (x_t - \bar{x}_t)^T] = \bar{P}_t \)
+
+* Second and third terms:
 $$
 \begin{aligned}
-&E[(x_t−\bar{x}_t)(h(x_t)+v−h(\bar{x}_t))^TK^T] \\\\
-=&E[(x_t−\bar{x}_t)(h(\bar{x}_t) +H(x_t−\bar{x}_t) +v−h(\bar{x}_t))^TK^T] \\\\
-=&E[(x_t−\bar{x}_t)(H(x_t−\bar{x}_t) +v)^TK^T] \\\\
-=&E[(x_t - \bar{x}_t)(x_t - \bar{x}_t)^T H^TK^T] \\\\
-=& \bar{P}_t H^TK^T \\\\
-=& KH\bar{P}_t
+&E[(x_t - \bar{x}_t) (h(x_t) + v - h(\bar{x}_t))^T K^T] \\
+=& E[(x_t - \bar{x}_t) (h(\bar{x}_t) + H (x_t - \bar{x}_t) + v - h(\bar{x}_t))^T K^T] \\
+=& E[(x_t - \bar{x}_t) (H (x_t - \bar{x}_t) + v)^T K^T] \\
+=& E[(x_t - \bar{x}_t) (x_t - \bar{x}_t)^T H^T K^T] \\
+=& \bar{P}_t H^T K^T \\
+=& K H \bar{P}_t
 \end{aligned}
 \tag{26}
 $$
 
-- **Fourth term**:
+* Fourth term:
+
 $$
-E((Ky)(Ky)^T) = KE(yy^T)K^T = KSK^T
+E((K y) (K y)^T) = K E(yy^T) K^T = K S K^T
 \tag{27}
 $$
 
-Thus, the updated covariance matrix is calculated as:
+Thus, the corrected covariance matrix is calculated as:
 
 $$
 \begin{aligned}
-\hat{P}_t &= \bar{P}_t - 2 \bar{P}_t H^TK^T + KSK^T \\\\
-&= \bar{P}_t - 2 \bar{P}_t H^TK^T + PH^TS^{-1} SK^T \\\\
-&= \bar{P}_t - \bar{P}_t H^TK^T \\\\
-&= (I-K H)\bar{P}_t
+\hat{P}_t &= \bar{P}_t - 2 \bar{P}_t H^T K^T + K S K^T \\
+&= \bar{P}_t - 2 \bar{P}_t H^T K^T + P H^T S^{-1} S K^T \\
+&= \bar{P}_t - \bar{P}_t H^T K^T \\
+&= (I - K H) \bar{P}_t
 \end{aligned}
 \tag{28}
 $$
 
+## Summary of EKF
+
+The calculation of the Extended Kalman Filter (EKF) is now fully derived. In summary, the EKF calculation involves using the following six equations.
+
+**Prediction Step**
+
+* Equation (8): Predicting the state: \( \bar{x}_t = f(\bar{x}_{t-1}, \bar{u}) \)
+
+* Equation (14): Predicting the covariance: \( \bar{P}_t = F_x P_{t-1} F_x^T + F_u Q F_u^T \)
+
+**Correction Step**
+
+* Equation (18): Observation residual: \( y = z - h(\bar{x}_t) \)
+
+* Equation (22): Kalman Gain: \( K = P H^T (H \bar{P}_t H^T + R)^{-1} \)
+
+* Equation (23): Correcting the state: \( \hat{x}_t = \bar{x}_t + K y \)
+
+* Equation (28): Correcting the covariance: \( \hat{P}_t = (I - K H) \bar{P}_t \)

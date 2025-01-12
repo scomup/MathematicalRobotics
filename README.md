@@ -99,6 +99,10 @@ python3 -m mathR.gauss_newton_method.demo_line
 
 Filtering techniques, such as the Extended Kalman Filter (EKF) and Particle Filter (PF), are essential tools in robotics for state estimation in the presence of noise and uncertainty.
 
+**Documentation Links:**
+* [Filter and EKF](docs/filter.pdf)
+
+
 ### Extended Kalman Filter (EKF) Demo
 
 This demo illustrates how the EKF can be used for GPS and odometry fuse problem.
