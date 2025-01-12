@@ -106,7 +106,7 @@ This demo illustrates how the EKF can be used for GPS and odometry fuse problem.
 ```bash
 python3 -m mathR.filter.demo_ekf
 ```
-<img src="./imgs/point_to_plane_ICP.png" alt="demop2p" width="70%" height="auto">
+<img src="./imgs/demo_ekf.gif" alt="demo_ekf" width="70%" height="auto">
 
 ### Particle Filter (PF) Demo
 This demo illustrates how the PF can be used for GPS and odometry fuse problem.
@@ -115,7 +115,7 @@ This demo illustrates how the PF can be used for GPS and odometry fuse problem.
 ```bash
 python3 -m mathR.filter.demo_pf
 ```
-<img src="./imgs/point_to_plane_ICP.png" alt="demop2p" width="70%" height="auto">
+<img src="./imgs/demo_pf.gif" alt="demo_pf" width="70%" height="auto">
 
 ## Bundle Adjustment
 ```bash
