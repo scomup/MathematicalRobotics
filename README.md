@@ -31,53 +31,42 @@ pip install -e git+https://github.com/scomup/MathematicalRobotics.git#egg=mathR
 
 ## gauss_newton_method
 
-The Gauss-Newton method is a numerical optimization technique that is especially effective for solving non-linear least squares problems.
-
-We provide some demos on Lie-group-based point matching using our Gauss-Newton implementation.
+The Gauss-Newton method is a numerical optimization technique that is especially effective for solving non-linear least squares problems. We have implemented a pure Python library for this method.
 
 **Documentation Links:**
 * [Gauss-Newton Method Document](docs/gauss_newton_method.pdf)
 * [Newton Method Document](docs/newton_method.pdf)
+
+We also provide some demos on Lie-group-based point matching using our library.
+
+**Lie Group Documentation Links:**
 * [SO3 group](docs/3d_rotation_group.pdf)
 * [SE3 group](docs/3d_transformation_group.pdf)
 
 ### Gauss-Newton for 2D points matching
-
-This demo solves a 2D point matching problem using the Gauss-Newton method.
-
 ```bash
-python3 -m mathR.optimization.demo_2d
+python3 -m mathR.gauss_newton_method.demo_2d
 ```
-<img src="./imgs/demo2d.gif" alt="demo2d" width="70%" height="auto">
-
+![demo2d](./imgs/demo2d.gif)
 
 ### Gauss-Newton for 3D points matching
-
-This demo solves a 3D point matching problem using the Gauss-Newton method.
-
 ```bash
-python3 -m mathR.optimization.demo_3d
+python3 -m mathR.gauss_newton_method.demo_3d
 ```
-<img src="./imgs/demo3d.gif" alt="demo3d" width="70%" height="auto">
+![demo3d](./imgs/demo3d.gif)
 
 ### Gauss-Newton for linear regression
-This demo solve a linear regression problem. It highlights how different noise kernel models (e.g., Gaussian, Huber, etc.) influence the optimization results.
-
 ```bash
-python3 -m mathR.optimization.demo_line
+python3 -m mathR.gauss_newton_method.demo_line
 ```
 
-<img src="./imgs/demo_line.png" alt="demo_line" width="50%" height="auto">
-
-
 ### Graph Optimization
-
-Graph optimization problems involve finding the best solution from a set of data represented by a graph.
+We have developed a graph optimization library implemented in pure Python. Compared to well-known graph optimization libraries like g2o, gtsam, or ceres, our implementation is highly readable and ideal for studying purposes.
 
 [Graph Optimization Document](docs/graph_optimization.pdf)
 
 ### 2D pose graph problem
-Optimize a 2D pose graph, often used for 2D SLAM.
+This demo solves a 2D point matching problem using the Gauss-Newton method.
 
 ```bash
 python3 -m mathR.graph_optimization.demo_g2o_se2
@@ -88,7 +77,7 @@ Dataset: sphere2500.g2o [^1]
 
 ### 3D pose graph problem
 
-Optimize a 3D pose graph, often used for 3D SLAM or 3D reconstruction.
+This demo showcases the application of Gauss-Newton in 3D point matching problems.
 
 ```bash
 python3 -m mathR.graph_optimization.demo_g2o_se3
@@ -98,32 +87,37 @@ Dataset: manhattanOlson3500.g2o [^1]
 
 [^1]: Datasets are available in the open-source package [Vertigo](https://github.com/OpenSLAM-org/openslam_vertigo).
 
+### Gauss-Newton for Linear Regression
+
+This demo illustrates how the Gauss-Newton method can be applied to solve a simple linear regression problem
+
+```bash
+python3 -m mathR.gauss_newton_method.demo_line
+```
+
 ## Filters
 
-State estimation techniques like the Extended Kalman Filter (EKF) and Particle Filter (PF) are critical in robotics to handle noisy measurements.
+Filtering techniques, such as the Extended Kalman Filter (EKF) and Particle Filter (PF), are essential tools in robotics for state estimation in the presence of noise and uncertainty.
 
 ### Extended Kalman Filter (EKF) Demo
 
-Fuse noisy GPS and odometry data to estimate the robot's state.
+This demo illustrates how the EKF can be used for GPS and odometry fuse problem.
 
 ```bash
 python3 -m mathR.filter.demo_ekf
 ```
-<img src="./imgs/demo_ekf.gif" alt="demop2p" width="70%" height="auto">
+<img src="./imgs/point_to_plane_ICP.png" alt="demop2p" width="70%" height="auto">
 
 ### Particle Filter (PF) Demo
+This demo illustrates how the PF can be used for GPS and odometry fuse problem.
 
-Demonstrates how the PF can track the robot's state using noisy GPS and odometry.
 
 ```bash
 python3 -m mathR.filter.demo_pf
 ```
-<img src="./imgs/demo_pf.gif" alt="demop2p" width="70%" height="auto">
+<img src="./imgs/point_to_plane_ICP.png" alt="demop2p" width="70%" height="auto">
 
 ## Bundle Adjustment
-
-Bundle adjustment optimizes camera poses and landmark positions simultaneously, commonly used in 3D reconstruction and structure-from-motion.
-
 ```bash
 python3 -m mathR.slam.demo_bundle_adjustment
 ```
