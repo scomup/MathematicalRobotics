@@ -416,11 +416,97 @@ def check(a, b, th=0.0001):
 
 
 if __name__ == '__main__':
-    r = np.array([0, 0, 1])
-    r = r / np.linalg.norm(r)
-    theta = np.pi - 0.001
-    omega = r * theta
-    print(omega)
+    x = np.array([0.5, 0.6, 0.7])
+    dx = np.array([0.02, 0.03, 0.03])
+    R1 = (expSO3(x+dx))
+    R2 = (expSO3(x).dot(expSO3(HSO3(x).dot(dx))))
+    print('%s test HSO3' % check(R1, R2))
+
+    v = np.array([1, 0.3, 2])
+    R = expSO3(v)
+    R2 = expSO3(logSO3(R))
+    R3 = expSO3test(logSO3(R))
+    print('%s test1 SO3' % check(R, R2))
+    print('%s test2 SO3' % check(R2, R3))
+
+    v = np.array([1, 0.3, 2, 1, -3.2, 0.2])
+    R = expSE3(v)
+    R2 = expSE3(logSE3(R))
+    R3 = expSE3test(logSE3(R))
+    print('%s test1 SE3' % check(R, R2))
+    print('%s test2 SE3' % check(R2, R3))
+
+    x = np.array([0.5, 0.2, 0.2])
+    R = expSO3(x)
+
+    def residual(x, a):
+        """
+        residual function of 3D rotation (SO3)
+        gauss_newton_method.md (7)
+        """
+        R = expSO3(x)
+        r = R.dot(a)
+        return r.flatten()
+
+    def plus(x1, x2):
+        """
+        The increment of SO3
+        gauss_newton_method.md (5)
+        """
+        return logSO3(expSO3(x1).dot(expSO3(x2)))
+
+    a = np.array([1., 2., 3.])
+    """
+    The jocabian of 3D rotation (SO3)
+    gauss_newton_method.md (9)
+    """
+    J = -R.dot(skew(a))
+    J_numerical = numerical_derivative(residual, [x, a], 0, plus)
+
+    print('%s test numerical derivative' % check(J, J_numerical))
+    x1 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    x2 = np.array([-0.3, -0.4, 0.1, 0.3, 0.5, 0.7])
+
+    def plus(x1, x2):
+        return m2p(p2m(x1) @ p2m(x2))
+
+    def minus(x1, x2):
+        r_rot = logSO3(np.linalg.inv(expSO3(x2[3:])) @ expSO3(x1[3:]))
+        r_trans = np.linalg.inv(expSO3(x2[3:])) @ (x1[:3] - x2[:3])
+        # return np.concatenate([r_trans, r_rot])
+        return np.concatenate([r_trans, r_rot])
+
+    J_numerical = numerical_derivative(minus, [x1, x2], 1, plus, minus)
+
+    # Add test for logSO3 when trace == -1
+    omega = np.array([0, 0, np.pi - 0.001])
     R = expSO3(omega)
     omega_new = logSO3(R)
-    print(omega_new)
+    print('%s logSO3 when r3 is approx to pi' % check(omega, omega_new))
+
+    omega = np.array([0, 0, -np.pi + 0.001])
+    R = expSO3(omega)
+    omega_new = logSO3(R)
+    print('%s logSO3 when r3 is approx to -pi' % check(omega, omega_new))
+
+    # Add test for logSO3 when trace == -1
+    omega = np.array([0, np.pi - 0.001, 0])
+    R = expSO3(omega)
+    omega_new = logSO3(R)
+    print('%s logSO3 when r2 is approx to pi' % check(omega, omega_new))
+
+    omega = np.array([0, -np.pi + 0.001, 0])
+    R = expSO3(omega)
+    omega_new = logSO3(R)
+    print('%s logSO3 when r2 is approx to -pi' % check(omega, omega_new))
+
+    # Add test for logSO3 when trace == -1
+    omega = np.array([np.pi - 0.001, 0, 0])
+    R = expSO3(omega)
+    omega_new = logSO3(R)
+    print('%s logSO3 when r1 is approx to pi' % check(omega, omega_new))
+
+    omega = np.array([-np.pi + 0.001, 0, 0])
+    R = expSO3(omega)
+    omega_new = logSO3(R)
+    print('%s logSO3 when r31 is approx to -pi' % check(omega, omega_new))
