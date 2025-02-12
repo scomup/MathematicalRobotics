@@ -213,7 +213,7 @@ class GraphSolver:
             dx = np.linalg.solve(H, -g)
         return dx, score
 
-    def solve(self, show_info=True, min_score_change=0.01, step=0):
+    def solve(self, show_info=True, min_score_change=0.01, step=0, min_itrs=3):
         last_score = np.inf
         itr = 0
         while True:
@@ -227,7 +227,7 @@ class GraphSolver:
                 time_diff = end - start
                 print('iter %d: solve time: %f error: %f' %
                       (itr, time_diff, score))
-            if (last_score - score < min_score_change and itr > 5):
+            if (last_score - score < min_score_change and itr >= min_itrs):
                 break
             self.update(dx)
             last_score = score
