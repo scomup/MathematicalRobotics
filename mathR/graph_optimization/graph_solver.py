@@ -2,7 +2,6 @@ import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import cho_solve, cho_factor
 from scipy.sparse import csc_matrix, csr_matrix, coo_matrix, eye
-from sksparse.cholmod import cholesky
 import time
 from mathR.utilities.robust_kernel import *
 
@@ -117,6 +116,16 @@ class GraphSolver:
         self.psize = 0
         self.use_sparse = use_sparse
         self.epsilon = epsilon
+        if (self.use_sparse):
+            print("Using sparse matrix for graph optimization.")
+            try:
+                from sksparse.cholmod import cholesky
+            except ImportError:
+                print("sksparse is not installed.")
+                print("Please install scikit-sparse:")
+                print("sudo apt install libsuitesparse-dev")
+                print("pip install scikit-sparse")
+                exit(-1)
 
     def add_vertex(self, vertex, is_constant=False):
         self.vertices.append(vertex)

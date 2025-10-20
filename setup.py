@@ -9,8 +9,7 @@ setup(
         'matplotlib',
         'scipy',
         'pyqtgraph',
-        'pyopengl',
-        'scikit-sparse'
+        'pyopengl'
     ],
     entry_points={
         'console_scripts': [

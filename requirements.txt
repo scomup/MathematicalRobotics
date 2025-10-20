@@ -1,7 +1,5 @@
 numpy
 matplotlib
 scipy
-pyqt5
 pyqtgraph
 pyopengl
-scikit-sparse

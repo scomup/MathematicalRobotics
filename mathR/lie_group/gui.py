@@ -221,7 +221,7 @@ class Gui3d(QMainWindow):
 
         for obj in self.static_obj:
             self.viewer.addItem(obj)
-        for obj in self.dynamic_obj:
+        for name, obj in self.dynamic_obj.items():
             self.viewer.addItem(obj)
 
         timer.start()
@@ -257,10 +257,16 @@ class Gui3d(QMainWindow):
         pitch = np.deg2rad(self.pitch)
         yaw = np.deg2rad(self.yaw)
         R = euler2mat([roll, pitch, yaw], self.rotate_mode)
+        print(R)
         T = np.eye(4)
         T[0:3, 0:3] = R
-        for obj in self.dynamic_obj:
-            obj.setTransform(T)
+        for name, obj in self.dynamic_obj.items():
+            if (name == "cube2"):
+                T2 = np.eye(4)
+                T2[:2, :2] = R[:2, :2]
+                obj.setTransform(T2)
+            else:
+                obj.setTransform(T)
         self.viewer.update()
 
 if __name__ == '__main__':
